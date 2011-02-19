@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Advanced aggregation css compression module.
+ *
+ */
+
+/**
+ * Default value to see if the advanced aggregator is enabled.
+ */
+
+
+/**
+ * Implement hook_advagg_css_alter.
+ */
+function advagg_css_compress_advagg_css_alter(&$contents) {
+  //Initialize CSSTidy
+  include_once('parse.inc');
+  $css = new csstidy();
+  $css->load_template('highest_compression');
+
+  // Optimize Aggregated CSS with CSSTidy
+  $css->parse($contents);
+  $contents = $css->print->plain();
+}

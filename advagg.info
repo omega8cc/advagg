@@ -1,0 +1,5 @@
+; $Id$
+name = Advanced Aggregator
+description = Better CSS/JS Aggregation
+package = Advanced Aggregator
+core = 6.x

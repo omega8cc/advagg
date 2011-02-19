@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Advanced aggregation js cdn library module.
+ *
+ */
+
+/**
+ * Implement hook_advagg_js_alter.
+ */
+function advagg_js_cdn_advagg_js_pre_alter(&$javascript) {
+//   watchdog('ss', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($javascript, TRUE)))));
+//   return;
+
+  foreach ($javascript as $type => $data) {
+    if (!$data) {
+      continue;
+    }
+    if ($type == 'setting' || $type == 'inline') {
+      continue;
+    }
+    foreach ($data as $path => $info) {
+      if (module_exists('jquery_update')) {
+        $file_path = drupal_get_path('module', 'jquery_update');
+        if (   $path == $file_path . '/replace/jquery.min.js'
+            || $path == $file_path . '/replace/jquery.js'
+              ) {
+          $info['preprocess'] = FALSE;
+          $javascript['external']['http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js'] = $info;
+          unset($javascript[$type][$path]);
+        }
+      }
+      elseif ($path == 'misc/jquery.js') {
+        $info['preprocess'] = FALSE;
+        $javascript['external']['http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'] = $info;
+        unset($javascript[$type][$path]);
+      }
+    }
+  }
+}

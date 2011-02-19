@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Advanced aggregation js compression module.
+ *
+ */
+
+/**
+ * Implement hook_init.
+ */
+function advagg_js_compress_init() {
+  global $conf;
+  // Do not use the minifide jquery if we are going to compress.
+  $conf['jquery_update_compression_type'] = 'none';
+}
+
+/**
+ * Implement hook_advagg_js_alter.
+ */
+function advagg_js_compress_advagg_js_alter(&$contents) {
+  // JSMin+ the contents of the aggregated file.
+  require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
+  // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
+  $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
+  $contents = JSMinPlus::minify($contents);
+
+  // JSMin the contents of the aggregated file.
+//   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsmin.php');
+//   $contents = JSMin::minify($contents);
+}

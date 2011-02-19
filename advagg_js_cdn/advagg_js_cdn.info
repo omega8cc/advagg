@@ -1,0 +1,6 @@
+; $Id$
+name = CDN Javascript
+description = Use a shared CDN for javascript libraries.
+package = Advanced Aggregator
+core = 6.x
+dependencies[] = advagg

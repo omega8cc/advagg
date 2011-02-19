@@ -1,0 +1,178 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Handles Advanced Aggregators installation and upgrade tasks.
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function advagg_enable() {
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function advagg_disable() {
+  cache_clear_all('*', 'cache_advagg', TRUE);
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function advagg_install() {
+  drupal_install_schema('advagg');
+
+  // Make sure we run last.
+  db_query("UPDATE {system} SET weight = 250 WHERE name = 'advagg'");
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function advagg_uninstall() {
+  // Remove database tables.
+  cache_clear_all('*', 'cache_advagg', TRUE);
+  drupal_uninstall_schema('advagg');
+
+  // Remove variables.
+  variable_del('advagg_enabled');
+  variable_del('advagg_stale_file_threshold');
+  variable_del('advagg_stale_file_last_used_threshold');
+  variable_del('advagg_file_last_used_interval');
+  variable_del('advagg_gzip_compression');
+
+  // Remove files.
+  $path = file_create_path('advagg_js');
+  file_scan_directory($path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($path);
+  $path = file_create_path('advagg_css');
+  file_scan_directory($path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($path);
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function advagg_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  // Report Drupal version
+  if ($phase == 'runtime') {
+    if (variable_get('preprocess_css', FALSE) || variable_get('preprocess_js', FALSE)) {
+      $requirements['advagg_core_off'] = array(
+        'title' => $t('Advanced Aggregator'),
+        'severity' => REQUIREMENT_ERROR,
+        'value' => $t('The advanced aggregator can not be turned on if cores css or js aggregation is turned on.'),
+      );
+    }
+    if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
+      $requirements['advagg_not_on'] = array(
+        'title' => $t('Advanced Aggregator'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The advanced aggregator is not currently enabled.'),
+      );
+    }
+    if (empty($requirements)) {
+      $requirements['advagg'] = array(
+          'title'       => $t('Advanced Aggregator'),
+          'severity'    => REQUIREMENT_OK,
+          'value'       => $t('The advanced aggregator should be working correctly'),
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_schema.
+ */
+function advagg_schema() {
+  $schema['cache_advagg'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg']['description'] = t('Cache table for the Advanced Aggregator. Used to keep timestamps and if the file exists.');
+
+  $schema['advagg_files'] = array(
+    'description' => t('Files used in aggregation.'),
+    'fields' => array(
+      'filename' => array(
+        'description' => 'Path of the file relative to Drupal webroot.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'filename_md5' => array(
+        'description' => 'MD5 hash of filename',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'checksum' => array(
+        'description' => 'mtime or md5 of the files content.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'filetype' => array(
+        'description' => 'Filetype.',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'counter' => array(
+        'description' => 'This is incremented every time a file changes.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'checksum' => array('checksum'),
+      'filetype' => array('filetype'),
+    ),
+    'primary key' => array('filename_md5'),
+  );
+
+  $schema['advagg_bundles'] = array(
+    'description' => t('What files are used in what bundles.'),
+    'fields' => array(
+      'bundle_md5' => array(
+        'description' => 'MD5 hash of the bundles list of files',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'filename_md5' => array(
+        'description' => 'MD5 hash of filename source',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'counter' => array(
+        'description' => 'This is incremented every time a file in the bundle changes.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'porder' => array(
+        'description' => 'Processing order.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('bundle_md5', 'filename_md5'),
+
+  );
+
+  return $schema;
+}

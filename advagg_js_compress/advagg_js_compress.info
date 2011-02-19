@@ -1,0 +1,6 @@
+; $Id$
+name = Compress Javascript
+description = Compress Javascript with a 3rd party compressor.
+package = Advanced Aggregator
+core = 6.x
+dependencies[] = advagg
