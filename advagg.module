@@ -3,12 +3,12 @@
 
 /**
  * @file
- * Advanced aggregation module
+ * Advanced CSS/JS aggregation module
  *
  */
 
 /**
- * Default value to see if the advanced aggregator is enabled.
+ * Default value to see if advanced CSS/JS aggregation is enabled.
  */
 define('ADVAGG_ENABLED', TRUE);
 

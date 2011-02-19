@@ -7,11 +7,6 @@
  */
 
 /**
- * Default value to see if the advanced aggregator is enabled.
- */
-
-
-/**
  * Implement hook_advagg_css_alter.
  */
 function advagg_css_compress_advagg_css_alter(&$contents) {

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Advanced aggregation js compression module.
+ * Advanced CSS/JS aggregation js compression module.
  *
  */
 
@@ -11,7 +11,7 @@
  */
 function advagg_js_compress_init() {
   global $conf;
-  // Do not use the minifide jquery if we are going to compress.
+  // Do not use the minified jquery if we are going to compress.
   $conf['jquery_update_compression_type'] = 'none';
 }
 

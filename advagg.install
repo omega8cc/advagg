@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Handles Advanced Aggregators installation and upgrade tasks.
+ * Handles Advanced Aggregation installation and upgrade tasks.
  */
 
 /**
@@ -65,23 +65,23 @@ function advagg_requirements($phase) {
   if ($phase == 'runtime') {
     if (variable_get('preprocess_css', FALSE) || variable_get('preprocess_js', FALSE)) {
       $requirements['advagg_core_off'] = array(
-        'title' => $t('Advanced Aggregator'),
+        'title' => $t('Advanced CSS/JS Aggregation'),
         'severity' => REQUIREMENT_ERROR,
-        'value' => $t('The advanced aggregator can not be turned on if cores css or js aggregation is turned on.'),
+        'value' => $t('Advanced CSS/JS aggregation can not be turned on if cores css or js aggregation is turned on.'),
       );
     }
     if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
       $requirements['advagg_not_on'] = array(
-        'title' => $t('Advanced Aggregator'),
+        'title' => $t('Advanced CSS/JS Aggregation'),
         'severity' => REQUIREMENT_WARNING,
-        'value' => $t('The advanced aggregator is not currently enabled.'),
+        'value' => $t('Advanced CSS/JS aggregation is not currently enabled.'),
       );
     }
     if (empty($requirements)) {
       $requirements['advagg'] = array(
-          'title'       => $t('Advanced Aggregator'),
+          'title'       => $t('Advanced CSS/JS Aggregation'),
           'severity'    => REQUIREMENT_OK,
-          'value'       => $t('The advanced aggregator should be working correctly'),
+          'value'       => $t('Advanced CSS/JS aggregation should be working correctly'),
       );
     }
   }
@@ -94,10 +94,10 @@ function advagg_requirements($phase) {
  */
 function advagg_schema() {
   $schema['cache_advagg'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_advagg']['description'] = t('Cache table for the Advanced Aggregator. Used to keep timestamps and if the file exists.');
+  $schema['cache_advagg']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep timestamps and if the file exists.');
 
   $schema['advagg_files'] = array(
-    'description' => t('Files used in aggregation.'),
+    'description' => t('Files used in CSS/JS aggregation.'),
     'fields' => array(
       'filename' => array(
         'description' => 'Path of the file relative to Drupal webroot.',
