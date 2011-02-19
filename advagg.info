@@ -1,5 +1,5 @@
 ; $Id$
 name = Advanced CSS/JS Aggregation
-description = Better CSS/JS Aggregation
+description = Better CSS/JS Aggregation.
 package = Advanced CSS/JS Aggregation
 core = 6.x
