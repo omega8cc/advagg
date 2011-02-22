@@ -35,7 +35,12 @@ define('ADVAGG_GZIP_COMPRESSION', TRUE);
 /**
  * Default generate the aggregate async.
  */
-define('ADVAGG_ASYNC_GENERATION', FALSE);
+define('ADVAGG_ASYNC_GENERATION', TRUE);
+
+/**
+ * How long to wait for the server to come back with an async opp.
+ */
+define('ADVAGG_SOCKET_TIMEOUT', 1);
 
 /**
  * Implementation of hook_perm().
@@ -158,7 +163,7 @@ function advagg_jquery_updater(&$js) {
 }
 
 /**
- * Given a list of file; return back the aggregated filename.
+ * Given a list of files; return back the aggregated filename.
  *
  * @param $files
  *   List of files in the proposed bundle.
@@ -300,8 +305,8 @@ function advagg_flush_caches() {
     $checksum = advagg_checksum($row['filename']);
     if ($checksum != $row['checksum']) {
       $needs_refreshing[] = $row['filename_md5'];
-      // Update checksum.
-      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1 WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
+      // Update checksum; increment counter; reset data.
+      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1, data = '' WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
     }
   }
 
@@ -392,6 +397,37 @@ function advagg_delete_file_if_stale($filename) {
     file_delete($filename . '.gz');
   }
 }
+
+/**
+ * Get data about a file.
+ *
+ * @param $filename_md5
+ *   md5 of filename.
+ * @return
+ *   data array from database.
+ */
+function advagg_get_file_data($filename_md5) {
+  $data = db_result(db_query("SELECT data FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
+  if (!empty($data)) {
+    $data = unserialize($data);
+  }
+  return $data;
+}
+
+/**
+ * Get data about a file.
+ *
+ * @param $filename_md5
+ *   md5 of filename.
+ * @param $data
+ *   data to store.
+ */
+function advagg_set_file_data($filename_md5, $data) {
+  $serialized_data = serialize($data);
+  db_query("UPDATE {advagg_files} SET data = '%s' WHERE filename_md5 = '%s'", $serialized_data, $filename_md5);
+}
+
+
 
 /**
  * ***MODIFIED CORE FUNCTIONS BELOW***
@@ -538,15 +574,38 @@ function advagg_build_css_cache($files, $counter = '') {
   $csspath = file_create_path('advagg_css');
   $filepath = $csspath .'/'. $filename;
 
-  // Generate on request?
-  if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
-    return $filepath;
-  }
-
   // Check that the file exists & filesize is not zero
   $built = advagg_bundle_built($filepath);
 
   if (!$built) {
+    // Generate on request?
+    if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
+      // Request file.
+      $ip = variable_get('advagg_server_addr', FALSE);
+      if (empty($ip)) {
+        $ip = $_SERVER['SERVER_ADDR'];
+      }
+      $url = 'http://' . $ip . $base_path . $filepath;
+      $headers = array(
+        'Host' => $_SERVER['HTTP_HOST'],
+      );
+
+      // Set timeout.
+      $socket_timeout = ini_set('default_socket_timeout', variable_get('advagg_socket_timeout', ADVAGG_SOCKET_TIMEOUT));
+      drupal_http_request($url, $headers, 'GET');
+      ini_set('default_socket_timeout', $socket_timeout);
+
+      // Return filepath.
+      return $filepath;
+    }
+
+    // Only generate once.
+    $lock_name = 'advagg_' . $filename;
+    if (!lock_acquire($lock_name)) {
+      lock_wait($lock_name);
+      return $filepath;
+    }
+
     // Build aggregate CSS file.
     foreach ($files as $file) {
       $contents = drupal_load_stylesheet($file, TRUE);
@@ -566,7 +625,7 @@ function advagg_build_css_cache($files, $counter = '') {
 
     // Invoke hook_advagg_css_alter() to give installed modules a chance to
     // modify the data in the bundle if necessary.
-    drupal_alter('advagg_css', $contents);
+    drupal_alter('advagg_css', $data);
 
     // Create the css/ within the files folder.
     file_check_directory($csspath, FILE_CREATE_DIRECTORY);
@@ -584,6 +643,8 @@ function advagg_build_css_cache($files, $counter = '') {
       }
     }
 
+    // Release lock.
+    lock_release($lock_name);
   }
   return $filepath;
 }
@@ -726,6 +787,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL) {
  *   The name of the JS file, or FALSE if the file could not be saved.
  */
 function advagg_build_js_cache($files, $counter = '') {
+  global $base_path;
   $contents = '';
 
   // Send $files, get filename back
@@ -734,15 +796,38 @@ function advagg_build_js_cache($files, $counter = '') {
   $jspath = file_create_path('advagg_js');
   $filepath = $jspath .'/'. $filename;
 
-  // Generate on request?
-  if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
-    return $filepath;
-  }
-
   // Check that the file exists & filesize is not zero
   $built = advagg_bundle_built($filepath);
 
   if (!$built) {
+    // Generate on request?
+    if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
+      // Request file.
+      $ip = variable_get('advagg_server_addr', FALSE);
+      if (empty($ip)) {
+        $ip = $_SERVER['SERVER_ADDR'];
+      }
+      $url = 'http://' . $ip . $base_path . $filepath;
+      $headers = array(
+        'Host' => $_SERVER['HTTP_HOST'],
+      );
+
+      // Set timeout.
+      $socket_timeout = ini_set('default_socket_timeout', variable_get('advagg_socket_timeout', ADVAGG_SOCKET_TIMEOUT));
+      drupal_http_request($url, $headers, 'GET');
+      ini_set('default_socket_timeout', $socket_timeout);
+
+      // Return filepath.
+      return $filepath;
+    }
+
+    // Only generate once.
+    $lock_name = 'advagg_' . $filename;
+    if (!lock_acquire($lock_name)) {
+      lock_wait($lock_name);
+      return $filepath;
+    }
+
     // Build aggregate JS file.
     foreach ($files as $file) {
       // Append a ';' and a newline after each JS file to prevent them from running together.
@@ -750,7 +835,7 @@ function advagg_build_js_cache($files, $counter = '') {
     }
     // Invoke hook_advagg_js_alter() to give installed modules a chance to
     // modify the data in the bundle if necessary.
-    drupal_alter('advagg_js', $contents);
+    drupal_alter('advagg_js', $contents, $files);
 
     // Create advagg_js/ within the files folder.
     file_check_directory($jspath, FILE_CREATE_DIRECTORY);
@@ -766,6 +851,9 @@ function advagg_build_js_cache($files, $counter = '') {
         }
       }
     }
+
+    // Release lock.
+    lock_release($lock_name);
   }
 
   return $filepath;

@@ -7,6 +7,21 @@
  */
 
 /**
+ * Implementation of hook_menu
+ */
+function advagg_js_compress_menu() {
+  $items = array();
+
+  $items['advagg_js_compress_test_file.php'] = array(
+    'page callback' => 'advagg_js_compress_test_file',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
  * Implement hook_init.
  */
 function advagg_js_compress_init() {
@@ -18,14 +33,121 @@ function advagg_js_compress_init() {
 /**
  * Implement hook_advagg_js_alter.
  */
-function advagg_js_compress_advagg_js_alter(&$contents) {
+function advagg_js_compress_advagg_js_alter(&$contents, $files) {
+  global $base_path;
+
+  // Make sure every file in this aggregate is compressable.
+  $files_to_test = array();
+  $all_ok = TRUE;
+  foreach ($files as $filename) {
+    $filename_md5 = md5($filename);
+    $data = advagg_get_file_data($filename_md5);
+
+    // File needs to be tested.
+    if (empty($data['advagg_js_compress']['tested'])) {
+      $files_to_test[] = array(
+        'md5' => $filename_md5,
+        'filename' => $filename,
+      );
+    }
+    elseif ($data['advagg_js_compress']['tested']['jsminplus'] == -1) {
+      $all_ok = FALSE;
+    }
+  }
+
+  // Send test files to worker.
+  if (!empty($files_to_test)) {
+    $compressable = advagg_js_compress_test_compression($files_to_test);
+    if (is_array($compressable)) {
+    $all_ok = FALSE;
+    }
+  }
+
+  // Only compress if all files are compressable.
+  if ($all_ok) {
+    // JSMin+ the contents of the aggregated file.
+    require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
+    // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
+    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
+    $contents = JSMinPlus::minify($contents);
+  }
+}
+
+/**
+ * Run various theme functions so the cache is primed.
+ *
+ * @param $files_to_test
+ *   array with md5 and filename.
+ * @return
+ *   TRUE if all files are compressable. List of files that failed otherwise.
+ */
+function advagg_js_compress_test_compression($files_to_test) {
+  $bad_files = array();
+  foreach ($files_to_test as $info) {
+    // Setup request URL and headers.
+    $query['values'] = $info;
+    $query['key'] = $key;
+    $query_string = http_build_query($query, '', '&');
+    $ip = variable_get('advagg_server_addr', FALSE);
+    if (empty($ip)) {
+      $ip = $_SERVER['SERVER_ADDR'];
+    }
+    $url = 'http://' . $ip . $base_path . '/advagg_js_compress_test_file.php';
+    $headers = array(
+      'Host' => $_SERVER['HTTP_HOST'],
+      'Content-Type' => 'application/x-www-form-urlencoded',
+    );
+
+    $results = drupal_http_request($url, $headers, 'POST', $query_string);
+    $data = advagg_get_file_data($filename_md5);
+    if ($results->data == $info['md5']) {
+      $data['advagg_js_compress']['tested']['jsminplus'] = 1;
+    }
+    else {
+      $data['advagg_js_compress']['tested']['jsminplus'] = -1;
+      $bad_files[] = $info;
+    }
+    advagg_set_file_data($info['md5'], $data);
+  }
+  if (empty($bad_files)) {
+    return TRUE;
+  }
+  return $bad_files;
+}
+
+/**
+ * Run various theme functions so the cache is primed.
+ *
+ * @param $values
+ *   object File info
+ */
+function advagg_js_compress_test_file($values = NULL) {
+//   watchdog('debug', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($values, TRUE) . print_r($_REQUEST, TRUE)))));
+
+  // Exit if key does not match & called with $file not set.
+  if (is_null($values)) {
+    if (empty($_POST['key']) || empty($_POST['values'])) {
+      return;
+    }
+    $key = variable_get('advagg_js_compress_url_key', FALSE);
+    if ($key != $_POST['key']) {
+      return;
+    }
+    $values = array();
+    $values['values'] = $_POST['values'];
+  }
+
   // JSMin+ the contents of the aggregated file.
   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
+  $contents = file_get_contents($values['values']['filename']);
   // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
   $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
   $contents = JSMinPlus::minify($contents);
 
-  // JSMin the contents of the aggregated file.
-//   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsmin.php');
-//   $contents = JSMin::minify($contents);
+  echo $values['values']['md5'];
+  exit;
 }
+
+
+
+

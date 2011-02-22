@@ -132,6 +132,12 @@ function advagg_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'data' => array(
+        'description' => 'Extra data about this file. Example would be what compressors work with it.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+      ),
     ),
     'indexes' => array(
       'checksum' => array('checksum'),
@@ -176,3 +182,21 @@ function advagg_schema() {
 
   return $schema;
 }
+
+/**
+ * Update 6100 - Add new column to table.
+ */
+function advagg_update_6100() {
+  $ret = array();
+
+  // Add in data column
+  db_add_field($ret, 'advagg_files', 'data', array(
+        'description' => 'Extra data about this file. Example would be what compressors work with it.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+      ));
+
+  return $ret;
+}
+

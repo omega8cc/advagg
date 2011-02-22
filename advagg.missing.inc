@@ -16,6 +16,8 @@
  *   Boolean indicating if the bundle already exists.
  */
 function advagg_missing_css() {
+  ignore_user_abort();
+
   // Try to regenerate missing file
   advagg_missing_regenerate();
 
@@ -27,6 +29,8 @@ function advagg_missing_css() {
  * Menu Callback; regenerates a missing js file.
  */
 function advagg_missing_js() {
+  ignore_user_abort();
+
   // Try to regenerate missing file
   advagg_missing_regenerate();
 
@@ -51,6 +55,11 @@ function advagg_missing_regenerate() {
   $arg = arg();
   $filename = array_pop($arg);
 
+  // Verfy requested filename has the correct pattern.
+  if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {
+    return FALSE;
+  }
+
   // Get type
   $type = substr($filename, 0, strpos($filename, '_'));
 
@@ -72,16 +81,6 @@ function advagg_missing_regenerate() {
     $counter = substr($filename, 36, strpos($filename, '.', 37)-36);
   }
   else {
-    return FALSE;
-  }
-
-  // Verfy counter is numeric.
-  if (is_numeric($counter) == FALSE) {
-    return FALSE;
-  }
-
-  // Verfy string is md5.
-  if (preg_match('/^[a-f0-9]{32}$/', $md5) == FALSE) {
     return FALSE;
   }
 
