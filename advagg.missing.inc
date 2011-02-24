@@ -85,7 +85,7 @@ function advagg_missing_regenerate() {
   }
 
   $_GET['redirect_counter'] = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
-  if ($redirect_count > 5) {
+  if ($_GET['redirect_counter'] > 5) {
     watchdog('advagg', 'This request could not generate correctly. Loop detected. Request data: %info', array('%info' => $_GET['q']));
     return FALSE;
   }
@@ -113,25 +113,8 @@ function advagg_missing_regenerate() {
   }
 
   // Redirect to file.
+  $_GET['redirect_counter']++;
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
   header('Location: ' . $uri, TRUE, 307);
   exit;
-}
-
-/**
- * Send out a fast 404 and exit.
- */
-function advagg_missing_fast404() {
-//   watchdog('x', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_SERVER, TRUE)))));
-
-  global $base_path;
-  header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
-  header('X-AdvAgg: Failed Validation');
-  print '<html>';
-  print '<head><title>404 Not Found</title></head>';
-  print '<body><h1>Not Found</h1>';
-  print '<p>The requested URL was not found on this server.</p>';
-  print '<p><a href="' . $base_path . '">Home</a></p>';
-  print '</body></html>';
-  exit();
 }
