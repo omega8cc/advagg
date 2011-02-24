@@ -35,7 +35,7 @@ define('ADVAGG_GZIP_COMPRESSION', TRUE);
 /**
  * Default generate the aggregate async.
  */
-define('ADVAGG_ASYNC_GENERATION', TRUE);
+define('ADVAGG_ASYNC_GENERATION', FALSE);
 
 /**
  * How long to wait for the server to come back with an async opp.

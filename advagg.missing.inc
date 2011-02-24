@@ -122,8 +122,11 @@ function advagg_missing_regenerate() {
  * Send out a fast 404 and exit.
  */
 function advagg_missing_fast404() {
+//   watchdog('x', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_SERVER, TRUE)))));
+
   global $base_path;
-  header('HTTP/1.1 404 Not Found');
+  header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+  header('X-AdvAgg: Failed Validation');
   print '<html>';
   print '<head><title>404 Not Found</title></head>';
   print '<body><h1>Not Found</h1>';
