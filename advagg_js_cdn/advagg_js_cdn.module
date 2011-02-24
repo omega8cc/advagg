@@ -11,8 +11,8 @@
  */
 function advagg_js_cdn_advagg_js_pre_alter(&$javascript) {
 //   watchdog('ss', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($javascript, TRUE)))));
-//   return;
 
+  $schema = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
   foreach ($javascript as $type => $data) {
     if (!$data) {
       continue;
@@ -21,21 +21,61 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript) {
       continue;
     }
     foreach ($data as $path => $info) {
+      // jquery.js
       if (module_exists('jquery_update')) {
         $file_path = drupal_get_path('module', 'jquery_update');
         if (   $path == $file_path . '/replace/jquery.min.js'
             || $path == $file_path . '/replace/jquery.js'
               ) {
           $info['preprocess'] = FALSE;
-          $javascript['external']['http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js'] = $info;
+          $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js'] = $info;
           unset($javascript[$type][$path]);
         }
       }
       elseif ($path == 'misc/jquery.js') {
         $info['preprocess'] = FALSE;
-        $javascript['external']['http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'] = $info;
+        $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'] = $info;
         unset($javascript[$type][$path]);
+      }
+
+      // jquery-ui.js
+      if (module_exists('jquery_update')) {
+        $version = jquery_ui_get_version();
+        $filename = advagg_get_jquery_ui_filename();
+        if ($path == $filename) {
+          $info['preprocess'] = FALSE;
+          $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/jqueryui/' . $version .'/jquery-ui.min.js'] = $info;
+          unset($javascript[$type][$path]);
+        }
       }
     }
   }
+}
+
+/**
+ * Get the path for the jquery-ui.js file.
+ *
+ * @param string $file
+ *   filename.
+ */
+function advagg_get_jquery_ui_filename($file = 'jquery-ui') {
+  $compression = variable_get('jquery_update_compression_type', 'mini');
+  $jquery_ui_path = JQUERY_UI_PATH . '/ui';
+
+  switch ($compression) {
+    case 'none':
+      $file_path = "$file.js";
+      break;
+
+    case 'pack':
+      $file_path = "packed/$file.packed.js";
+      break;
+
+    case 'mini':
+    default:
+      $file_path = "minified/$file.min.js";
+      break;
+  }
+  $js_path = $jquery_ui_path . '/' . $file_path;
+  return $js_path;
 }
