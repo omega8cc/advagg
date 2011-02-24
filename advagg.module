@@ -686,6 +686,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL) {
   $preprocessed = '';
   $no_preprocess = array('core' => '', 'module' => '', 'theme' => '');
   $files = array();
+  $external = array();
   $preprocess_js = TRUE;
   if (isset($_GET['advagg']) && $_GET['advagg'] == 0) {
     if (user_access('bypass advanced aggregation')) {
@@ -771,7 +772,8 @@ function advagg_process_js($scope = 'header', $javascript = NULL) {
 
   // Keep the order of JS files consistent as some are preprocessed and others are not.
   // Make sure any inline or JS setting variables appear last after libraries have loaded.
-  $output = implode('', $external) . $preprocessed . implode('', $no_preprocess) . $output;
+  $external = empty($external) ? '' : implode('', $external);
+  $output = $external . $preprocessed . implode('', $no_preprocess) . $output;
 
   return $output;
 }
