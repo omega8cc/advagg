@@ -31,6 +31,33 @@ function advagg_js_compress_init() {
 }
 
 /**
+ * Implement hook_advagg_js_pre_alter.
+ */
+function advagg_js_compress_advagg_js_pre_alter(&$javascript) {
+//   watchdog('ss', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($javascript, TRUE)))));
+//   return;
+
+  foreach ($javascript as $type => $data) {
+    if (!$data) {
+      continue;
+    }
+    if ($type == 'setting' || $type == 'inline') {
+      continue;
+    }
+    foreach ($data as $path => $info) {
+      if (!module_exists('jquery_update')) {
+        $file_path = drupal_get_path('module', 'advagg_js_compress');
+        if ($path == 'misc/jquery.form.js') {
+          $new_path = $file_path . '/jquery.form.js';
+          $javascript[$type][$new_path] = $info;
+          unset($javascript[$type][$path]);
+        }
+      }
+    }
+  }
+}
+
+/**
  * Implement hook_advagg_js_alter.
  */
 function advagg_js_compress_advagg_js_alter(&$contents, $files) {
@@ -82,8 +109,15 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files) {
  *   TRUE if all files are compressable. List of files that failed otherwise.
  */
 function advagg_js_compress_test_compression($files_to_test) {
+  global $base_path;
   $bad_files = array();
   foreach ($files_to_test as $info) {
+    $key = variable_get('advagg_js_compress_url_key', FALSE);
+    if (empty($key)) {
+      $key = mt_rand();
+      variable_set('advagg_js_compress_url_key', $key);
+    }
+
     // Setup request URL and headers.
     $query['values'] = $info;
     $query['key'] = $key;
@@ -92,7 +126,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     if (empty($ip)) {
       $ip = $_SERVER['SERVER_ADDR'];
     }
-    $url = 'http://' . $ip . $base_path . '/advagg_js_compress_test_file.php';
+    $url = 'http://' . $ip . $base_path . 'advagg_js_compress_test_file.php';
     $headers = array(
       'Host' => $_SERVER['HTTP_HOST'],
       'Content-Type' => 'application/x-www-form-urlencoded',
