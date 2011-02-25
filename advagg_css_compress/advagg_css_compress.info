@@ -1,4 +1,3 @@
-; $Id$
 name = Compress CSS
 description = Compress CSS with a 3rd party compressor.
 package = Advanced CSS/JS Aggregation

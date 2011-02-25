@@ -1,4 +1,3 @@
-; $Id$
 name = CDN Javascript
 description = Use a shared CDN for javascript libraries.
 package = Advanced CSS/JS Aggregation
