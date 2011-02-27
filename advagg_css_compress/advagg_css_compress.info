@@ -3,3 +3,4 @@ description = Compress CSS with a 3rd party compressor.
 package = Advanced CSS/JS Aggregation
 core = 6.x
 dependencies[] = advagg
+php = 5.0
