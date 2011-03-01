@@ -42,10 +42,55 @@ define('ADVAGG_ASYNC_GENERATION', FALSE);
 define('ADVAGG_SOCKET_TIMEOUT', 1);
 
 /**
+ * Default file checksum mode.
+ */
+define('ADVAGG_CHECKSUM_MODE', 'mtime');
+
+/**
+ * Default value for writing debug info to watchdog.
+ */
+define('ADVAGG_DEBUG', FALSE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
   return array('bypass advanced aggregation');
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function advagg_menu() {
+  $css_path = file_create_path('advagg_css');
+  $js_path = file_create_path('advagg_js');
+  $file_path = drupal_get_path('module', 'advagg');
+
+  $items = array();
+  $items[$css_path . '/%'] = array(
+    'page callback' => 'advagg_missing_css',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access content'),
+    'file path' => $file_path,
+    'file' => 'advagg.missing.inc',
+  );
+  $items[$js_path . '/%'] = array(
+    'page callback' => 'advagg_missing_js',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access content'),
+    'file path' => $file_path,
+    'file' => 'advagg.missing.inc',
+  );
+  $items['admin/settings/advagg'] = array(
+    'title' => 'Advanced CSS/JS Aggragation',
+    'description' => 'Configuration for Advanced CSS/JS Aggragation.',
+    'page callback' => 'imageinfo_cache_admin_page',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+  );
+  return $items;
 }
 
 /**
@@ -96,7 +141,7 @@ function advagg_init() {
   );
 
   // Generate imagecache presets async.
-  $socket_timeout = ini_set('default_socket_timeout', variable_get('imageinfo_cache_socket_timeout', IMAGEINFO_CACHE_SOCKET_TIMEOUT));
+  $socket_timeout = ini_set('default_socket_timeout', variable_get('advagg_socket_timeout', ADVAGG_SOCKET_TIMEOUT));
   $results = drupal_http_request($url, $headers);
   ini_set('default_socket_timeout', $socket_timeout);
 
@@ -114,31 +159,6 @@ function advagg_init() {
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
   header('Location: ' . $uri, TRUE, 307);
   exit;
-}
-
-/**
- * Implementation of hook_menu().
- */
-function advagg_menu() {
-  $css_path = file_create_path('advagg_css');
-  $js_path = file_create_path('advagg_js');
-  $file_path = drupal_get_path('module', 'advagg');
-
-  $items[$css_path . '/%'] = array(
-    'page callback' => 'advagg_missing_css',
-    'type' => MENU_CALLBACK,
-    'access arguments' => array('access content'),
-    'file path' => $file_path,
-    'file' => 'advagg.missing.inc',
-  );
-  $items[$js_path . '/%'] = array(
-    'page callback' => 'advagg_missing_js',
-    'type' => MENU_CALLBACK,
-    'access arguments' => array('access content'),
-    'file path' => $file_path,
-    'file' => 'advagg.missing.inc',
-  );
-  return $items;
 }
 
 /**
@@ -175,6 +195,7 @@ function advagg_processor(&$variables) {
 
   // CSS
   $css = $variables['css'];
+  $css_orig = $css;
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
     if (!empty($processed_css)) {
@@ -185,6 +206,7 @@ function advagg_processor(&$variables) {
   // JS
   $scope = 'header';
   $js = drupal_add_js(NULL, NULL, $scope);
+  $js_orig = $js;
   if (!empty($js)) {
     // jquery update handler
     advagg_jquery_updater($js);
@@ -193,6 +215,18 @@ function advagg_processor(&$variables) {
     if (!empty($processed_js)) {
       $variables['scripts'] = $processed_js;
     }
+  }
+
+  // Output debug info.
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $data = array(
+      'css_before' => $css_orig,
+      'css_after' => $processed_css,
+      'js_before' => $js_orig,
+      'js_after' => $processed_js,
+    );
+    $data = str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($data, TRUE))));
+    watchdog('advagg', 'Debug info: !data', array('!$data' => $data), WATCHDOG_DEBUG);
   }
 }
 
@@ -311,13 +345,25 @@ function advagg_file_saver($data, $dest) {
  *   Checksum value.
  */
 function advagg_checksum($filename) {
-  $checksum = @filemtime($filename);
-  if ($checksum === FALSE) {
-    touch($filename);
-    $checksum = @filemtime($filename);
-    if ($checksum === FALSE) {
+  if (file_exists($filename)) {
+    $mode = variable_get('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
+    if ($mode == 'mtime') {
+      $checksum = @filemtime($filename);
+      if ($checksum === FALSE) {
+        touch($filename);
+        $checksum = @filemtime($filename);
+        // Use md5 as a last option.
+        if ($checksum === FALSE) {
+          $checksum = md5(file_get_contents($filename));
+        }
+      }
+    }
+    elseif ($mode = 'md5') {
       $checksum = md5(file_get_contents($filename));
     }
+  }
+  else {
+    $checksum = '-1';
   }
   return $checksum;
 }

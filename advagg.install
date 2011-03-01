@@ -9,9 +9,6 @@
  * Implementation of hook_enable().
  */
 function advagg_enable() {
-  // Flush theme registry
-  register_shutdown_function('drupal_rebuild_theme_registry');
-
   // Rescan files
   register_shutdown_function('advagg_flush_caches');
 
@@ -50,6 +47,10 @@ function advagg_uninstall() {
   variable_del('advagg_stale_file_last_used_threshold');
   variable_del('advagg_file_last_used_interval');
   variable_del('advagg_gzip_compression');
+  variable_del('advagg_async_generation');
+  variable_del('advagg_socket_timeout');
+  variable_del('advagg_server_addr');
+  variable_del('advagg_debug');
 
   // Remove files.
   $path = file_create_path('advagg_js');
@@ -101,6 +102,9 @@ function advagg_requirements($phase) {
   return $requirements;
 }
 
+/**
+ * Check to see if the CSS/JS generator is working.
+ */
 function advagg_check_missing_handler() {
   global $base_path;
   $ret = array();
