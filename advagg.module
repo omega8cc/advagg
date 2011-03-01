@@ -202,6 +202,7 @@ function advagg_processor(&$variables) {
   // CSS
   $css = $variables['css'];
   $css_orig = $css;
+  $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
     if (!empty($processed_css)) {
@@ -226,7 +227,9 @@ function advagg_processor(&$variables) {
   // Output debug info.
   if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
     $data = array(
-      'css_before' => $css_orig,
+      'css_before_vars' => $css_orig,
+      'css_before_function' => drupal_add_css(),
+      'css_before_styles' => $css_styles,
       'css_after' => $processed_css,
       'js_before' => $js_orig,
       'js_after' => $processed_js,
