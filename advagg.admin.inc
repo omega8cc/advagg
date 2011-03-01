@@ -10,7 +10,7 @@
  */
 function imageinfo_cache_admin_page() {
   $output = '';
-  return $output . drupal_get_form('advagg_admin_settings_from');
+  return $output . drupal_get_form('advagg_admin_settings_form');
 }
 
 /**
@@ -19,7 +19,7 @@ function imageinfo_cache_admin_page() {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_admin_settings_from() {
+function advagg_admin_settings_form() {
   $form = array();
 
   $form['advagg_enabled'] = array(
@@ -80,7 +80,9 @@ function advagg_admin_settings_from() {
   return system_settings_form($form);
 }
 
-function advagg_admin_settings_from_validate($form, &$form_state) {
+/**
+ * Validate form values. Used to unset variables before they get saved.
+ */
+function advagg_admin_settings_form_validate($form, &$form_state) {
   unset($form_state['values']['advagg_debug_info']);
-  drupal_set_message(boost_print_r($form_state['values'], TRUE, TRUE));
 }
