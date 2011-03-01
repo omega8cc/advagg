@@ -84,13 +84,38 @@ function advagg_menu() {
   $items['admin/settings/advagg'] = array(
     'title' => 'Advanced CSS/JS Aggragation',
     'description' => 'Configuration for Advanced CSS/JS Aggragation.',
-    'page callback' => 'imageinfo_cache_admin_page',
+    'page callback' => 'advagg_admin_page',
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('administer site configuration'),
     'file path' => $file_path,
     'file' => 'advagg.admin.inc',
   );
+  $items['admin_menu/flush-cache/advagg'] = array(
+    'page callback' => 'advagg_admin_flush_cache',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+  );
   return $items;
+}
+
+/**
+ * Implementation of hook_admin_menu().
+ *
+ * Add in a cache flush for advagg.
+ */
+function advagg_admin_menu(&$deleted) {
+  $links = array();
+
+  $links[] = array(
+    'title' => 'Adv CSS/JS Agg',
+    'path' => 'admin_menu/flush-cache/advagg',
+    'query' => 'destination',
+    'parent_path' => 'admin_menu/flush-cache',
+  );
+
+  return $links;
 }
 
 /**
@@ -410,11 +435,11 @@ function advagg_bundle_built($filepath) {
   return TRUE;
 }
 
-
 /**
  * Implementation of hook_flush_caches().
  */
 function advagg_flush_caches() {
+  global $_advagg;
   // Only one advagg cache flusher can run at a time.
   if (!lock_acquire('advagg_flush_caches')) {
     return;
@@ -450,6 +475,9 @@ function advagg_flush_caches() {
     if (!$good) {
       watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
     }
+    else {
+      $_advagg['rebuilt'][] = $bundle_md5;
+    }
   }
 
   // Garbage collection
@@ -459,7 +487,17 @@ function advagg_flush_caches() {
   lock_release('advagg_flush_caches');
 }
 
-function advagg_rebuld_bundle($bundle_md5, $counter = '') {
+/**
+ * Rebuild a bundle.
+ *
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ * @param $counter
+ *   Counter value.
+ * @param $force
+ *   Rebuild even if file already exists.
+ */
+function advagg_rebuld_bundle($bundle_md5, $counter = '', $force = FALSE) {
   global $conf;
   $files = array();
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
@@ -470,10 +508,10 @@ function advagg_rebuld_bundle($bundle_md5, $counter = '') {
 
   $conf['advagg_async_generation'] = FALSE;
   if ($filetype == 'js') {
-    return advagg_build_js_cache($files, $counter);
+    return advagg_build_js_cache($files, $counter, $force);
   }
   if ($filetype == 'css') {
-    return advagg_build_css_cache($files, $counter);
+    return advagg_build_css_cache($files, $counter, $force);
   }
 }
 
@@ -687,10 +725,14 @@ function advagg_process_css($css = NULL) {
  * @param $types
  *   An array of types of CSS files (e.g., screen, print) to aggregate and
  *   compress into one file.
+ * @param $counter
+ *   Counter value.
+ * @param $force
+ *   Rebuild even if file already exists.
  * @return
  *   The name of the CSS file, or FALSE if the file could not be saved.
  */
-function advagg_build_css_cache($files, $counter = '') {
+function advagg_build_css_cache($files, $counter = '', $force = FALSE) {
   $data = '';
 
   // Send $files, get filename back
@@ -702,7 +744,7 @@ function advagg_build_css_cache($files, $counter = '') {
   // Check that the file exists & filesize is not zero
   $built = advagg_bundle_built($filepath);
 
-  if (!$built) {
+  if (!$built || $force) {
     // Generate on request?
     if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
       // Request file.
@@ -760,7 +802,7 @@ function advagg_build_css_cache($files, $counter = '') {
       return FALSE;
     }
     if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
-      if (!file_exists($filepath . '.gz')) {
+      if (!file_exists($filepath . '.gz') || $force) {
         $good = advagg_file_saver(gzencode($data, 9, FORCE_GZIP), $filepath . '.gz');
         if (!$good) {
           return FALSE;
@@ -913,10 +955,14 @@ function advagg_process_js($scope = 'header', $javascript = NULL) {
  *
  * @param $files
  *   An array of JS files to aggregate and compress into one file.
+ * @param $counter
+ *   Counter value.
+ * @param $force
+ *   Rebuild even if file already exists.
  * @return
  *   The name of the JS file, or FALSE if the file could not be saved.
  */
-function advagg_build_js_cache($files, $counter = '') {
+function advagg_build_js_cache($files, $counter = '', $force = FALSE) {
   global $base_path;
   $contents = '';
 
@@ -929,7 +975,7 @@ function advagg_build_js_cache($files, $counter = '') {
   // Check that the file exists & filesize is not zero
   $built = advagg_bundle_built($filepath);
 
-  if (!$built) {
+  if (!$built || $force) {
     // Generate on request?
     if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
       // Request file.
@@ -974,7 +1020,7 @@ function advagg_build_js_cache($files, $counter = '') {
       return FALSE;
     }
     if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
-      if (!file_exists($filepath . '.gz')) {
+      if (!file_exists($filepath . '.gz') || $force) {
         $good = advagg_file_saver(gzencode($contents, 9, FORCE_GZIP), $filepath . '.gz');
         if (!$good) {
           return FALSE;
