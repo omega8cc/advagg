@@ -62,7 +62,25 @@ function advagg_admin_settings_from() {
     '#title'          => t('Debug to watchdog.'),
     '#default_value'  => variable_get('advagg_debug', ADVAGG_DEBUG),
   );
-
+  $form['info'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Hook Theme Info'),
+  );
+  init_theme();
+  $hooks = theme_get_registry();
+  $data = implode("\n", $hooks['page']['preprocess functions']);
+  $form['info']['advagg_debug_info'] = array(
+    '#type'           => 'textarea',
+    '#default_value'  => $data,
+    '#rows'           => count($hooks['page']['preprocess functions'])+1,
+  );
 
   return system_settings_form($form);
+}
+
+function advagg_admin_settings_from_validate($form, &$form_state) {
+  unset($form_state['values']['advagg_debug_info']);
+  drupal_set_message(boost_print_r($form_state['values'], TRUE, TRUE));
 }
