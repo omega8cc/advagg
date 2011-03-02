@@ -62,6 +62,11 @@ define('ADVAGG_CSS_COUNT_THRESHOLD', 22);
 define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);
 
 /**
+ * Default value for creating a htaccess file in the advagg dirs.
+ */
+define('ADVAGG_DIR_HTACCESS', TRUE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
@@ -379,6 +384,9 @@ function advagg_file_saver($data, $dest) {
     }
   }
 
+  // Make sure .htaccess file exists.
+  advagg_htaccess_check_generate($dest);
+
   cache_set($dest, time(), 'cache_advagg', CACHE_PERMANENT);
   return TRUE;
 }
@@ -651,6 +659,12 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   }
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
 
+  // A dummy query-string is added to filenames, to gain control over
+  // browser-caching. The string changes on every update or full cache
+  // flush, forcing browsers to load a new copy of the files, as the
+  // URL changed.
+  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
+
   // CDN Support.
   $url_builder = module_exists('cdn') ? 'file_create_url' : 'url';
 
@@ -679,15 +693,15 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             // If a CSS file is not to be preprocessed and it's a module CSS file, it needs to *always* appear at the *top*,
             // regardless of whether preprocessing is on or off.
             if (!$preprocess && $type == 'module') {
-              $no_module_preprocess[] = array($media, $url_builder($file));
+              $no_module_preprocess[] = array($media, $url_builder($file) . $query_string);
             }
             // If a CSS file is not to be preprocessed and it's a theme CSS file, it needs to *always* appear at the *bottom*,
             // regardless of whether preprocessing is on or off.
             else if (!$preprocess && $type == 'theme') {
-              $no_theme_preprocess[] = array($media, $url_builder($file));
+              $no_theme_preprocess[] = array($media, $url_builder($file) . $query_string);
             }
             else {
-              $output[] = array($media, $url_builder($file));
+              $output[] = array($media, $url_builder($file) . $query_string);
             }
           }
         }
@@ -777,15 +791,9 @@ function advagg_unlimited_css_builder($files) {
  *   html string
  */
 function advagg_unlimited_css_traditional($files, &$styles) {
-  // A dummy query-string is added to filenames, to gain control over
-  // browser-caching. The string changes on every update or full cache
-  // flush, forcing browsers to load a new copy of the files, as the
-  // URL changed.
-  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
-
   foreach ($files as $css_file) {
     list ($media, $href) = $css_file;
-    $styles .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . $query_string . '" />'."\n";
+    $styles .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />'."\n";
   }
 }
 
@@ -798,12 +806,6 @@ function advagg_unlimited_css_traditional($files, &$styles) {
  *   html string
  */
 function advagg_unlimited_css_import($files, &$styles) {
-  // A dummy query-string is added to filenames, to gain control over
-  // browser-caching. The string changes on every update or full cache
-  // flush, forcing browsers to load a new copy of the files, as the
-  // URL changed.
-  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
-
   $counter = 0;
   $media = NULL;
   $import = '';
@@ -817,7 +819,7 @@ function advagg_unlimited_css_import($files, &$styles) {
       $counter = 0;
       $media = $media_new;
     }
-    $import .= '@import "'. $href . $query_string .'";'."\n";
+    $import .= '@import "'. $href .'";'."\n";
     ++$counter;
   }
   if ($media && !empty($import)) {
@@ -1146,8 +1148,10 @@ function advagg_missing_fast404() {
 //   watchdog('x', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_SERVER, TRUE)))));
 
   global $base_path;
-  header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
-  header('X-AdvAgg: Failed Validation');
+  if (!headers_sent()) {
+    header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+    header('X-AdvAgg: Failed Validation');
+  }
   print '<html>';
   print '<head><title>404 Not Found</title></head>';
   print '<body><h1>Not Found</h1>';
@@ -1155,4 +1159,71 @@ function advagg_missing_fast404() {
   print '<p><a href="' . $base_path . '">Home</a></p>';
   print '</body></html>';
   exit();
+}
+
+/**
+ * Generate .htaccess rules and place them in advagg dir
+ *
+ * @param $dest
+ *   destination of the file that just got saved.
+ */
+function advagg_htaccess_check_generate($dest) {
+  if (variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
+    return TRUE;
+  }
+
+  $htaccess_file = dirname($dest) . '/.htaccess';
+  if (file_exists($htaccess_file)) {
+    return TRUE;
+  }
+
+  $data = "\n";
+  $data .= "<IfModule mod_rewrite.c>\n";
+  $data .= "  RewriteEngine on\n";
+  $data .= "  # Rules to correctly serve gzip compressed CSS and JS files.\n";
+  $data .= "  # Requires both mod_rewrite and mod_headers to be enabled.\n";
+  $data .= "  <IfModule mod_headers.c>\n";
+  $data .= "    # Serve gzip compressed CSS/JS files if they exist and client accepts gzip.\n";
+  $data .= "    RewriteCond %{HTTP:Accept-encoding} gzip\n";
+  $data .= "    RewriteCond %{REQUEST_FILENAME}\.gz -s\n";
+  $data .= "    RewriteRule ^(.*)\.(j|cs)s$ $1\.$2s\.gz [QSA]\n";
+  $data .= "\n";
+  $data .= "    # Serve correct content types, and prevent mod_deflate double gzip.\n";
+  $data .= "    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]\n";
+  $data .= "    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]\n";
+  $data .= "\n";
+  $data .= "    <FilesMatch \"\.(j|cs)s\.gz$\">\n";
+  $data .= "      # Serve correct encoding type.\n";
+  $data .= "      Header append Content-Encoding gzip\n";
+  $data .= "      # Force proxies to cache gzipped & non-gzipped css/js files separately.\n";
+  $data .= "      Header append Vary Accept-Encoding\n";
+  $data .= "    </FilesMatch>\n";
+  $data .= "  </IfModule>\n";
+  $data .= "</IfModule>\n";
+  $data .= "\n";
+  $data .= "<FilesMatch \"^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s(?:\.gz)?$\">\n";
+  $data .= "  FileETag None\n";
+  $data .= "  <IfModule mod_expires.c>\n";
+  $data .= "    # Enable expirations.\n";
+  $data .= "    ExpiresActive On\n";
+  $data .= "\n";
+  $data .= "    # Cache all aggregated CSS/JS files for 1 year after access (A).\n";
+  $data .= "    ExpiresDefault A31556926\n";
+  $data .= "  </IfModule>\n";
+  $data .= "  <IfModule mod_headers.c>\n";
+  $data .= "    # Unset unnecessary headers.\n";
+  $data .= "    Header unset ETag\n";
+  $data .= "    Header unset Last-Modified\n";
+  $data .= "    Header unset Pragma\n";
+  $data .= "\n";
+  $data .= "    # Make these files publicly cacheable.\n";
+  $data .= "    Header append Cache-Control \"public\"\n";
+  $data .= "  </IfModule>\n";
+  $data .= "</FilesMatch>\n";
+  $data .= "\n";
+
+  if (!file_save_data($data, $htaccess_file, FILE_EXISTS_REPLACE)) {
+    return FALSE;
+  }
+  return TRUE;
 }

@@ -32,7 +32,8 @@ function advagg_admin_settings_form() {
     '#title'          => t('Gzip CSS/JS files'),
     '#default_value'  => variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION),
   );
-  module_load_install('advagg');
+
+  module_load_include('install', 'advagg');
   $ret = advagg_check_missing_handler();
   $form['advagg_async_generation'] = array(
     '#type'           => 'checkbox',
