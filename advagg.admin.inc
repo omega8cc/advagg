@@ -132,11 +132,13 @@ function advagg_admin_settings_form() {
  * Validate form values. Used to unset variables before they get saved.
  */
 function advagg_admin_settings_form_validate($form, &$form_state) {
+  global $conf;
+
   unset($form_state['values']['advagg_debug_info']);
-//   if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression']) {
-//     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
-//     advagg_admin_recreate_htaccess();
-//   }
+  if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression']) {
+    $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
+    advagg_admin_recreate_htaccess();
+  }
 }
 
 /**
