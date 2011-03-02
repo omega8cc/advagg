@@ -199,6 +199,8 @@ function advagg_check_missing_handler() {
 
   $readme = drupal_get_path('module', 'advagg') . '/readme.txt';
 
+  $extra_404 = module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly') : '';
+
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
     if ($data_cdn->code == 404 && !empty($data_cdn->headers['X-AdvAgg']) && $mode == CDN_MODE_BASIC) {
@@ -233,7 +235,7 @@ function advagg_check_missing_handler() {
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_WARNING,
         'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back.', array('@cdn' => url('admin/settings/cdn'))),
+        'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back when routed through the CDN.', array('@cdn' => url('admin/settings/cdn'))),
       );
     }
     else {
@@ -242,7 +244,7 @@ function advagg_check_missing_handler() {
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_ERROR,
         'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed.', array('@readme' => url($readme))),
+        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. ', array('@readme' => url($readme))) . $extra_404,
       );
     }
   }
@@ -278,7 +280,7 @@ function advagg_check_missing_handler() {
       'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
       'severity'    => REQUIREMENT_ERROR,
       'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed.', array('@readme' => url($readme))),
+        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. ', array('@readme' => url($readme))) . $extra_404,
     );
   }
 

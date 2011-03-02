@@ -66,6 +66,12 @@ define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);
  */
 define('ADVAGG_DIR_HTACCESS', TRUE);
 
+// Handle htaccess 404 issue.
+if ($_SERVER['REDIRECT_STATUS'] == 404 && strpos($_SERVER['REQUEST_URI'], '/advagg_') !== FALSE) {
+  $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
+  menu_execute_active_handler();
+}
+
 /**
  * Implementation of hook_perm().
  */
@@ -138,6 +144,7 @@ function advagg_admin_menu(&$deleted) {
  */
 function advagg_init() {
   global $base_path;
+
   // Skip if not an advagg request
   if (strpos($_GET['q'], '/advagg_') === FALSE) {
     return;
