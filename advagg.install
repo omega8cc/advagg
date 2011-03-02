@@ -285,10 +285,11 @@ function advagg_check_missing_handler() {
   }
 
   // Set socket timeout.
-  if ($async && $time_local['time'] > 950) {
-    $new_time = ceil(($time_local['time']+51)/1000);
-    $timeout = variable_get('advagg_socket_timeout', -1);
+  $timeout = variable_get('advagg_socket_timeout', -1);
+  $new_time = ceil(($time_local['time']+51)/1000);
+  if ($async) {
     if ($timeout == -1 || $timeout != $new_time) {
+      variable_set('advagg_socket_timeout', $new_time);
       $ret['advagg_socket_timeout'] = array(
         'title'       => $t('Adv CSS/JS Agg - Socket Timeout'),
         'severity'    => REQUIREMENT_OK,
@@ -296,7 +297,6 @@ function advagg_check_missing_handler() {
       );
     }
     else {
-      variable_set('advagg_socket_timeout', $new_time);
       $ret['advagg_socket_timeout'] = array(
         'title'       => $t('Adv CSS/JS Agg - Socket Timeout'),
         'severity'    => REQUIREMENT_OK,
