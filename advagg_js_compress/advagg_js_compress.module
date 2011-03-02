@@ -181,7 +181,3 @@ function advagg_js_compress_test_file($values = NULL) {
   echo $values['values']['md5'];
   exit;
 }
-
-
-
-

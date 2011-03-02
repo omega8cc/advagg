@@ -1,13 +1,119 @@
 
-Fast 404 issue:
-  Assuming that you followed a guide like this http://2bits.com/drupal-planet/reducing-server-resource-utilization-busy-sites-implementing-fast-404s-drupal.html Advanced CSS/JS
-  Aggragetor works similar to imagecache. We need to add in 2 exceptions for
-  the 2 directories that advagg uses. Replace this if statement
+----------------------------------
+ADVANCED CSS/JS AGGREGATION MODULE
+----------------------------------
 
-if (!strpos($_SERVER['QUERY_STRING'], 'imagecache')) {
+CONTENTS OF THIS FILE
+---------------------
 
-  with one like this:
+ * Fast 404
+ * Features & benefits
+ * Configuration
+ * Technical Details & Hooks
 
-if (!strpos($_SERVER['QUERY_STRING'], 'imagecache') && !strpos($_SERVER['QUERY_STRING'], '/advagg_')) {
+FAST 404
+--------
 
-  If you are still having issues
+Assuming that this guide was followed:
+http://2bits.com/drupal-planet/reducing-server-resource-utilization-busy-sites-implementing-fast-404s-drupal.html
+and your having issues with Advanced CSS/JS Aggregation. Advagg works similar
+to imagecache, thus we need to add in an exceptions for the directories that
+advagg uses. Replace this if statement
+
+    if (!strpos($_SERVER['QUERY_STRING'], 'imagecache')) {
+
+with one like this:
+
+    if (!strpos($_SERVER['QUERY_STRING'], 'imagecache') && !strpos($_SERVER['QUERY_STRING'], '/advagg_')) {
+
+This will most likely be in your settings.php file. If you are still having
+problems, open an issue on the advagg issue queue:
+http://drupal.org/project/issues/advagg
+
+FEATURES & BENEFITS
+-------------------
+
+Advanced CSS/JS Aggregation Core Module:
+ * Imagecache style CSS/JS Aggregation. If the file doesn't exist it will be
+   generated on demand.
+ * Stampede protection for CSS and JS aggregation. Uses locking so multiple
+   requests for the same thing will result in only one thread doing the work
+   while the others wait around for it to be completed.
+ * Zero file I/O if the Aggregated file already exists. Results in better page
+   generation performance.
+ * Smarter aggregate deletion. CSS/JS aggregates only get removed from the cache
+   if they have not been accessed in the last 30 days.
+ * Smarter cache flushing. Scans all CSS/JS files that have been added to any
+   aggregate; if that file has changed then rebuild all aggregates that contain
+   the updated file and give the newly aggregated file a new name. The new name
+   ensures changes go out when using CDNs.
+ * Url query string to turn off aggregation for that request. ?advagg=0 will
+   turn off file aggregation if the user has the "bypass advanced aggregation"
+   permission. ?advagg=-1 will completely bypass all of Advanced CSS/JS
+   Aggregations modules and submodules.
+ * Gzip support. All aggregated files can be pre-compressed into a .gz file and
+   served from Apache. This is faster then gzipping the file on each request.
+ * IE Unlimited CSS support. If using ?advagg=0 the CSS output will change
+   to use @import style in order to get around the 31 CSS files limit in IE.
+ * CDN support. Advagg integrates with this module.
+ * jQuery Update support. Advagg integrates with this module.
+ * LABjs support. Advagg integrates with this module.
+ * One year browser cache lifetimes for all aggregated files. This is a good
+   thing.
+ * Drush support. "cc advagg" will issue a smart cache flush.
+ * Admin menu support. Cache flushing Advanced CSS/JS Aggregation is available
+   in the "Flush all caches" menu.
+
+Advanced CSS/JS Aggregation Submodules:
+ * CSSTidy library support. Can compress the generated CSS files with the
+   CSSTidy library.
+ * jsmin+ library support. Can compress the generated JS files with the jsmin+
+   library.
+ * Google Libraries API. Load jquery.js & jquery-ui.js from Google's CDN network.
+   This is a good thing.
+
+CONFIGURATION
+-------------
+
+The settings page is located at:
+admin/settings/advagg
+ * Enable Advanced Aggregation. You can disable the module here. Same affect as
+   placing ?advagg=-1 in the URL.
+ * Gzip CSS/JS files. For every Aggregated file generated, this will create a
+   gzip version of that and then serve that out if the browser accepts gzip
+   compression.
+ * Generate CSS/JS files on request (async mode). If advagg doesn't have a route
+   back to its self and this is enabled then you will have a broken site. But
+   this enabled one can expect much quicker page generation times after a cache
+   flush.
+ * IP Address to send all asynchronous requests to. If you wish to have one
+   server generate all CSS/JS aggregated files then this allows for that to
+   happen.
+ * File Checksum Mode. Keep at mtime; only use md5 if file modification time is
+   unreliable on your setup.
+ * Debug to watchdog. This will output A LOT of data to watchdog. Don't turn on
+   unless your trying to debug an issue.
+ * Hook Theme Info. Displays the preprocess_page order. Used for debugging.
+ * Smart cache flush button. Scan all files referenced in aggregated files. If any of
+   them have changed, increment the counters containing that file and rebuild
+   the bundle.
+ * Cache Rebuild button. Recreate all aggregated files. Useful if JS or CSS
+   compression was just enabled.
+ * Forced Cache Rebuild. Recreate all aggregated files by incrementing internal
+   counter for every bundle. One should never have to use this option.
+
+TECHNICAL DETAILS & HOOKS
+-------------------------
+
+Technical Details:
+ * There are 2 database tables and one cache table used by advagg.
+ * Files are generated by this pattern: css_[MD5]_[Counter].css
+ * In the future support for cache bundles will be added.
+ * Every JS file is tested for compressibility. This is necessary because jsmin+
+   can bomb on certain files; this allows us to catch these bad files and mark
+   them.
+
+Hooks:
+ * hook_advagg_css_alter
+ * hook_advagg_js_alter
+ * hook_advagg_js_pre_alter
