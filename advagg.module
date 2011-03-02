@@ -66,10 +66,26 @@ define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);
  */
 define('ADVAGG_DIR_HTACCESS', TRUE);
 
-// Handle htaccess 404 issue.
-if ($_SERVER['REDIRECT_STATUS'] == 404 && strpos($_SERVER['REQUEST_URI'], '/advagg_') !== FALSE) {
-  $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
-  menu_execute_active_handler();
+// Handle 404s ASAP
+advagg_faster_404();
+function advagg_faster_404() {
+  $css_path = file_create_path('advagg_css');
+  $js_path = file_create_path('advagg_js');
+
+  // 404 from htaccess.
+  $css = strpos($_SERVER['REQUEST_URI'], $css_path);
+  $js = strpos($_SERVER['REQUEST_URI'], $js_path);
+  if ($css !== FALSE || $js !== FALSE) {
+    $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
+    menu_execute_active_handler();
+  }
+
+  // Normal requests.
+  $css = strpos($_GET['q'], $css_path);
+  $js = strpos($_GET['q'], $js_path);
+  if ($css !== FALSE || $js !== FALSE) {
+    menu_execute_active_handler();
+  }
 }
 
 /**
@@ -1173,48 +1189,77 @@ function advagg_missing_fast404() {
  *
  * @param $dest
  *   destination of the file that just got saved.
+ * @param $force
+ *   force recreate the .htaccess file.
  */
-function advagg_htaccess_check_generate($dest) {
-  if (variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
+function advagg_htaccess_check_generate($dest, $force = FALSE) {
+  global $base_path;
+  if (!$force || variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
     return TRUE;
   }
 
-  $htaccess_file = dirname($dest) . '/.htaccess';
-  if (file_exists($htaccess_file)) {
+  $dir = dirname($dest);
+  $htaccess_file = $dir . '/.htaccess';
+  if (!$force || file_exists($htaccess_file)) {
     return TRUE;
+  }
+
+  $css_path = file_create_path('advagg_css');
+  $js_path = file_create_path('advagg_js');
+
+  $type = '';
+  if ($dir == $js_path) {
+    $ext = 'js';
+    $path = $js_path;
+    $type = 'text/javascript';
+  }
+  elseif ($dir == $css_path) {
+    $type = 'css';
+    $path = $css_path;
+    $type = 'text/css';
+  }
+  else {
+    return FALSE;
   }
 
   $data = "\n";
-  $data .= "<IfModule mod_rewrite.c>\n";
-  $data .= "  RewriteEngine on\n";
-  $data .= "  # Rules to correctly serve gzip compressed CSS and JS files.\n";
-  $data .= "  # Requires both mod_rewrite and mod_headers to be enabled.\n";
-  $data .= "  <IfModule mod_headers.c>\n";
-  $data .= "    # Serve gzip compressed CSS/JS files if they exist and client accepts gzip.\n";
-  $data .= "    RewriteCond %{HTTP:Accept-encoding} gzip\n";
-  $data .= "    RewriteCond %{REQUEST_FILENAME}\.gz -s\n";
-  $data .= "    RewriteRule ^(.*)\.(j|cs)s$ $1\.$2s\.gz [QSA]\n";
+  if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION)) {
+    $data .= "<IfModule mod_rewrite.c>\n";
+    $data .= "  RewriteEngine on\n";
+    $data .= "\n";
+    $data .= "  # Send 404's back to index.php\n";
+    $data .= "  RewriteCond %{REQUEST_FILENAME} !-s\n";
+    $data .= "  RewriteRule ^(.*)$ ${base_path}index.php?q=$path/$1 [L]\n";
+    $data .= "\n";
+    $data .= "  # Rules to correctly serve gzip compressed $ext files.\n";
+    $data .= "  # Requires both mod_rewrite and mod_headers to be enabled.\n";
+    $data .= "  <IfModule mod_headers.c>\n";
+    $data .= "    # Serve gzip compressed $ext files if they exist and client accepts gzip.\n";
+    $data .= "    RewriteCond %{HTTP:Accept-encoding} gzip\n";
+    $data .= "    RewriteCond %{REQUEST_FILENAME}\.gz -s\n";
+    $data .= "    RewriteRule ^(.*)\.$ext$ $1\.$ext\.gz [QSA]\n";
+    $data .= "\n";
+    $data .= "    # Serve correct content types, and prevent mod_deflate double gzip.\n";
+    $data .= "    RewriteRule \.$ext\.gz$ - [T=$type,E=no-gzip:1]\n";
+    $data .= "\n";
+    $data .= "    <FilesMatch \"\.$ext\.gz$\">\n";
+    $data .= "      # Serve correct encoding type.\n";
+    $data .= "      Header append Content-Encoding gzip\n";
+    $data .= "      # Force proxies to cache gzipped & non-gzipped $ext files separately.\n";
+    $data .= "      Header append Vary Accept-Encoding\n";
+    $data .= "    </FilesMatch>\n";
+    $data .= "  </IfModule>\n";
+    $data .= "</IfModule>\n";
+  }
+
   $data .= "\n";
-  $data .= "    # Serve correct content types, and prevent mod_deflate double gzip.\n";
-  $data .= "    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]\n";
-  $data .= "    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]\n";
-  $data .= "\n";
-  $data .= "    <FilesMatch \"\.(j|cs)s\.gz$\">\n";
-  $data .= "      # Serve correct encoding type.\n";
-  $data .= "      Header append Content-Encoding gzip\n";
-  $data .= "      # Force proxies to cache gzipped & non-gzipped css/js files separately.\n";
-  $data .= "      Header append Vary Accept-Encoding\n";
-  $data .= "    </FilesMatch>\n";
-  $data .= "  </IfModule>\n";
-  $data .= "</IfModule>\n";
-  $data .= "\n";
-  $data .= "<FilesMatch \"^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s(?:\.gz)?$\">\n";
+  $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_\d+\.$ext(?:\.gz)?$\">\n";
   $data .= "  FileETag None\n";
   $data .= "  <IfModule mod_expires.c>\n";
   $data .= "    # Enable expirations.\n";
   $data .= "    ExpiresActive On\n";
   $data .= "\n";
-  $data .= "    # Cache all aggregated CSS/JS files for 1 year after access (A).\n";
+  $data .= "    # Cache all aggregated $ext files for 1 year after access (A).\n";
   $data .= "    ExpiresDefault A31556926\n";
   $data .= "  </IfModule>\n";
   $data .= "  <IfModule mod_headers.c>\n";

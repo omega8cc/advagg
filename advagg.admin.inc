@@ -77,6 +77,7 @@ function advagg_admin_settings_form() {
     '#default_value'  => $data,
     '#rows'           => count($hooks['page']['preprocess functions'])+1,
   );
+
   $form['flush'] = array(
     '#type'         => 'fieldset',
     '#title'        => t('Smart cache flush'),
@@ -111,6 +112,18 @@ function advagg_admin_settings_form() {
     '#value' => t('Force all counters to be increment by one'),
     '#submit' => array('advagg_admin_increment_rebuild_bundles'),
   );
+  $form['htaccess'] = array(
+    '#type'         => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'        => t('Rebuild htaccess files'),
+    '#description'  => t('This will recreate the htaccess files located in the advagg_* directories.'),
+  );
+  $form['htaccess']['recreate_htaccess'] = array(
+    '#type' => 'submit',
+    '#value' => t('Recreate htaccess files'),
+    '#submit' => array('advagg_admin_recreate_htaccess'),
+  );
 
   return system_settings_form($form);
 }
@@ -120,6 +133,10 @@ function advagg_admin_settings_form() {
  */
 function advagg_admin_settings_form_validate($form, &$form_state) {
   unset($form_state['values']['advagg_debug_info']);
+//   if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression']) {
+//     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
+//     advagg_admin_recreate_htaccess();
+//   }
 }
 
 /**
@@ -180,4 +197,23 @@ function advagg_admin_increment_rebuild_bundles() {
   }
 
   drupal_set_message(t('Advanced CSS/JS Aggregation cache incremented and rebuilt. %count files recreated.', array('%count' => count($bundles))));
+}
+
+/**
+ * Rebuild htaccess files.
+ */
+function advagg_admin_recreate_htaccess() {
+  $css_path = file_create_path('advagg_css') . '/.htaccess';
+  $js_path = file_create_path('advagg_js') . '/.htaccess';
+
+  file_delete($css_path);
+  advagg_htaccess_check_generate($css_path, TRUE);
+
+  file_delete($js_path);
+  advagg_htaccess_check_generate($js_path, TRUE);
+
+
+
+
+  drupal_set_message(t('Advanced CSS/JS Aggregation htaccess files rebuilt.'));
 }
