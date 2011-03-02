@@ -230,7 +230,7 @@ function advagg_theme_registry_alter(&$theme_registry) {
  */
 function advagg_processor(&$variables) {
   // If disabled, skip
-  if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE || (isset($_GET['advagg']) && $_GET['advagg'] == -1)) {
     return;
   }
 
@@ -720,6 +720,12 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   return advagg_unlimited_css_builder($files);
 }
 
+/**
+ * Logic to figure out what kind of css tags to use.
+ *
+ * @param $files
+ *   array of css files ($media, $href)
+ */
 function advagg_unlimited_css_builder($files) {
   global $user;
   $styles = '';

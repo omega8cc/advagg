@@ -75,7 +75,7 @@ function advagg_requirements($phase) {
       $requirements['advagg_core_off'] = array(
         'title' => $t('Adv CSS/JS Agg - Core Variables'),
         'severity' => REQUIREMENT_ERROR,
-        'value' => $t('Advanced CSS/JS aggregation can not be turned on if cores css or js aggregation is turned on.'),
+        'value' => $t('Cores CSS and/or JS aggregation should be turned off.'),
       );
     }
     if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
@@ -85,10 +85,59 @@ function advagg_requirements($phase) {
         'value' => $t('Advanced CSS/JS aggregation is not currently enabled.'),
       );
     }
+    if (module_exists('css_gzip')) {
+      $requirements['advagg_css_gzip'] = array(
+        'title' => $t('Adv CSS/JS Agg - CSS Gzip'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The CSS Gzip module is no longer used.'),
+      );
+    }
+    if (module_exists('csstidy')) {
+      $requirements['advagg_csstidy'] = array(
+        'title' => $t('Adv CSS/JS Agg - CSS Tidy'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The CSS Tidy module is no longer used.'),
+      );
+    }
+    if (module_exists('javascript_aggregator')) {
+      $requirements['advagg_javascript_aggregator'] = array(
+        'title' => $t('Adv CSS/JS Agg - Javascript Aggregator'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The Javascript Aggregator module is no longer used.'),
+      );
+    }
+    if (module_exists('unlimited_css')) {
+      $requirements['advagg_unlimited_css'] = array(
+        'title' => $t('Adv CSS/JS Agg - IE Unlimited CSS Loader'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The IE Unlimited CSS Loader module is no longer used.'),
+      );
+    }
+    if (module_exists('ie_css_optimizer')) {
+      $requirements['advagg_unlimited_css'] = array(
+        'title' => $t('Adv CSS/JS Agg - IE CSS Optimizer'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The IE CSS Optimizer module is no longer used.'),
+      );
+    }
+    if (module_exists('cmscdn')) {
+      $requirements['advagg_cmscdn'] = array(
+        'title' => $t('Adv CSS/JS Agg - CMS CDN'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The CMS CDN module is no longer used.'),
+      );
+    }
+    if (module_exists('bundlecache')) {
+      $requirements['advagg_bundlecache'] = array(
+        'title' => $t('Adv CSS/JS Agg - BundleCache'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The BundleCache module is no longer used.'),
+      );
+    }
     init_theme();
     $hooks = theme_get_registry();
     $function = array_pop($hooks['page']['preprocess functions']);
-    if (module_exists('jquery_update')) {
+    if (module_exists('labjs')) {
       $function = array_pop($hooks['page']['preprocess functions']);
     }
     if ($function != 'advagg_processor') {
@@ -178,7 +227,7 @@ function advagg_check_missing_handler() {
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_ERROR,
-        'value'       => $t('Set to FALSE. Check to see if you have fast 404s, if so create an exception for them.'),
+        'value'       => $t('Set to FALSE. Check to see if you have fast 404s, if so create an exception for this module.'),
       );
     }
   }
@@ -213,7 +262,7 @@ function advagg_check_missing_handler() {
     $ret['advagg_async_generation'] = array(
       'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
       'severity'    => REQUIREMENT_ERROR,
-      'value'       => $t('Set to FALSE. Check to see if you have fast 404s, if so create an exception for them.'),
+      'value'       => $t('Set to FALSE. Check to see if you have fast 404s, if so create an exception for this module.'),
     );
   }
 
