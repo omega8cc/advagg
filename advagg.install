@@ -143,6 +143,20 @@ function advagg_requirements($phase) {
         'description' => $t('On the <a href="@modules">modules page</a> you can disable it, as this module is no longer needed.', array('@modules' => url('admin/build/modules'))),
       );
     }
+    if (module_exists('cdn')) {
+      $file_path_blacklist = variable_get(CDN_EXCEPTION_FILE_PATH_BLACKLIST_VARIABLE, CDN_EXCEPTION_FILE_PATH_BLACKLIST_DEFAULT);
+      $file_path_blacklist = explode("\n", trim($file_path_blacklist));
+      $file_path_blacklist = array_map('trim', $file_path_blacklist);
+      $file_path_blacklist = array_filter($file_path_blacklist);
+      if (array_search('*.js', $file_path_blacklist) !== FALSE) {
+        $requirements['advagg_bundlecache'] = array(
+          'title'       => $t('Adv CSS/JS Agg - CDN Settings'),
+          'severity'    => REQUIREMENT_WARNING,
+          'value'       => $t('The CDN module is set to blacklist all *.js files.'),
+          'description' => $t('Check your <a href="@cdn">CDN settings</a> and adjust the blacklist to not include "*.js". Testing is important in this case. "*tiny_mce.js" is a file/pattern we had to add to the blacklist after removing *.js from it.', array('@cdn' => url('admin/settings/cdn/other'))),
+        );
+      }
+    }
     init_theme();
     $hooks = theme_get_registry();
     $function = array_pop($hooks['page']['preprocess functions']);
@@ -197,7 +211,7 @@ function advagg_check_missing_handler() {
     $mode = variable_get(CDN_MODE_VARIABLE, CDN_MODE_BASIC);
   }
 
-  $readme = drupal_get_path('module', 'advagg') . '/readme.txt';
+  $readme = drupal_get_path('module', 'advagg') . '/README.txt';
 
   $extra_404 = module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly') : '';
 
@@ -230,7 +244,7 @@ function advagg_check_missing_handler() {
       }
     }
     elseif ($data_local->code == 404 && !empty($data_local->headers['X-AdvAgg'])) {
-      variable_set('advagg_async_generation', FALSE);
+      // variable_set('advagg_async_generation', FALSE);
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_WARNING,

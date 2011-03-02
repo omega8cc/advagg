@@ -40,8 +40,16 @@ function advagg_admin_settings_form() {
     '#title'          => t('Generate CSS/JS files on request (async mode)'),
     '#default_value'  => variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION),
     '#disabled'       => $ret['advagg_async_generation']['severity'] == REQUIREMENT_ERROR ? TRUE : FALSE,
-    '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'])),
+    '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
   );
+  $readme = drupal_get_path('module', 'advagg') . '/README.txt';
+  $form['advagg_dir_htaccess'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Generate .htaccess files in the advagg_* dirs'),
+    '#default_value'  => variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS),
+    '#description'    => t('Disable if your using the rules from the <a href="@readme">readme</a> file in your webroots htaccess file.', array('@readme' => url($readme))),
+  );
+
   $form['advagg_server_addr'] = array(
     '#type'           => 'textfield',
     '#title'          => t('IP Address to send all asynchronous requests to'),
@@ -135,8 +143,22 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   global $conf;
 
   unset($form_state['values']['advagg_debug_info']);
-  if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression']) {
+  if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression'] && $form_state['values']['advagg_dir_htaccess']) {
     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
+    advagg_admin_recreate_htaccess();
+  }
+  if ($form_state['values']['advagg_dir_htaccess'] == FALSE) {
+    $css_path = file_create_path('advagg_css') . '/.htaccess';
+    $js_path = file_create_path('advagg_js') . '/.htaccess';
+
+    if (file_exists($css_path) || file_exists($js_path)) {
+      file_delete($css_path);
+      file_delete($js_path);
+      drupal_set_message(t('Advanced CSS/JS Aggregation directory level htaccess files have been removed.'));
+    }
+  }
+  elseif ($conf['advagg_dir_htaccess'] != $form_state['values']['advagg_dir_htaccess']) {
+    $conf['advagg_dir_htaccess'] = $form_state['values']['advagg_dir_htaccess'];
     advagg_admin_recreate_htaccess();
   }
 }

@@ -1250,9 +1250,8 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     $data .= "    </FilesMatch>\n";
     $data .= "  </IfModule>\n";
     $data .= "</IfModule>\n";
+    $data .= "\n";
   }
-
-  $data .= "\n";
   $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_\d+\.$ext(?:\.gz)?$\">\n";
   $data .= "  FileETag None\n";
   $data .= "  <IfModule mod_expires.c>\n";

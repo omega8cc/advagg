@@ -10,6 +10,7 @@ CONTENTS OF THIS FILE
  * Features & benefits
  * Configuration
  * Technical Details & Hooks
+ * Single htaccess rules
 
 FAST 404
 --------
@@ -117,3 +118,57 @@ Hooks:
  * hook_advagg_css_alter
  * hook_advagg_js_alter
  * hook_advagg_js_pre_alter
+
+SINGLE HTACCESS RULES
+---------------------
+
+If the directory level htaccess rules are interfering with your server, you can
+place these rules in the drupal roots htaccess file. Place these rules after
+"RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]" but before "</IfModule>"
+
+  # Rules to correctly serve gzip compressed CSS and JS files.
+  # Requires both mod_rewrite and mod_headers to be enabled.
+  <IfModule mod_headers.c>
+    # Serve gzip compressed CSS/JS files if they exist and client accepts gzip.
+    RewriteCond %{HTTP:Accept-encoding} gzip
+    RewriteCond %{REQUEST_URI} (^/(.+)/advagg_(j|cs)s/(.+)\.(j|cs)s) [NC]
+    RewriteCond %{REQUEST_FILENAME}\.gz -s
+    RewriteRule ^(.*)\.(j|cs)s$ $1\.$2s\.gz [QSA]
+
+    # Serve correct content types, and prevent mod_deflate double gzip.
+    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]
+    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]
+
+    <FilesMatch "\.(j|cs)s\.gz$">
+      # Serve correct encoding type.
+      Header append Content-Encoding gzip
+      # Force proxies to cache gzipped & non-gzipped css/js files separately.
+      Header append Vary Accept-Encoding
+    </FilesMatch>
+  </IfModule>
+
+You also need to place these rules at the very end of your htaccess file.
+
+<FilesMatch "(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s(?:\.gz)?$">
+  FileETag None
+  <IfModule mod_expires.c>
+    # Enable expirations.
+    ExpiresActive On
+
+    # Cache all aggregated js files for 1 year after access (A).
+    ExpiresDefault A31556926
+  </IfModule>
+  <IfModule mod_headers.c>
+    # Unset unnecessary headers.
+    Header unset ETag
+    Header unset Last-Modified
+    Header unset Pragma
+
+    # Make these files publicly cacheable.
+    Header append Cache-Control "public"
+  </IfModule>
+</FilesMatch>
+
+Be sure to disable the "Generate .htaccess files in the advagg_* dirs" setting
+on the admin/settings/advagg page after placing these rules in the webroots
+htaccess file. This is located at the same directory level as Drupals index.php.
