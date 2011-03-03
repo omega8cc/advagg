@@ -22,7 +22,7 @@ define('ADVAGG_STALE_FILE_THRESHOLD', 2592000);
 define('ADVAGG_STALE_FILE_LAST_USED_THRESHOLD', 1296000);
 
 /**
- * Default file last used checkin is 12 hours.
+ * Default file last used check-in is 12 hours.
  */
 define('ADVAGG_FILE_LAST_USED_INTERVAL', 1296000);
 
@@ -62,7 +62,7 @@ define('ADVAGG_CSS_COUNT_THRESHOLD', 22);
 define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);
 
 /**
- * Default value for creating a htaccess file in the advagg dirs.
+ * Default value for creating a htaccess file in the advagg directories.
  */
 define('ADVAGG_DIR_HTACCESS', TRUE);
 
@@ -119,8 +119,8 @@ function advagg_menu() {
     'file' => 'advagg.missing.inc',
   );
   $items['admin/settings/advagg'] = array(
-    'title' => 'Advanced CSS/JS Aggragation',
-    'description' => 'Configuration for Advanced CSS/JS Aggragation.',
+    'title' => 'Advanced CSS/JS Aggregation',
+    'description' => 'Configuration for Advanced CSS/JS Aggregation.',
     'page callback' => 'advagg_admin_page',
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('administer site configuration'),
@@ -198,7 +198,7 @@ function advagg_init() {
   if (empty($ip)) {
     $ip = $_SERVER['SERVER_ADDR'];
   }
-  $url = 'http://' . $ip . $base_path . 'imageinfo_cache_generate.php';
+  $url = 'http://' . $ip . $base_path . $_GET['q'];
   $headers = array(
     'Host' => $host,
   );
@@ -385,7 +385,7 @@ function advagg_get_filename($files, $filetype, $counter = '') {
  * @param $dest
  *   A string containing the destination location.
  * @return
- *   Boolean indicating if the file save was sucessful.
+ *   Boolean indicating if the file save was successful.
  */
 function advagg_file_saver($data, $dest) {
   // Create the JS file.
@@ -531,7 +531,7 @@ function advagg_flush_caches() {
     db_query("UPDATE {advagg_bundles} SET counter = counter + 1 WHERE bundle_md5 = '%s'", $bundle_md5);
 
     // Rebuild bundles
-    $good = advagg_rebuld_bundle($bundle_md5);
+    $good = advagg_rebuild_bundle($bundle_md5);
     if (!$good) {
       watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
     }
@@ -557,7 +557,7 @@ function advagg_flush_caches() {
  * @param $force
  *   Rebuild even if file already exists.
  */
-function advagg_rebuld_bundle($bundle_md5, $counter = '', $force = FALSE) {
+function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
   global $conf;
   $files = array();
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
