@@ -31,6 +31,21 @@ function advagg_js_compress_init() {
 }
 
 /**
+ * Implement hook_advagg_files_table.
+ */
+function advagg_js_compress_advagg_files_table($row, $checksum) {
+  // IF the file has changed, test it's compressibility.
+  if ($row['filetype'] = 'js' && $checksum != $row['checksum']) {
+    $files_to_test[] = array(
+      'md5' => $row['filename'],
+      'filename' => $row['filename_md5'],
+    );
+    advagg_js_compress_test_compression($files_to_test);
+    watchdog('asdfg', $checksum . ' ' . $row['checksum'] . ' ' . $row['filetype']);
+  }
+}
+
+/**
  * Implement hook_advagg_js_pre_alter.
  */
 function advagg_js_compress_advagg_js_pre_alter(&$javascript) {
@@ -63,7 +78,7 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript) {
 function advagg_js_compress_advagg_js_alter(&$contents, $files) {
   global $base_path;
 
-  // Make sure every file in this aggregate is compressable.
+  // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $all_ok = TRUE;
   foreach ($files as $filename) {
@@ -84,13 +99,14 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files) {
 
   // Send test files to worker.
   if (!empty($files_to_test)) {
-    $compressable = advagg_js_compress_test_compression($files_to_test);
-    if (is_array($compressable)) {
-    $all_ok = FALSE;
+    $compressible = advagg_js_compress_test_compression($files_to_test);
+    // If an array then it is a list of files that can not be compressed.
+    if (is_array($compressible)) {
+      $all_ok = FALSE;
     }
   }
 
-  // Only compress if all files are compressable.
+  // Only compress if all files are compressible.
   if ($all_ok) {
     // JSMin+ the contents of the aggregated file.
     require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
@@ -106,7 +122,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files) {
  * @param $files_to_test
  *   array with md5 and filename.
  * @return
- *   TRUE if all files are compressable. List of files that failed otherwise.
+ *   TRUE if all files are compressible. List of files that failed otherwise.
  */
 function advagg_js_compress_test_compression($files_to_test) {
   global $base_path;

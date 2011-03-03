@@ -494,10 +494,26 @@ function advagg_flush_caches() {
   $results = db_query("SELECT * FROM {advagg_files}");
   while($row = db_fetch_array($results)) {
     $checksum = advagg_checksum($row['filename']);
-    if ($checksum != $row['checksum']) {
+    // Let other modules see if the bundles needs to be rebuilt.
+    // hook_advagg_files_table
+    // Return TRUE in order to increment the counter.
+    $results = module_invoke_all('advagg_files_table', $row, $checksum);
+    watchdog('advagg_fc_files', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($update, TRUE)))));
+
+    // Check each return value; see if an update is needed.
+    $update = FALSE;
+    foreach ($results as $bool) {
+      if ($bool === TRUE) {
+        $update = TRUE;
+        break;
+      }
+    }
+
+    // Increment the counter if needed and mark file for bundle refreshment..
+    if ($checksum != $row['checksum'] || $update == TRUE) {
       $needs_refreshing[] = $row['filename_md5'];
-      // Update checksum; increment counter; reset data.
-      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1, data = '' WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
+      // Update checksum; increment counter.
+      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1, WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
     }
   }
 
@@ -1136,7 +1152,9 @@ function advagg_build_js_cache($files, $counter = '', $force = FALSE) {
     // Build aggregate JS file.
     foreach ($files as $file) {
       // Append a ';' and a newline after each JS file to prevent them from running together.
-      $contents .= file_get_contents($file) .";\n";
+      if (file_exists($file)) {
+        $contents .= file_get_contents($file) .";\n";
+      }
     }
     // Invoke hook_advagg_js_alter() to give installed modules a chance to
     // modify the data in the bundle if necessary.
