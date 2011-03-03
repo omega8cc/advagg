@@ -195,7 +195,7 @@ function advagg_admin_rebuild_bundles() {
 
   // Rebuild each one.
   foreach ($bundles as $bundle_md5) {
-    advagg_rebuld_bundle($bundle_md5, '', TRUE);
+    advagg_rebuild_bundle($bundle_md5, '', TRUE);
   }
 
   drupal_set_message(t('Advanced CSS/JS Aggregation cache rebuilt. %count files recreated.', array('%count' => count($bundles))));
@@ -217,7 +217,7 @@ function advagg_admin_increment_rebuild_bundles() {
 
   // Rebuild each one.
   foreach ($bundles as $bundle_md5) {
-    advagg_rebuld_bundle($bundle_md5, '', TRUE);
+    advagg_rebuild_bundle($bundle_md5, '', TRUE);
   }
 
   drupal_set_message(t('Advanced CSS/JS Aggregation cache incremented and rebuilt. %count files recreated.', array('%count' => count($bundles))));

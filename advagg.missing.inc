@@ -105,7 +105,7 @@ function advagg_missing_regenerate() {
 
   // Rebuild file.
   $conf['advagg_async_generation'] = FALSE;
-  $good = advagg_rebuld_bundle($md5, $counter);
+  $good = advagg_rebuild_bundle($md5, $counter);
   if (!$good) {
     watchdog('advagg', 'This request could not generate correctly. Aggregate not generated. Request data: %info', array('%info' => $_GET['q']));
     return FALSE;
