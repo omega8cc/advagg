@@ -155,7 +155,7 @@ You also need to place these rules at the very end of your htaccess file.
     # Enable expirations.
     ExpiresActive On
 
-    # Cache all aggregated js files for 1 year after access (A).
+    # Cache all aggregated CSS/JS files for 1 year after access (A).
     ExpiresDefault A31556926
   </IfModule>
   <IfModule mod_headers.c>
