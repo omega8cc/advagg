@@ -29,7 +29,7 @@ define('ADVAGG_FILE_LAST_USED_INTERVAL', 1296000);
 /**
  * Default gzip compression setting.
  */
-define('ADVAGG_GZIP_COMPRESSION', TRUE);
+define('ADVAGG_GZIP_COMPRESSION', FALSE);
 
 /**
  * Default generate the aggregate async.
