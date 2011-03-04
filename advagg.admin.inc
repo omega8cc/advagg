@@ -21,18 +21,13 @@ function advagg_admin_page() {
  */
 function advagg_admin_settings_form() {
   $form = array();
+  $readme = drupal_get_path('module', 'advagg') . '/README.txt';
 
   $form['advagg_enabled'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Enable Advanced Aggregation'),
     '#default_value'  => variable_get('advagg_enabled', ADVAGG_ENABLED),
   );
-  $form['advagg_gzip_compression'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Gzip CSS/JS files'),
-    '#default_value'  => variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION),
-  );
-
   module_load_include('install', 'advagg');
   $ret = advagg_check_missing_handler();
   $form['advagg_async_generation'] = array(
@@ -42,19 +37,17 @@ function advagg_admin_settings_form() {
     '#disabled'       => $ret['advagg_async_generation']['severity'] == REQUIREMENT_ERROR ? TRUE : FALSE,
     '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
   );
-  $readme = drupal_get_path('module', 'advagg') . '/README.txt';
+  $form['advagg_gzip_compression'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Gzip CSS/JS files'),
+    '#default_value'  => variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION),
+    '#description'    => t('This might break CSS/JS handling at the Apache level. If it does, use the rules for your webroot level htaccess file before re-enabling. Directions on what to change are located in the <a href="@readme">readme</a> file. In short, be sure to test this out.', array('@readme' => url($readme))),
+  );
   $form['advagg_dir_htaccess'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Generate .htaccess files in the advagg_* dirs'),
     '#default_value'  => variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS),
-    '#description'    => t('Disable if your using the rules from the <a href="@readme">readme</a> file in your webroots htaccess file.', array('@readme' => url($readme))),
-  );
-
-  $form['advagg_server_addr'] = array(
-    '#type'           => 'textfield',
-    '#title'          => t('IP Address to send all asynchronous requests to'),
-    '#default_value'  => variable_get('advagg_server_addr', FALSE),
-    '#description'    => t('If left blank it will use the same server as the request.'),
+    '#description'    => t('Disable if your using the rules from the <a href="@readme">readme</a> file in your webroot level htaccess file.', array('@readme' => url($readme))),
   );
   $form['advagg_checksum_mode'] = array(
     '#type'           => 'radios',
@@ -65,6 +58,12 @@ function advagg_admin_settings_form() {
       'md5' => 'md5',
     ),
     '#description'    => t('If Drupal is on multiple servers and the file system is not shared;  using md5 is recommended. The file modificaiton time (mtime) could be different with this type of setup.'),
+  );
+  $form['advagg_server_addr'] = array(
+    '#type'           => 'textfield',
+    '#title'          => t('IP Address to send all asynchronous requests to'),
+    '#default_value'  => variable_get('advagg_server_addr', FALSE),
+    '#description'    => t('If left blank it will use the same server as the request.'),
   );
   $form['advagg_debug'] = array(
     '#type'           => 'checkbox',
