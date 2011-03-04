@@ -81,7 +81,6 @@ function advagg_faster_404() {
     $js = strpos($_SERVER['REQUEST_URI'], $js_path);
     if ($css !== FALSE || $js !== FALSE) {
       $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
-      $_GET['q'] = trim($_GET['q'], '/');
       menu_execute_active_handler();
     }
   }
@@ -91,7 +90,6 @@ function advagg_faster_404() {
     $css = strpos($_GET['q'], $css_path);
     $js = strpos($_GET['q'], $js_path);
     if ($css !== FALSE || $js !== FALSE) {
-      $_GET['q'] = trim($_GET['q'], '/');
       menu_execute_active_handler();
     }
   }
