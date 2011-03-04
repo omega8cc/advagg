@@ -148,7 +148,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     );
 
     $results = drupal_http_request($url, $headers, 'POST', $query_string);
-    $data = advagg_get_file_data($filename_md5);
+    $data = advagg_get_file_data($info['md5']);
     if ($results->data == $info['md5']) {
       $data['advagg_js_compress']['tested']['jsminplus'] = 1;
     }
