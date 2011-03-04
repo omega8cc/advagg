@@ -14,6 +14,61 @@ function advagg_admin_page() {
 }
 
 /**
+ * Page generation function for admin/settings/advagg
+ */
+function advagg_admin_info_page() {
+  $output = '';
+  return $output . drupal_get_form('advagg_admin_info_form');
+}
+
+/**
+ * Form builder; Configure advagg settings.
+ *
+ * @ingroup forms
+ * @see system_settings_form()
+ */
+function advagg_admin_info_form() {
+  $form = array();
+
+  $types = db_query("SELECT DISTINCT(filetype) FROM {advagg_files}");
+  while ($type = db_result($types)) {
+    $form[$type] = array(
+      '#type'          => 'fieldset',
+      '#collapsible'   => TRUE,
+      '#collapsed'     => TRUE,
+      '#title'         => t('%type files', array('%type' => strtoupper($type))),
+    );
+    // filename  filename_md5  checksum  filetype  counter   data
+    $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = '%s'", $type);
+    while ($row = db_fetch_array($results)) {
+      $data = unserialize($row['data']);
+      if (!empty($data)) {
+        list($data, $rows) = advagg_form_print_r($data);
+
+        $form[$type][$row['filename_md5']] = array(
+          '#type'         => 'textarea',
+          '#title'        => $row['filename'],
+          '#default_value'  => $data,
+          '#rows'           => $rows-1,
+          '#description'  => t('File has changed %counter times', array('%counter' => $row['counter'])),
+        );
+      }
+      else {
+        $form[$type][$row['filename_md5']] = array(
+          '#type'   => 'markup',
+          '#value'  => format_plural($row['counter'], 'changed 1 time - %file<br />', 'changed %counter times - %file<br />',  array(
+            '%counter'  => $row['counter'],
+            '%file'     => $row['filename'],
+          )),
+        );
+      }
+    }
+  }
+
+  return $form;
+}
+
+/**
  * Form builder; Configure advagg settings.
  *
  * @ingroup forms
@@ -235,8 +290,25 @@ function advagg_admin_recreate_htaccess() {
   file_delete($js_path);
   advagg_htaccess_check_generate($js_path, TRUE);
 
-
-
-
   drupal_set_message(t('Advanced CSS/JS Aggregation htaccess files rebuilt.'));
+}
+
+function advagg_form_print_r($data) {
+  $data = print_r($data, TRUE);
+  $data = explode("\n", $data);
+  $new_data = '';
+  foreach ($data as $text) {
+    $new_text = str_replace('    ', '', $text);
+    if ($new_text == "(") {
+      $new_data .= ' ' . $new_text;
+    }
+    else {
+      $new_data .= "\n" . $text;
+    }
+  }
+  $new_data = explode("\n", $new_data);
+  $new_data = array_filter($new_data);
+  $rows = count($new_data);
+  $new_data = implode("\n", $new_data);
+  return array($new_data, $rows);
 }

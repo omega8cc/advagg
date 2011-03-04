@@ -7,6 +7,11 @@
  */
 
 /**
+ * Default value to see if the callback is working.
+ */
+define('ADVAGG_JS_COMPRESS_CALLBACK', FALSE);
+
+/**
  * Implementation of hook_menu
  */
 function advagg_js_compress_menu() {
@@ -80,28 +85,31 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $all_ok = TRUE;
-  foreach ($files as $filename) {
-    $filename_md5 = md5($filename);
-    $data = advagg_get_file_data($filename_md5);
+  $advagg_js_compress_callback = varible_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
+  if ($advagg_js_compress_callback) {
+    foreach ($files as $filename) {
+      $filename_md5 = md5($filename);
+      $data = advagg_get_file_data($filename_md5);
 
-    // File needs to be tested.
-    if (empty($data['advagg_js_compress']['tested'])) {
-      $files_to_test[] = array(
-        'md5' => $filename_md5,
-        'filename' => $filename,
-      );
+      // File needs to be tested.
+      if (empty($data['advagg_js_compress']['tested'])) {
+        $files_to_test[] = array(
+          'md5' => $filename_md5,
+          'filename' => $filename,
+        );
+      }
+      elseif ($data['advagg_js_compress']['tested']['jsminplus'] == -1) {
+        $all_ok = FALSE;
+      }
     }
-    elseif ($data['advagg_js_compress']['tested']['jsminplus'] == -1) {
-      $all_ok = FALSE;
-    }
-  }
 
-  // Send test files to worker.
-  if (!empty($files_to_test)) {
-    $compressible = advagg_js_compress_test_compression($files_to_test);
-    // If an array then it is a list of files that can not be compressed.
-    if (is_array($compressible)) {
-      $all_ok = FALSE;
+    // Send test files to worker.
+    if (!empty($files_to_test)) {
+      $compressible = advagg_js_compress_test_compression($files_to_test);
+      // If an array then it is a list of files that can not be compressed.
+      if (is_array($compressible)) {
+        $all_ok = FALSE;
+      }
     }
   }
 

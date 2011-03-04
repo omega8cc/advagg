@@ -134,6 +134,20 @@ function advagg_menu() {
     'file path' => $file_path,
     'file' => 'advagg.admin.inc',
   );
+  $items['admin/settings/advagg/config'] = array(
+    'title' => 'Configuration',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['admin/settings/advagg/info'] = array(
+    'title' => 'Information',
+    'description' => 'More detailed information about advagg.',
+    'page callback' => 'advagg_admin_info_page',
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+  );
   $items['admin_menu/flush-cache/advagg'] = array(
     'page callback' => 'advagg_admin_flush_cache',
     'type' => MENU_CALLBACK,
