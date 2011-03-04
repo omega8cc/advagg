@@ -842,7 +842,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
  * @param $output_no_preprocess
  *   array of css files ($media, $href)
  * @param $output_preproced
- *   array of css files ($media, $href)
+ *   array of css files ($media, $href, $prefix, $suffix)
  * @param $theme_no_preprocess
  *   array of css files ($media, $href)
  * @return
@@ -901,7 +901,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
  * Use link tags for CSS
  *
  * @param $files
- *   array of css files ($media, $href)
+ *   array of css files ($media, $href, $prefix, $suffix)
  * @param &$styles
  *   html string
  */
@@ -909,8 +909,8 @@ function advagg_unlimited_css_traditional($files, &$styles) {
   foreach ($files as $css_file) {
     $media = $css_file['media'];
     $href = $css_file['href'];
-    $prefix = $css_file['prefix'];
-    $suffix = $css_file['suffix'];
+    $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'];
+    $suffix = empty($css_file['suffix']) ? '' : $css_file['suffix'];
     $styles .= $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . $suffix . "\n";
   }
 }
