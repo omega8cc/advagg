@@ -41,7 +41,6 @@ function advagg_js_compress_advagg_files_table($row, $checksum) {
       'filename' => $row['filename_md5'],
     );
     advagg_js_compress_test_compression($files_to_test);
-    watchdog('asdfg', $checksum . ' ' . $row['checksum'] . ' ' . $row['filetype']);
   }
 }
 
