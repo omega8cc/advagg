@@ -75,7 +75,7 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript) {
 /**
  * Implement hook_advagg_js_alter.
  */
-function advagg_js_compress_advagg_js_alter(&$contents, $files) {
+function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
   global $base_path;
 
   // Make sure every file in this aggregate is compressible.

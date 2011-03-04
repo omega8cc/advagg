@@ -11,7 +11,7 @@
  *
  * TODO have set_cfg be configurable from GUI.
  */
-function advagg_css_compress_advagg_css_alter(&$contents, $files) {
+function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   // Initialize CSSTidy.
   include_once('parse.inc');
   $css = new csstidy();

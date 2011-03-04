@@ -406,6 +406,7 @@ function advagg_get_filename($files, $filetype, $counter = '') {
     $output[] = array(
       'filename' => $filetype . '_' . $bundle_md5 . '_' . $counter . '.' . $filetype,
       'files' => $files,
+      'bundle_md5' => $bundle_md5,
     );
   }
   return $output;
@@ -1111,6 +1112,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   foreach ($filenames as $info) {
     $filename = $info['filename'];
     $files = $info['files'];
+    $bundle_md5 = $info['bundle_md5'];
     $prefix = '';
     $suffix = '';
     $filepath = $filepath .'/'. $filename;
@@ -1122,7 +1124,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       // Invoke hook_advagg_js_extra_alter() or hook_advagg_css_extra_alter to
       // give installed modules a chance to modify the prefix or suffix for a
       // given filename.
-      drupal_alter('advagg_' . $type . '_extra', $filename, $prefix, $suffix);
+      drupal_alter('advagg_' . $type . '_extra', $filename, $bundle_md5, $prefix, $suffix);
 
       // Generate on request?
       if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
@@ -1160,10 +1162,10 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       elseif ($type == 'js') {
         $data = advagg_build_js_bundle($files);
       }
-      // Invoke hook_advagg_js_extra_alter() or hook_advagg_css_extra_alter to
-      // give installed modules a chance to modify the data in the bundle if
+      // Invoke hook_advagg_js_alter() or hook_advagg_css_alter to give
+      // installed modules a chance to modify the data in the bundle if
       // necessary.
-      drupal_alter('advagg_' . $type, $data, $files);
+      drupal_alter('advagg_' . $type, $data, $files, $bundle_md5);
 
       // Create the advagg_$type/ within the files folder.
       file_check_directory($filepath, FILE_CREATE_DIRECTORY);
