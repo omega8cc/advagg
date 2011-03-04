@@ -146,6 +146,12 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
   }
 }
 
+/**
+ * Compress a JS string using jsmin+
+ *
+ * @param $contents
+ *   Javascript string.
+ */
 function advagg_js_compress_jsminplus(&$contents) {
   // JSMin+ the contents of the aggregated file.
   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
