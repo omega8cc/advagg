@@ -18,10 +18,10 @@ function advagg_missing_css() {
   ignore_user_abort();
 
   // Try to regenerate missing file
-  advagg_missing_regenerate();
+  $msg = advagg_missing_regenerate();
 
   // If here send out fast 404.
-  advagg_missing_fast404();
+  advagg_missing_fast404($msg);
 }
 
 /**
@@ -31,10 +31,10 @@ function advagg_missing_js() {
   ignore_user_abort();
 
   // Try to regenerate missing file
-  advagg_missing_regenerate();
+  $msg = advagg_missing_regenerate();
 
   // If here send out fast 404.
-  advagg_missing_fast404();
+  advagg_missing_fast404($msg);
 }
 
 /**
@@ -54,9 +54,9 @@ function advagg_missing_regenerate() {
   $arg = arg();
   $filename = array_pop($arg);
 
-  // Verfy requested filename has the correct pattern.
+  // Verify requested filename has the correct pattern.
   if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {
-    return FALSE;
+    return t('Wrong Pattern.');
   }
 
   // Get type
@@ -67,7 +67,7 @@ function advagg_missing_regenerate() {
 
   // Make sure extension is the same as the type.
   if ($ext != $type) {
-    return FALSE;
+    return t('Type does not match extension.');
   }
 
   // Extract info from wanted filename.
@@ -80,13 +80,13 @@ function advagg_missing_regenerate() {
     $counter = substr($filename, 36, strpos($filename, '.', 37)-36);
   }
   else {
-    return FALSE;
+    return t('Wrong file type.');
   }
 
   $_GET['redirect_counter'] = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
   if ($_GET['redirect_counter'] > 5) {
     watchdog('advagg', 'This request could not generate correctly. Loop detected. Request data: %info', array('%info' => $_GET['q']));
-    return FALSE;
+    return t('In a Loop.');
   }
 
   // Remove file from the cache.
@@ -95,12 +95,12 @@ function advagg_missing_regenerate() {
   // Counter in database.
   $counter_in_db = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $md5));
   if ($counter_in_db === FALSE) {
-    return FALSE;
+    return t('Not a valid bundle.');
   }
 
   // Only process if we got an older counter.
   if ($counter > $counter_in_db || $counter < 0) {
-    return FALSE;
+    return t('Counter out of range.');
   }
 
   // Rebuild file.
@@ -108,7 +108,7 @@ function advagg_missing_regenerate() {
   $good = advagg_rebuild_bundle($md5, $counter);
   if (!$good) {
     watchdog('advagg', 'This request could not generate correctly. Aggregate not generated. Request data: %info', array('%info' => $_GET['q']));
-    return FALSE;
+    return t('Rebuild Failed.');
   }
 
   // Redirect to file.

@@ -85,7 +85,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $all_ok = TRUE;
-  $advagg_js_compress_callback = varible_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
+  $advagg_js_compress_callback = variable_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
   if ($advagg_js_compress_callback) {
     foreach ($files as $filename) {
       $filename_md5 = md5($filename);
@@ -108,6 +108,33 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
       $compressible = advagg_js_compress_test_compression($files_to_test);
       // If an array then it is a list of files that can not be compressed.
       if (is_array($compressible)) {
+        $contents = '';
+        // Place filename in an array key.
+        $list_bad = array();
+        foreach ($compressible as $file) {
+          $file = $file['filename'];
+          $list_bad[$file] = $file;
+        }
+
+        // Do not compress the file that it bombs on.
+        $list_good = array();
+        foreach ($files as $file) {
+          if (!empty($list_bad[$file])) {
+            $data = advagg_build_js_bundle($list_good);
+            advagg_js_compress_jsminplus($data);
+            $data .= ";\n" . advagg_build_js_bundle(array($file));
+            $contents .= $data;
+            $list_good = array();
+          }
+          else {
+            $list_good[] = $file;
+          }
+        }
+        if (!empty($list_good)) {
+          $data = advagg_build_js_bundle($list_good);
+          advagg_js_compress_jsminplus($data);
+          $contents .= $data;
+        }
         $all_ok = FALSE;
       }
     }
@@ -115,12 +142,16 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
 
   // Only compress if all files are compressible.
   if ($all_ok) {
-    // JSMin+ the contents of the aggregated file.
-    require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
-    // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
-    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
-    $contents = JSMinPlus::minify($contents);
+    advagg_js_compress_jsminplus($contents);
   }
+}
+
+function advagg_js_compress_jsminplus(&$contents) {
+  // JSMin+ the contents of the aggregated file.
+  require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
+  // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
+  $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
+  $contents = JSMinPlus::minify($contents);
 }
 
 /**

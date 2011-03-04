@@ -81,6 +81,7 @@ function advagg_faster_404() {
     $js = strpos($_SERVER['REQUEST_URI'], $js_path);
     if ($css !== FALSE || $js !== FALSE) {
       $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
+      $_GET['q'] = trim($_GET['q'], '/');
       menu_execute_active_handler();
     }
   }
@@ -90,6 +91,7 @@ function advagg_faster_404() {
     $css = strpos($_GET['q'], $css_path);
     $js = strpos($_GET['q'], $js_path);
     if ($css !== FALSE || $js !== FALSE) {
+      $_GET['q'] = trim($_GET['q'], '/');
       menu_execute_active_handler();
     }
   }
@@ -1117,7 +1119,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
  */
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE) {
   $data = '';
-  $filepath = file_create_path('advagg_' . $type);
+  $file_type_path = file_create_path('advagg_' . $type);
 
   // Send $files, get filename back
   $filenames = advagg_get_filename($files, $type, $counter);
@@ -1129,7 +1131,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
     $bundle_md5 = $info['bundle_md5'];
     $prefix = '';
     $suffix = '';
-    $filepath = $filepath .'/'. $filename;
+    $filepath = $file_type_path .'/'. $filename;
 
     // Check that the file exists & filesize is not zero
     $built = advagg_bundle_built($filepath);
@@ -1182,7 +1184,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       drupal_alter('advagg_' . $type, $data, $files, $bundle_md5);
 
       // Create the advagg_$type/ within the files folder.
-      file_check_directory($filepath, FILE_CREATE_DIRECTORY);
+      file_check_directory($file_type_path, FILE_CREATE_DIRECTORY);
 
       $good = advagg_file_saver($data, $filepath);
       if (!$good) {
@@ -1234,7 +1236,18 @@ function advagg_build_css_bundle($files) {
   return $data;
 }
 
+/**
+ * Given a list of files, grab their contents and glue it into one big string.
+ *
+ * @param $files
+ *   array of filenames.
+ * @return
+ *   string containing all the files.
+ */
 function advagg_build_js_bundle($files) {
+  if (empty($files)) {
+    return '';
+  }
   // Build aggregate JS file.
   foreach ($files as $file) {
     // Append a ';' and a newline after each JS file to prevent them from running together.
@@ -1248,13 +1261,13 @@ function advagg_build_js_bundle($files) {
 /**
  * Send out a fast 404 and exit.
  */
-function advagg_missing_fast404() {
+function advagg_missing_fast404($msg = '') {
 //   watchdog('x', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_SERVER, TRUE)))));
 
   global $base_path;
   if (!headers_sent()) {
     header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
-    header('X-AdvAgg: Failed Validation');
+    header('X-AdvAgg: Failed Validation. ' . $msg);
   }
   print '<html>';
   print '<head><title>404 Not Found</title></head>';

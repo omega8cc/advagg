@@ -36,7 +36,7 @@ function advagg_admin_info_form() {
       '#type'          => 'fieldset',
       '#collapsible'   => TRUE,
       '#collapsed'     => TRUE,
-      '#title'         => t('%type files', array('%type' => strtoupper($type))),
+      '#title'         => t('@type files', array('@type' => strtoupper($type))),
     );
     // filename  filename_md5  checksum  filetype  counter   data
     $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = '%s'", $type);
@@ -56,7 +56,7 @@ function advagg_admin_info_form() {
       else {
         $form[$type][$row['filename_md5']] = array(
           '#type'   => 'markup',
-          '#value'  => format_plural($row['counter'], 'changed 1 time - %file<br />', 'changed %counter times - %file<br />',  array(
+          '#value'  => '<div>' . format_plural($row['counter'], 'changed 1 time - %file<br />', 'changed %counter times - %file<br /></div>',  array(
             '%counter'  => $row['counter'],
             '%file'     => $row['filename'],
           )),
