@@ -48,6 +48,8 @@ Advanced CSS/JS Aggregation Core Module:
    aggregate; if that file has changed then rebuild all aggregates that contain
    the updated file and give the newly aggregated file a new name. The new name
    ensures changes go out when using CDNs.
+ * Works with Drupal's private file system. Can Use a separate directory for
+   serving aggregated files from.
  * Url query string to turn off aggregation for that request. ?advagg=0 will
    turn off file aggregation if the user has the "bypass advanced aggregation"
    permission. ?advagg=-1 will completely bypass all of Advanced CSS/JS
@@ -76,25 +78,31 @@ Advanced CSS/JS Aggregation Submodules:
 CONFIGURATION
 -------------
 
-The settings page is located at:
+Settings page is located at:
 admin/settings/advagg
  * Enable Advanced Aggregation. You can disable the module here. Same affect as
    placing ?advagg=-1 in the URL.
- * Gzip CSS/JS files. For every Aggregated file generated, this will create a
-   gzip version of that and then serve that out if the browser accepts gzip
-   compression.
  * Generate CSS/JS files on request (async mode). If advagg doesn't have a route
    back to its self and this is enabled then you will have a broken site. But
    this enabled one can expect much quicker page generation times after a cache
    flush.
+ * Gzip CSS/JS files. For every Aggregated file generated, this will create a
+   gzip version of that and then serve that out if the browser accepts gzip
+   compression.
+ * Generate .htaccess files in the advagg_* dirs. If your using the rules
+   located at the bottom of this document in your webroots htaccess file then
+   you can disable this checkbox.
+ * Use a different directory for storing advagg files. Only available if your
+   using a private file system. Allows you to save the generated aggregated
+   files in a different directory. This gets around the private file system
+   restrictions. If boost is installed, you can safely use the cache directory.
+ * File Checksum Mode. Keep at mtime; only use md5 if file modification time is
+   unreliable on your setup.
  * IP Address to send all asynchronous requests to. If you wish to have one
    server generate all CSS/JS aggregated files then this allows for that to
    happen.
- * File Checksum Mode. Keep at mtime; only use md5 if file modification time is
-   unreliable on your setup.
  * Debug to watchdog. This will output A LOT of data to watchdog. Don't turn on
    unless your trying to debug an issue.
- * Hook Theme Info. Displays the preprocess_page order. Used for debugging.
  * Smart cache flush button. Scan all files referenced in aggregated files. If any of
    them have changed, increment the counters containing that file and rebuild
    the bundle.
@@ -102,6 +110,15 @@ admin/settings/advagg
    compression was just enabled.
  * Forced Cache Rebuild. Recreate all aggregated files by incrementing internal
    counter for every bundle. One should never have to use this option.
+ * Rebuild htaccess files. Recreate the generated htaccess files.
+
+Additional information is available at:
+admin/settings/advagg/info
+ * Hook Theme Info. Displays the preprocess_page order. Used for debugging.
+ * CSS files. Displays how often a files checksum has changed and any data
+   stored about it.
+ * JS files. Displays how often a files checksum has changed and any data
+   stored about it.
 
 TECHNICAL DETAILS & HOOKS
 -------------------------
@@ -115,15 +132,27 @@ Technical Details:
    them.
 
 Hooks:
- * hook_advagg_css_alter
- * hook_advagg_js_alter
- * hook_advagg_js_pre_alter
+ * hook_advagg_css_alter. Modify the data before it gets written to the file.
+   Useful for compression.
+ * hook_advagg_css_pre_alter. Modify the raw $variables['css'] before it gets
+   processed. Useful for file replacement.
+ * hook_advagg_css_extra_alter. Allows one to set the a prefix and suffix to be
+   added into the HTML DOM. Useful for CSS conditionals.
+ * hook_advagg_js_alter. Modify the data before it gets written to the file.
+   Useful for compression.
+ * hook_advagg_js_pre_alter. Modify the raw $javascript before it gets
+   processed. Useful for file replacement.
+ * hook_advagg_js_extra_alter. Allows one to set the a prefix and suffix to be
+   added into the HTML DOM.
+ * hook_advagg_filenames_alter. Allows for a one to many relationship. A single
+   request for a bundle name can result in multiple bundles being returned.
+ * hook_advagg_files_table. Allows for modules to mark a file as expired.
 
 SINGLE HTACCESS RULES
 ---------------------
 
 If the directory level htaccess rules are interfering with your server, you can
-place these rules in the drupal roots htaccess file. Place these rules after
+place these rules in the Drupal roots htaccess file. Place these rules after
 "RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]" but before "</IfModule>"
 
   # Rules to correctly serve gzip compressed CSS and JS files.
@@ -171,4 +200,5 @@ You also need to place these rules at the very end of your htaccess file.
 
 Be sure to disable the "Generate .htaccess files in the advagg_* dirs" setting
 on the admin/settings/advagg page after placing these rules in the webroots
-htaccess file. This is located at the same directory level as Drupals index.php.
+htaccess file. This is located at the same directory level as Drupal's
+index.php.
