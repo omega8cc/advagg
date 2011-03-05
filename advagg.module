@@ -966,7 +966,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
 
   // CDN Support.
-  $url_builder = module_exists('cdn') ? 'file_create_url' : 'url';
+  $url_builder = module_exists('cdn') && function_exists('cdn_theme_registry_alter') == FALSE ? 'file_create_url' : 'url';
 
   // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
