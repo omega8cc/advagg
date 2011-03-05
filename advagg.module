@@ -306,6 +306,44 @@ function advagg_get_root_files_dir($reset = FALSE) {
 }
 
 /**
+ * Recursively merge 2 arrays together.
+ *
+ * @param $array1
+ *   first array
+ * @param $array2
+ *   second array
+ * @return
+ *   combined array
+ */
+function advagg_merge_array($array1, $array2) {
+  $final = array();
+  foreach ($array1 as $key => $value) {
+    if (is_array($value)) {
+      $final[$key] = advagg_merge_array($value, $array2[$key]);
+    }
+    elseif (is_array($array2[$key])) {
+      $final[$key] = advagg_merge_array($array2[$key], $value);
+    }
+    else {
+      $final[$key] = $value;
+    }
+  }
+
+  foreach ($array2 as $key => $value) {
+    if (is_array($value)) {
+      $final[$key] = advagg_merge_array($value, $array1[$key]);
+    }
+    elseif (is_array($array1[$key])) {
+      $final[$key] = advagg_merge_array($array1[$key], $value);
+    }
+    else {
+      $final[$key] = $value;
+    }
+  }
+  return $final;
+}
+
+/**
  * Process variables for page.tpl.php
  *
  * @param $variables
@@ -320,6 +358,7 @@ function advagg_processor(&$variables) {
   // CSS
   $css = $variables['css'];
   $css_orig = $css;
+  $css = advagg_merge_array($css, drupal_add_css());
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
@@ -943,7 +982,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   }
   $module_no_preprocess = array();
   $output_no_preprocess = array();
-  $output_preproced = array();
+  $output_preprocess = array();
   $theme_no_preprocess = array();
 
   $preprocess_css = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
@@ -1042,7 +1081,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         if ($extra !== FALSE && is_array($extra)) {
           $prefix = $extra['prefix'];
           $suffix = $extra['suffix'];
-          $output_preproced[] = array(
+          $output_preprocess[] = array(
             'media' => $media,
             'href' => $url_builder($preprocess_file),
             'prefix' => $prefix,
@@ -1063,7 +1102,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
     }
   }
 
-  return advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preproced, $theme_no_preprocess);
+  return advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 }
 
 /**
@@ -1073,17 +1112,17 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
  *   array of css files ($media, $href)
  * @param $output_no_preprocess
  *   array of css files ($media, $href)
- * @param $output_preproced
+ * @param $output_preprocess
  *   array of css files ($media, $href, $prefix, $suffix)
  * @param $theme_no_preprocess
  *   array of css files ($media, $href)
  * @return
  *   html for loading the css. html for the head.
  */
-function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preproced, $theme_no_preprocess) {
+function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess) {
   global $user;
   $styles = '';
-  $files = array_merge($module_no_preprocess, $output_no_preprocess, $output_preproced, $theme_no_preprocess);
+  $files = array_merge($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 
   // Select method for css html output
   if (count($files) < variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
@@ -1112,7 +1151,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     if ($is_ie) {
       advagg_unlimited_css_import($module_no_preprocess, $styles);
       advagg_unlimited_css_import($output_no_preprocess, $styles);
-      advagg_unlimited_css_traditional($output_preproced, $styles);
+      advagg_unlimited_css_traditional($output_preprocess, $styles);
       advagg_unlimited_css_import($theme_no_preprocess, $styles);
     }
     else {
@@ -1122,7 +1161,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
   else {
     advagg_unlimited_css_import($module_no_preprocess, $styles);
     advagg_unlimited_css_import($output_no_preprocess, $styles);
-    advagg_unlimited_css_traditional($output_preproced, $styles);
+    advagg_unlimited_css_traditional($output_preprocess, $styles);
     advagg_unlimited_css_import($theme_no_preprocess, $styles);
   }
 
