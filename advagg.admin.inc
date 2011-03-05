@@ -30,6 +30,21 @@ function advagg_admin_info_page() {
 function advagg_admin_info_form() {
   $form = array();
 
+  $form['info'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Hook Theme Info'),
+  );
+  init_theme();
+  $hooks = theme_get_registry();
+  $data = implode("\n", $hooks['page']['preprocess functions']);
+  $form['info']['advagg_debug_info'] = array(
+    '#type'           => 'textarea',
+    '#default_value'  => $data,
+    '#rows'           => count($hooks['page']['preprocess functions'])+1,
+  );
+
   $types = db_query("SELECT DISTINCT(filetype) FROM {advagg_files}");
   while ($type = db_result($types)) {
     $form[$type] = array(
@@ -135,20 +150,6 @@ function advagg_admin_settings_form() {
     '#type'           => 'checkbox',
     '#title'          => t('Debug to watchdog.'),
     '#default_value'  => variable_get('advagg_debug', ADVAGG_DEBUG),
-  );
-  $form['info'] = array(
-    '#type'          => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
-    '#title'         => t('Hook Theme Info'),
-  );
-  init_theme();
-  $hooks = theme_get_registry();
-  $data = implode("\n", $hooks['page']['preprocess functions']);
-  $form['info']['advagg_debug_info'] = array(
-    '#type'           => 'textarea',
-    '#default_value'  => $data,
-    '#rows'           => count($hooks['page']['preprocess functions'])+1,
   );
 
   $form['flush'] = array(
