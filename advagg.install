@@ -53,12 +53,11 @@ function advagg_uninstall() {
   variable_del('advagg_debug');
 
   // Remove files.
-  $path = file_create_path('advagg_js');
-  file_scan_directory($path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
-  @unlink($path);
-  $path = file_create_path('advagg_css');
-  file_scan_directory($path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
-  @unlink($path);
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($css_path);
+  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($js_path);
 }
 
 /**
@@ -189,7 +188,7 @@ function advagg_check_missing_handler() {
   $t = get_t();
 
   // Setup request
-  $css_path = file_create_path('advagg_css');
+  list($css_path, $js_path) = advagg_get_root_files_dir();
   $ip = $_SERVER['SERVER_ADDR'];
   $filepath = $css_path . '/css_missing' . mt_rand() . '_0.css';
   $url = 'http://' . $ip . $base_path . $filepath;
@@ -213,7 +212,7 @@ function advagg_check_missing_handler() {
 
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
 
-  $extra_404 = module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly') : '';
+  $extra_404 = module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly.') : '';
 
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
@@ -258,7 +257,7 @@ function advagg_check_missing_handler() {
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_ERROR,
         'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. ', array('@readme' => url($readme))) . $extra_404,
+        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
       );
     }
   }
@@ -294,7 +293,7 @@ function advagg_check_missing_handler() {
       'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
       'severity'    => REQUIREMENT_ERROR,
       'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. ', array('@readme' => url($readme))) . $extra_404,
+        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
     );
   }
 

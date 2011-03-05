@@ -66,14 +66,18 @@ define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);
  */
 define('ADVAGG_DIR_HTACCESS', TRUE);
 
+/**
+ * Default value for a custom files directory just for advagg directories.
+ */
+define('ADVAGG_CUSTOM_FILES_DIR', '');
+
 // Handle 404s ASAP
 advagg_faster_404();
 function advagg_faster_404() {
   if (empty($_SERVER['REQUEST_URI']) && empty($_GET['q'])) {
     return;
   }
-  $css_path = file_create_path('advagg_css');
-  $js_path = file_create_path('advagg_js');
+  list($css_path, $js_path) = advagg_get_root_files_dir();
 
   // 404 from htaccess.
   if (!empty($_SERVER['REQUEST_URI'])) {
@@ -106,8 +110,7 @@ function advagg_perm() {
  * Implementation of hook_menu().
  */
 function advagg_menu() {
-  $css_path = file_create_path('advagg_css');
-  $js_path = file_create_path('advagg_js');
+  list($css_path, $js_path) = advagg_get_root_files_dir();
   $file_path = drupal_get_path('module', 'advagg');
 
   $items = array();
@@ -188,8 +191,7 @@ function advagg_init() {
   }
 
   // Get our advagg file paths.
-  $css_path = file_create_path('advagg_css');
-  $js_path = file_create_path('advagg_js');
+  list($css_path, $js_path) = advagg_get_root_files_dir();
 
   // Skip if this request belongs to us.
   if (strpos($_GET['q'], $css_path) !== FALSE || strpos($_GET['q'], $js_path) !== FALSE) {
@@ -269,6 +271,38 @@ function advagg_theme_registry_alter(&$theme_registry) {
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
   }
+}
+
+/**
+ * Get the CSS & JS path for advagg.
+ *
+ * @param $reset
+ *   reset the static variables.
+ * @return
+ *   array($css_path, $js_path)
+ */
+function advagg_get_root_files_dir($reset = FALSE) {
+  static $css_path = '';
+  static $js_path = '';
+  if ($reset) {
+    $css_path = '';
+    $js_path = '';
+  }
+
+  if (!empty($css_path) && empty($js_path)) {
+    return array($css_path, $js_path);
+  }
+
+  $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  if (empty($custom_path)) {
+    $css_path = file_create_path('advagg_css');
+    $js_path = file_create_path('advagg_js');
+    return array($css_path, $js_path);
+  }
+
+  $css_path = $custom_path . '/advagg_css';
+  $js_path = $custom_path . '/advagg_js';
+  return array($css_path, $js_path);
 }
 
 /**
@@ -438,14 +472,20 @@ function advagg_get_filename($files, $filetype, $counter = '') {
  */
 function advagg_file_saver($data, $dest) {
   // Create the JS file.
-  if (!file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
+  $file_save_data = 'file_save_data';
+  $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  if (!empty($custom_path)) {
+    $file_save_data = 'advagg_file_save_data';
+  }
+
+  if (!$file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
     return FALSE;
   }
 
   // Make sure filesize is not zero.
   clearstatcache();
   if (@filesize($dest) == 0) {
-    if (!file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
+    if (!$file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
       return FALSE;
     }
     clearstatcache();
@@ -461,6 +501,175 @@ function advagg_file_saver($data, $dest) {
 
   cache_set($dest, time(), 'cache_advagg', CACHE_PERMANENT);
   return TRUE;
+}
+
+
+
+/**
+ * ***MODIFIED CORE FUNCTIONS BELOW***
+ *
+ * @see file_save_data
+ * @see file_move
+ * @see file_copy
+ */
+
+/**
+ * Save a string to the specified destination.
+ *
+ * @see file_save_data
+ *
+ * @param $data A string containing the contents of the file.
+ * @param $dest A string containing the destination location.
+ * @param $replace Replace behavior when the destination file already exists.
+ *   - FILE_EXISTS_REPLACE - Replace the existing file
+ *   - FILE_EXISTS_RENAME - Append _{incrementing number} until the filename is unique
+ *   - FILE_EXISTS_ERROR - Do nothing and return FALSE.
+ *
+ * @return A string containing the resulting filename or 0 on error
+ */
+function advagg_file_save_data($data, $dest, $replace = FILE_EXISTS_RENAME) {
+  $temp = file_directory_temp();
+  // On Windows, tempnam() requires an absolute path, so we use realpath().
+  $file = tempnam(realpath($temp), 'file');
+  if (!$fp = fopen($file, 'wb')) {
+    drupal_set_message(t('The file could not be created.'), 'error');
+    return 0;
+  }
+  fwrite($fp, $data);
+  fclose($fp);
+
+  if (!advagg_file_move($file, $dest, $replace)) {
+    return 0;
+  }
+
+  return $file;
+}
+
+/**
+ * Moves a file to a new location.
+ *
+ * @see file_move
+ *
+ * - Checks if $source and $dest are valid and readable/writable.
+ * - Performs a file move if $source is not equal to $dest.
+ * - If file already exists in $dest either the call will error out, replace the
+ *   file or rename the file based on the $replace parameter.
+ *
+ * @param $source
+ *   Either a string specifying the file location of the original file or an
+ *   object containing a 'filepath' property. This parameter is passed by
+ *   reference and will contain the resulting destination filename in case of
+ *   success.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this
+ *   value is omitted, Drupal's 'files' directory will be used.
+ * @param $replace
+ *   Replace behavior when the destination file already exists.
+ *   - FILE_EXISTS_REPLACE: Replace the existing file.
+ *   - FILE_EXISTS_RENAME: Append _{incrementing number} until the filename is
+ *     unique.
+ *   - FILE_EXISTS_ERROR: Do nothing and return FALSE.
+ * @return
+ *   TRUE for success, FALSE for failure.
+ */
+function advagg_file_move(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
+  $path_original = is_object($source) ? $source->filepath : $source;
+
+  if (advagg_file_copy($source, $dest, $replace)) {
+    $path_current = is_object($source) ? $source->filepath : $source;
+
+    if ($path_original == $path_current || file_delete($path_original)) {
+      return 1;
+    }
+    drupal_set_message(t('The removal of the original file %file has failed.', array('%file' => $path_original)), 'error');
+  }
+  return 0;
+}
+
+/**
+ * Copies a file to a new location.
+ *
+ * @see file_copy
+ *
+ * This is a powerful function that in many ways performs like an advanced
+ * version of copy().
+ * - Checks if $source and $dest are valid and readable/writable.
+ * - Performs a file copy if $source is not equal to $dest.
+ * - If file already exists in $dest either the call will error out, replace the
+ *   file or rename the file based on the $replace parameter.
+ *
+ * @param $source
+ *   Either a string specifying the file location of the original file or an
+ *   object containing a 'filepath' property. This parameter is passed by
+ *   reference and will contain the resulting destination filename in case of
+ *   success.
+ * @param $dest
+ *   A string containing the directory $source should be copied to. If this
+ *   value is omitted, Drupal's 'files' directory will be used.
+ * @param $replace
+ *   Replace behavior when the destination file already exists.
+ *   - FILE_EXISTS_REPLACE: Replace the existing file.
+ *   - FILE_EXISTS_RENAME: Append _{incrementing number} until the filename is
+ *     unique.
+ *   - FILE_EXISTS_ERROR: Do nothing and return FALSE.
+ * @return
+ *   TRUE for success, FALSE for failure.
+ */
+function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
+  $directory = dirname($dest);
+
+
+  // Process a file upload object.
+  if (is_object($source)) {
+    $file = $source;
+    $source = $file->filepath;
+    if (!$basename) {
+      $basename = $file->filename;
+    }
+  }
+
+  $source = realpath($source);
+  if (!file_exists($source)) {
+    drupal_set_message(t('The selected file %file could not be copied, because no file by that name exists. Please check that you supplied the correct filename.', array('%file' => $source)), 'error');
+    return 0;
+  }
+
+  // If the destination file is not specified then use the filename of the source file.
+  $basename = basename($dest);
+  $basename = $basename ? $basename : basename($source);
+  $dest = $directory . '/' . $basename;
+
+  // Make sure source and destination filenames are not the same, makes no sense
+  // to copy it if they are. In fact copying the file will most likely result in
+  // a 0 byte file. Which is bad. Real bad.
+  if ($source != realpath($dest)) {
+    if (!$dest = file_destination($dest, $replace)) {
+      drupal_set_message(t('The selected file %file could not be copied, because a file by that name already exists in the destination.', array('%file' => $source)), 'error');
+      return FALSE;
+    }
+
+    if (!@copy($source, $dest)) {
+      drupal_set_message(t('The selected file %file could not be copied. ' . $dest, array('%file' => $source)), 'error');
+      return 0;
+    }
+
+    // Give everyone read access so that FTP'd users or
+    // non-webserver users can see/read these files,
+    // and give group write permissions so group members
+    // can alter files uploaded by the webserver.
+    @chmod($dest, 0664);
+  }
+
+  if (isset($file) && is_object($file)) {
+    $file->filename = $basename;
+    $file->filepath = $dest;
+    $source = $file;
+  }
+  else {
+    $source = $dest;
+  }
+
+  return 1; // Everything went ok.
 }
 
 /**
@@ -589,8 +798,9 @@ function advagg_flush_caches() {
   }
 
   // Garbage collection
-  file_scan_directory(file_create_path('advagg_css'), '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
-  file_scan_directory(file_create_path('advagg_js'), '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
+  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
   lock_release('advagg_flush_caches');
 }
@@ -740,7 +950,14 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
     $preprocess_css = FALSE;
   }
+
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  if (!$public_downloads) {
+    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+    if (!empty($custom_path)) {
+      $public_downloads = TRUE;
+    }
+  }
 
   // A dummy query-string is added to filenames, to gain control over
   // browser-caching. The string changes on every update or full cache
@@ -1004,6 +1221,12 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
     $preprocess_js = FALSE;
   }
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  if (!$public_downloads) {
+    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+    if (!empty($custom_path)) {
+      $public_downloads = TRUE;
+    }
+  }
 
   // A dummy query-string is added to filenames, to gain control over
   // browser-caching. The string changes on every update or full cache
@@ -1117,7 +1340,13 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
  */
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE) {
   $data = '';
-  $file_type_path = file_create_path('advagg_' . $type);
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  if ($type == 'js') {
+    $file_type_path = $js_path;
+  }
+  if ($type == 'css') {
+    $file_type_path = $css_path;
+  }
 
   // Send $files, get filename back
   $filenames = advagg_get_filename($files, $type, $counter);
@@ -1296,8 +1525,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     return TRUE;
   }
 
-  $css_path = file_create_path('advagg_css');
-  $js_path = file_create_path('advagg_js');
+  list($css_path, $js_path) = advagg_get_root_files_dir();
 
   $type = '';
   if ($dir == $js_path) {

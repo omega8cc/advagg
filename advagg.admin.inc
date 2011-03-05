@@ -104,6 +104,17 @@ function advagg_admin_settings_form() {
     '#default_value'  => variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS),
     '#description'    => t('Disable if your using the rules from the <a href="@readme">readme</a> file in your webroot level htaccess file.', array('@readme' => url($readme))),
   );
+  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  if (!$public_downloads) {
+    $extra = module_exists('boost') ? t('If boost is installed, you can use the cache directory for advagg files.') : '';
+    $form['advagg_custom_files_dir'] = array(
+      '#type'           => 'textfield',
+      '#field_prefix'   => '<div>' . t('You are using a private file system. You can serve aggregated files via a public folder.') . '</div>',
+      '#title'          => t('Use a different directory for storing advagg files'),
+      '#default_value'  => variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR),
+      '#description'    => t('If left blank it will use drupals default files direcotry. ') . $extra,
+    );
+  }
   $form['advagg_checksum_mode'] = array(
     '#type'           => 'radios',
     '#title'          => t('File Checksum Mode'),
@@ -112,7 +123,7 @@ function advagg_admin_settings_form() {
       'mtime' => 'mtime',
       'md5' => 'md5',
     ),
-    '#description'    => t('If Drupal is on multiple servers and the file system is not shared;  using md5 is recommended. The file modificaiton time (mtime) could be different with this type of setup.'),
+    '#description'    => t('If Drupal is on multiple servers and the file system is not shared;  using md5 is recommended. The file modification time (mtime) could be different with this type of setup.'),
   );
   $form['advagg_server_addr'] = array(
     '#type'           => 'textfield',
@@ -196,14 +207,38 @@ function advagg_admin_settings_form() {
 function advagg_admin_settings_form_validate($form, &$form_state) {
   global $conf;
 
-  unset($form_state['values']['advagg_debug_info']);
+  // Custom directory.
+  if (!empty($form_state['values']['advagg_custom_files_dir'])) {
+    $files_dir = $form_state['values']['advagg_custom_files_dir'];
+    if (file_check_directory($files_dir) == TRUE) {
+      if ($files_dir != $conf['advagg_custom_files_dir']) {
+        // Remove old files.
+        list($css_path, $js_path) = advagg_get_root_files_dir();
+        file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+        @unlink($css_path);
+        file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+        @unlink($js_path);
+
+        // Set new path.
+        $conf['advagg_custom_files_dir'] = $files_dir;
+        advagg_get_root_files_dir(TRUE);
+        menu_rebuild();
+      }
+    }
+    else {
+      form_set_error('advagg_custom_files_dir', t('%dir is not a direcotry or is not writable by the web server.', array('%dir' => $files_dir)));
+    }
+  }
+
+  // Gzip & htaccess checks.
   if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression'] && $form_state['values']['advagg_dir_htaccess']) {
     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
     advagg_admin_recreate_htaccess();
   }
   if ($form_state['values']['advagg_dir_htaccess'] == FALSE) {
-    $css_path = file_create_path('advagg_css') . '/.htaccess';
-    $js_path = file_create_path('advagg_js') . '/.htaccess';
+    list($css_path, $js_path) = advagg_get_root_files_dir();
+    $css_path .= '/.htaccess';
+    $js_path .= '/.htaccess';
 
     if (file_exists($css_path) || file_exists($js_path)) {
       file_delete($css_path);
@@ -215,6 +250,9 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
     $conf['advagg_dir_htaccess'] = $form_state['values']['advagg_dir_htaccess'];
     advagg_admin_recreate_htaccess();
   }
+
+  // Remove debug info.
+  unset($form_state['values']['advagg_debug_info']);
 }
 
 /**
@@ -281,8 +319,9 @@ function advagg_admin_increment_rebuild_bundles() {
  * Rebuild htaccess files.
  */
 function advagg_admin_recreate_htaccess() {
-  $css_path = file_create_path('advagg_css') . '/.htaccess';
-  $js_path = file_create_path('advagg_js') . '/.htaccess';
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  $css_path .= '/.htaccess';
+  $js_path .= '/.htaccess';
 
   file_delete($css_path);
   advagg_htaccess_check_generate($css_path, TRUE);
