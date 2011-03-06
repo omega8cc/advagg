@@ -71,6 +71,17 @@ define('ADVAGG_DIR_HTACCESS', TRUE);
  */
 define('ADVAGG_CUSTOM_FILES_DIR', '');
 
+/**
+ * Default function used to render css output.
+ */
+define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder');
+
+/**
+ * Default function used to render css output.
+ */
+define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder');
+
+
 // Handle 404s ASAP
 advagg_faster_404();
 function advagg_faster_404() {
@@ -1102,7 +1113,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
     }
   }
 
-  return advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
+  $function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
+  return $function($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 }
 
 /**
