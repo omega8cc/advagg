@@ -148,6 +148,20 @@ Hooks:
    request for a bundle name can result in multiple bundles being returned.
  * hook_advagg_files_table. Allows for modules to mark a file as expired.
 
+JS/CSS Theme Override:
+
+    $conf['advagg_css_render_function'] - advagg_unlimited_css_builder
+    $conf['advagg_js_render_function'] - advagg_js_builder
+
+Changing these variables allow you to change the function used to render the
+CSS markup or the JS markup. This means you can add JS files to a JSON request.
+Example:
+
+    $conf['advagg_js_render_function'] = 'my_js_json_render_function';
+    $scope = 'header';
+    $js = drupal_add_js(NULL, NULL, $scope);
+    return advagg_process_js($scope, $js);
+
 SINGLE HTACCESS RULES
 ---------------------
 
