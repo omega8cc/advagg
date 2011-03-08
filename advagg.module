@@ -795,6 +795,7 @@ function advagg_bundle_built($filepath) {
  * Implementation of hook_flush_caches().
  */
 function advagg_flush_caches() {
+  set_time_limit(0);
   global $_advagg;
   // Only one advagg cache flusher can run at a time.
   if (!lock_acquire('advagg_flush_caches')) {
@@ -804,19 +805,20 @@ function advagg_flush_caches() {
   // Find files that have changed.
   $needs_refreshing = array();
   $results = db_query("SELECT * FROM {advagg_files}");
-  while($row = db_fetch_array($results)) {
+  while ($row = db_fetch_array($results)) {
     $checksum = advagg_checksum($row['filename']);
     // Let other modules see if the bundles needs to be rebuilt.
     // hook_advagg_files_table
     // Return TRUE in order to increment the counter.
-    $results = module_invoke_all('advagg_files_table', $row, $checksum);
+    $hook_results = module_invoke_all('advagg_files_table', $row, $checksum);
 
     // Check each return value; see if an update is needed.
     $update = FALSE;
-    foreach ($results as $bool) {
-      if ($bool === TRUE) {
-        $update = TRUE;
-        break;
+    if (!empty($hook_results)) {
+      foreach ($hook_results as $update) {
+        if ($update === TRUE) {
+          break;
+        }
       }
     }
 
@@ -824,7 +826,7 @@ function advagg_flush_caches() {
     if ($checksum != $row['checksum'] || $update == TRUE) {
       $needs_refreshing[] = $row['filename_md5'];
       // Update checksum; increment counter.
-      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1, WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
+      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1 WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
     }
   }
 
@@ -1474,15 +1476,17 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
     $suffix = '';
     $filepath = $file_type_path .'/'. $filename;
 
+    // Invoke hook_advagg_js_extra_alter() or hook_advagg_css_extra_alter to
+    // give installed modules a chance to modify the prefix or suffix for a
+    // given filename.
+    $values = array($filename, $bundle_md5, $prefix, $suffix);
+    drupal_alter('advagg_' . $type . '_extra', $values);
+    list($filename, $bundle_md5, $prefix, $suffix) = $values;
+
     // Check that the file exists & filesize is not zero
     $built = advagg_bundle_built($filepath);
 
     if (!$built || $force) {
-      // Invoke hook_advagg_js_extra_alter() or hook_advagg_css_extra_alter to
-      // give installed modules a chance to modify the prefix or suffix for a
-      // given filename.
-      drupal_alter('advagg_' . $type . '_extra', $filename, $bundle_md5, $prefix, $suffix);
-
       // Generate on request?
       if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
         // Request file.
@@ -1501,7 +1505,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
         ini_set('default_socket_timeout', $socket_timeout);
 
         // Return filepath.
-        $output[$filepath] = array($prefix, $suffix);
+        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
         continue;
       }
 
@@ -1509,7 +1513,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       $lock_name = 'advagg_' . $filename;
       if (!lock_acquire($lock_name)) {
         $locks[] = $lock_name;
-        $output[$filepath] = array($prefix, $suffix);
+        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
         continue;
       }
 
@@ -1545,7 +1549,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       // Release lock.
       lock_release($lock_name);
     }
-    $output[$filepath] = array($prefix, $suffix);
+    $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
   }
 
   // Wait for all locks before returning.
