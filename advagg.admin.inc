@@ -172,7 +172,7 @@ function advagg_admin_settings_form() {
   $form['rebuild']['advagg_rebuild'] = array(
     '#type' => 'submit',
     '#value' => t('Rebuild AdvAgg Cache'),
-    '#submit' => array('advagg_admin_rebuild_bundles'),
+    '#submit' => array('advagg_admin_batch_rebuild'),
   );
   $form['forced_rebuild'] = array(
     '#type'         => 'fieldset',
@@ -184,7 +184,7 @@ function advagg_admin_settings_form() {
   $form['forced_rebuild']['advagg_forced_build'] = array(
     '#type' => 'submit',
     '#value' => t('Force all counters to be increment by one'),
-    '#submit' => array('advagg_admin_increment_rebuild_bundles'),
+    '#submit' => array('advagg_admin_batch_rebuild'),
   );
   $form['htaccess'] = array(
     '#type'         => 'fieldset',
@@ -276,44 +276,96 @@ function advagg_admin_flush_cache() {
 }
 
 /**
- * Rebuild bundles.
- */
-function advagg_admin_rebuild_bundles() {
-  // Get list of all bundles.
-  $bundles = array();
-  $result = db_query("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5");
-  while ($bundle_md5 = db_result($result)) {
-    $bundles[] = $bundle_md5;
+* Set up batch for first and last name loading.
+*
+* This is where Drupal's Batch API comes into play.
+* It's as simple as defining $batch, and then calling batch_set($batch)
+*/
+function advagg_admin_batch_rebuild($form, &$form_state) {
+  $batch = array();
+
+  // Set up the type of batch operation we will do.
+  if ($form_state['clicked_button']['#post']['op'] == t('Force all counters to be increment by one')) {
+    $increment = TRUE;
+    $batch['title'] = t('Increment and rebuild aggregated files');
+
+  }
+  else {
+    $increment = FALSE;
+    $batch['title'] = t('Rebuilding aggregated files');
   }
 
-  // Rebuild each one.
-  foreach ($bundles as $bundle_md5) {
-    advagg_rebuild_bundle($bundle_md5, '', TRUE);
-  }
+  // Build batch opertaional data.
+  $batch += array(
+    'operations' => array(
+      array('advagg_admin_rebuild_bundles', array($increment)),
+    ),
+    'finished' => 'advagg_admin_rebuild_bundles_done',
+    'init_message' => t('Initializing...'),
+    'progress_message' => t('Processed @current batch operations out of @total.'),
+    'error_message' => t('Rebuilding aggregated files encountered an error.'),
+    'file' => drupal_get_path('module', 'advagg') . '/advagg.admin.inc',
+  );
 
-  drupal_set_message(t('Advanced CSS/JS Aggregation cache rebuilt. %count files recreated.', array('%count' => count($bundles))));
+  // Run it
+  batch_set($batch);
+  batch_process('admin/settings/advagg');
 }
 
 /**
  * Rebuild bundles.
  */
-function advagg_admin_increment_rebuild_bundles() {
-  // Increment All Counters.
-  db_query("UPDATE {advagg_bundles} SET counter = counter + 1");
+function advagg_admin_rebuild_bundles($increment, &$context) {
+  // init batch.
+  if (!isset($context['sandbox']['progress'])) {
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['max'] = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM advagg_bundles GROUP BY bundle_md5) as temp"));
+
+    // Increment All Counters.
+    if ($increment) {
+      db_query("UPDATE {advagg_bundles} SET counter = counter + 1");
+    }
+  }
+
+  // Set limit.
+  $limit = 1;
 
   // Get list of all bundles.
   $bundles = array();
-  $result = db_query("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5");
+  $result = db_query_range("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5", $context['sandbox']['progress'], $limit);
   while ($bundle_md5 = db_result($result)) {
-    $bundles[] = $bundle_md5;
+    $filenames = advagg_rebuild_bundle($bundle_md5, '', TRUE);
+    $filename = array();
+    foreach ($filenames as $name => $data) {
+      $filename[] = $name;
+    }
+
+    // Update our progress information.
+    $context['sandbox']['progress']++;
+    $context['message'] = t('%md5 Created', array('%md5' => $bundle_md5));
+    $context['results'][] = $filename;
   }
 
-  // Rebuild each one.
-  foreach ($bundles as $bundle_md5) {
-    advagg_rebuild_bundle($bundle_md5, '', TRUE);
+  // Inform the batch engine that we are not finished,
+  // and provide an estimation of the completion level we reached.
+  if ($context['sandbox']['progress'] != $context['sandbox']['max']) {
+    $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
   }
+}
 
-  drupal_set_message(t('Advanced CSS/JS Aggregation cache incremented and rebuilt. %count files recreated.', array('%count' => count($bundles))));
+function advagg_admin_rebuild_bundles_done($success, $results, $operations) {
+  if ($success) {
+    // Here we do something meaningful with the results.
+    $message = count($results) .' files generated.';
+    $message .= theme('item_list', $results);
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    $message = t('An error occurred while processing %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
+  }
+  drupal_set_message($message);
 }
 
 /**
