@@ -331,7 +331,6 @@ function advagg_admin_rebuild_bundles($increment, &$context) {
   $limit = 1;
 
   // Get list of all bundles.
-  $bundles = array();
   $result = db_query_range("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5", $context['sandbox']['progress'], $limit);
   while ($bundle_md5 = db_result($result)) {
     $filenames = advagg_rebuild_bundle($bundle_md5, '', TRUE);
