@@ -81,6 +81,11 @@ define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder');
  */
 define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder');
 
+/**
+ * Default function used to render js output.
+ */
+define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
+
 
 // Handle 404s ASAP
 advagg_faster_404();
@@ -843,13 +848,15 @@ function advagg_flush_caches() {
     // Increment Counter
     db_query("UPDATE {advagg_bundles} SET counter = counter + 1 WHERE bundle_md5 = '%s'", $bundle_md5);
 
-    // Rebuild bundles
-    $good = advagg_rebuild_bundle($bundle_md5);
-    if (!$good) {
-      watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
-    }
-    else {
-      $_advagg['rebuilt'][] = $bundle_md5;
+    if (variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH)) {
+      // Rebuild bundles
+      $good = advagg_rebuild_bundle($bundle_md5);
+      if (!$good) {
+        watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
+      }
+      else {
+        $_advagg['rebuilt'][] = $bundle_md5;
+      }
     }
   }
 

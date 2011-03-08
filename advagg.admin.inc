@@ -92,6 +92,7 @@ function advagg_admin_info_form() {
 function advagg_admin_settings_form() {
   $form = array();
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
+  $bundle_count = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM advagg_bundles GROUP BY bundle_md5) as temp"));
 
   $form['advagg_enabled'] = array(
     '#type'           => 'checkbox',
@@ -118,6 +119,12 @@ function advagg_admin_settings_form() {
     '#title'          => t('Generate .htaccess files in the advagg_* dirs'),
     '#default_value'  => variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS),
     '#description'    => t('Disable if your using the rules from the <a href="@readme">readme</a> file in your webroot level htaccess file.', array('@readme' => url($readme))),
+  );
+  $form['advagg_rebuild_on_flush'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Regenerate flushed bundles in the cache flush request'),
+    '#default_value'  => variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH),
+    '#description'    => t('Enable if your server will not timeout on a request.'),
   );
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
   if (!$public_downloads) {
@@ -167,7 +174,7 @@ function advagg_admin_settings_form() {
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
     '#title'        => t('Cache Rebuild'),
-    '#description'  => t('Recreate all aggregated files. Useful if JS or CSS compression was just enabled.'),
+    '#description'  => t('Recreate all aggregated files. Useful if JS or CSS compression was just enabled. %count Files', array('%count' => $bundle_count)),
   );
   $form['rebuild']['advagg_rebuild'] = array(
     '#type' => 'submit',
@@ -179,7 +186,7 @@ function advagg_admin_settings_form() {
     '#collapsible'   => TRUE,
     '#collapsed'     => TRUE,
     '#title'        => t('Forced Cache Rebuild'),
-    '#description'  => t('Recreate all aggregated files by incrementing internal counter for every bundle.'),
+    '#description'  => t('Recreate all aggregated files by incrementing internal counter for every bundle. %count Files', array('%count' => $bundle_count)),
   );
   $form['forced_rebuild']['advagg_forced_build'] = array(
     '#type' => 'submit',
