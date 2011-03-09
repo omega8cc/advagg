@@ -167,10 +167,6 @@ function advagg_js_compress_jsminplus(&$contents) {
  *   TRUE if all files are compressible. List of files that failed otherwise.
  */
 function advagg_js_compress_test_compression($files_to_test) {
-  if (empty($_SERVER['HTTP_HOST'])) {
-    return;
-  }
-
   global $base_path;
   $bad_files = array();
   foreach ($files_to_test as $info) {
