@@ -192,7 +192,7 @@ place these rules in the Drupal roots htaccess file. Place these rules after
 
 You also need to place these rules at the very end of your htaccess file.
 
-<FilesMatch "^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s.*">
+<FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s.*">
   FileETag None
   <IfModule mod_expires.c>
     # Enable expirations.
