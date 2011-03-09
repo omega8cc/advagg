@@ -54,7 +54,7 @@ define('ADVAGG_DEBUG', FALSE);
 /**
  * Default value for number of files that can be added before using @import.
  */
-define('ADVAGG_CSS_COUNT_THRESHOLD', 22);
+define('ADVAGG_CSS_COUNT_THRESHOLD', 25);
 
 /**
  * Default value for not using @import if logged in and not IE.
@@ -241,8 +241,9 @@ function advagg_init() {
   $host = substr($_GET['q'], $start, $end - $start);
 
   // Send request to correct host.
+  $ip = variable_get('advagg_server_addr', FALSE);
   if (empty($ip)) {
-    $ip = $_SERVER['SERVER_ADDR'];
+    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
   }
   $url = 'http://' . $ip . $base_path . $_GET['q'];
   $headers = array(
@@ -1215,8 +1216,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     }
 
     if ($is_ie) {
-      advagg_unlimited_css_import($module_no_preprocess, $styles);
-      advagg_unlimited_css_import($output_no_preprocess, $styles);
+      advagg_unlimited_css_import(array_merge($module_no_preprocess, $output_no_preprocess), $styles);
       advagg_unlimited_css_traditional($output_preprocess, $styles);
       advagg_unlimited_css_import($theme_no_preprocess, $styles);
     }
@@ -1225,8 +1225,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     }
   }
   else {
-    advagg_unlimited_css_import($module_no_preprocess, $styles);
-    advagg_unlimited_css_import($output_no_preprocess, $styles);
+    advagg_unlimited_css_import(array_merge($module_no_preprocess, $output_no_preprocess), $styles);
     advagg_unlimited_css_traditional($output_preprocess, $styles);
     advagg_unlimited_css_import($theme_no_preprocess, $styles);
   }
@@ -1267,7 +1266,7 @@ function advagg_unlimited_css_import($files, &$styles) {
   foreach ($files as $css_file) {
     $media_new = $css_file['media'];
     $href = $css_file['href'];
-    if ($media_new != $media || $counter > variable_get('unlimited_css_count_threshold', UNLIMITED_CSS_COUNT_THRESHOLD)) {
+    if ($media_new != $media || $counter > variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
       if ($media && !empty($import)) {
         $styles .= "\n".'<style type="text/css" media="'. $media .'">'."\n". $import .'</style>';
         $import = '';
@@ -1276,7 +1275,7 @@ function advagg_unlimited_css_import($files, &$styles) {
       $media = $media_new;
     }
     $import .= '@import "'. $href .'";'."\n";
-    ++$counter;
+    $counter++;
   }
   if ($media && !empty($import)) {
     $styles .= "\n".'<style type="text/css" media="'. $media .'">'."\n". $import .'</style>';
@@ -1521,7 +1520,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
         // Request file.
         $ip = variable_get('advagg_server_addr', FALSE);
         if (empty($ip)) {
-          $ip = $_SERVER['SERVER_ADDR'];
+          $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
         }
         $url = 'http://' . $ip . $base_path . $filepath;
         $headers = array(

@@ -167,6 +167,10 @@ function advagg_js_compress_jsminplus(&$contents) {
  *   TRUE if all files are compressible. List of files that failed otherwise.
  */
 function advagg_js_compress_test_compression($files_to_test) {
+  if (empty($_SERVER['HTTP_HOST'])) {
+    return;
+  }
+
   global $base_path;
   $bad_files = array();
   foreach ($files_to_test as $info) {
@@ -182,7 +186,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     $query_string = http_build_query($query, '', '&');
     $ip = variable_get('advagg_server_addr', FALSE);
     if (empty($ip)) {
-      $ip = $_SERVER['SERVER_ADDR'];
+      $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
     }
     $url = 'http://' . $ip . $base_path . 'advagg_js_compress_test_file.php';
     $headers = array(

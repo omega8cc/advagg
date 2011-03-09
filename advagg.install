@@ -192,7 +192,10 @@ function advagg_check_missing_handler() {
 
   // Setup request
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  $ip = $_SERVER['SERVER_ADDR'];
+  $ip = variable_get('advagg_server_addr', FALSE);
+  if (empty($ip)) {
+    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
+  }
   $filepath = $css_path . '/css_missing' . mt_rand() . '_0.css';
   $url = 'http://' . $ip . $base_path . $filepath;
   $headers = array(
