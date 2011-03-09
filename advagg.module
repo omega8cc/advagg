@@ -82,13 +82,16 @@ define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder');
 define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder');
 
 /**
- * Default function used to render js output.
+ * Default value for rebuliding the bundle on cache flush.
  */
 define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
 
 
 // Handle 404s ASAP
 advagg_faster_404();
+/**
+ * Quick check to see if the URL is a advagg one.
+ */
 function advagg_faster_404() {
   if (empty($_SERVER['REQUEST_URI']) && empty($_GET['q'])) {
     return;
@@ -313,12 +316,27 @@ function advagg_get_root_files_dir($reset = FALSE) {
     return array($css_path, $js_path);
   }
 
-  $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  if (!$public_downloads) {
+    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  }
   if (empty($custom_path)) {
     $css_path = file_create_path('advagg_css');
     $js_path = file_create_path('advagg_js');
     return array($css_path, $js_path);
   }
+  file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
+
+  // Get path name
+  $conf_path = conf_path();
+  if (is_link($conf_path)) {
+    $path = readlink($conf_path);
+  }
+  $conf_path = str_replace("\\", '/', $conf_path);
+  $conf_path = explode('/', $conf_path);
+  $conf_path = array_pop($conf_path);
+  $custom_path = $custom_path . '/' . $conf_path;
+  file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
 
   $css_path = $custom_path . '/advagg_css';
   $js_path = $custom_path . '/advagg_js';
@@ -975,6 +993,46 @@ function advagg_set_file_data($filename_md5, $data) {
  */
 
 /**
+ * Returns an array of values needed for aggregration
+ *
+ * @param $noagg
+ *   (optional) Bool indicating that aggregation should be disabled if TRUE.
+ * @return
+ *   array of values to be imported via list() function.
+ */
+function advagg_process_css_js_prep($noagg = FALSE) {
+  $preprocess = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
+  if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
+    $preprocess = FALSE;
+  }
+
+  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  if (!$public_downloads) {
+    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+    if (!empty($custom_path)) {
+      $public_downloads = TRUE;
+    }
+  }
+
+  // A dummy query-string is added to filenames, to gain control over
+  // browser-caching. The string changes on every update or full cache
+  // flush, forcing browsers to load a new copy of the files, as the
+  // URL changed.
+  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
+
+  // CDN Support.
+  $url_builder = 'url';
+  if (module_exists('cdn')) {
+    $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
+    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && function_exists('cdn_theme_registry_alter') == FALSE) {
+      $url_builder = 'file_create_url';
+    }
+  }
+
+  return array($preprocess, $public_downloads, $query_string, $url_builder);
+}
+
+/**
  * Returns a themed representation of all stylesheets that should be attached to the page.
  *
  * @see drupal_get_css
@@ -995,6 +1053,8 @@ function advagg_set_file_data($filename_md5, $data) {
  * @param $css
  *   (optional) An array of CSS files. If no array is provided, the default
  *   stylesheets array is used instead.
+ * @param $noagg
+ *   (optional) Bool indicating that aggregation should be disabled if TRUE.
  * @return
  *   A string of XHTML CSS tags.
  */
@@ -1009,27 +1069,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   $output_preprocess = array();
   $theme_no_preprocess = array();
 
-  $preprocess_css = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
-  if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
-    $preprocess_css = FALSE;
-  }
-
-  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
-  if (!$public_downloads) {
-    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
-    if (!empty($custom_path)) {
-      $public_downloads = TRUE;
-    }
-  }
-
-  // A dummy query-string is added to filenames, to gain control over
-  // browser-caching. The string changes on every update or full cache
-  // flush, forcing browsers to load a new copy of the files, as the
-  // URL changed.
-  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
-
-  // CDN Support.
-  $url_builder = module_exists('cdn') && function_exists('cdn_theme_registry_alter') == FALSE ? 'file_create_url' : 'url';
+  // Get usefull info.
+  list($preprocess_css, $public_downloads, $query_string, $url_builder) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
@@ -1258,6 +1299,8 @@ function advagg_unlimited_css_import($files, &$styles) {
  * @param $javascript
  *   (optional) An array with all JavaScript code. Defaults to the default
  *   JavaScript array for the given scope.
+ * @param $noagg
+ *   (optional) Bool indicating that aggregation should be disabled if TRUE.
  * @return
  *   All JavaScript code segments and includes for the scope as HTML tags.
  */
@@ -1270,7 +1313,6 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
   if (!isset($javascript)) {
     $javascript = drupal_add_js(NULL, NULL, $scope);
   }
-
   if (empty($javascript)) {
     return '';
   }
@@ -1280,30 +1322,10 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
   $external_no_preprocess = array();
   $output_no_preprocess = array('core' => array(), 'module' => array(), 'theme' => array());
   $output_preprocess = array();
-
   $preprocess_list = array();
-  $preprocess_js = TRUE;
-  if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
-    $preprocess_js = FALSE;
-  }
-  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
-  if (!$public_downloads) {
-    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
-    if (!empty($custom_path)) {
-      $public_downloads = TRUE;
-    }
-  }
 
-  // A dummy query-string is added to filenames, to gain control over
-  // browser-caching. The string changes on every update or full cache
-  // flush, forcing browsers to load a new copy of the files, as the
-  // URL changed. Files that should not be cached (see drupal_add_js())
-  // get time() as query-string instead, to enforce reload on every
-  // page request.
-  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
-
-  // CDN Support.
-  $url_builder = module_exists('cdn') ? 'file_create_url' : 'url';
+  // Get usefull info.
+  list($preprocess_js, $public_downloads, $query_string, $url_builder) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
@@ -1568,6 +1590,14 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   return $output;
 }
 
+/**
+ * Given a list of files, grab their contents and glue it into one big string.
+ *
+ * @param $files
+ *   array of filenames.
+ * @return
+ *   string containing all the files.
+ */
 function advagg_build_css_bundle($files) {
   // Build aggregate CSS file.
   foreach ($files as $file) {

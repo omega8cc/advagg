@@ -18,7 +18,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript) {
     $jquery_ui_filepath = advagg_get_jquery_ui_filename();
   }
 
-  $schema = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
+  $schema = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https' : 'http';
   foreach ($javascript as $type => $data) {
     if (!$data || $type == 'setting' || $type == 'inline') {
       continue;
