@@ -80,6 +80,23 @@ function advagg_admin_info_form() {
     }
   }
 
+  // List missing files.
+  $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = '-1' ORDER BY filetype ASC");
+  while ($row = db_fetch_array($results)) {
+    $form['missing'][$row['filename_md5']] = array(
+      '#type'   => 'markup',
+      '#value'  => '<div>' . $row['filename'] . '<br /></div>',
+    );
+  }
+  if (!empty($form['missing'])) {
+    $form['missing'] += array(
+      '#type'          => 'fieldset',
+      '#collapsible'   => TRUE,
+      '#collapsed'     => FALSE,
+      '#title'         => t('Missing files'),
+    );
+  }
+
   return $form;
 }
 
