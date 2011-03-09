@@ -114,6 +114,7 @@ function advagg_missing_regenerate() {
   // Redirect to file.
   $_GET['redirect_counter']++;
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
+  usleep(250000); // Sleep for 250ms
   header('Location: ' . $uri, TRUE, 307);
   exit;
 }
