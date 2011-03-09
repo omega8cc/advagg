@@ -109,7 +109,7 @@ function advagg_admin_info_form() {
 function advagg_admin_settings_form() {
   $form = array();
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
-  $bundle_count = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM advagg_bundles GROUP BY bundle_md5) as temp"));
+  $bundle_count = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp"));
 
   $form['advagg_enabled'] = array(
     '#type'           => 'checkbox',
@@ -343,7 +343,7 @@ function advagg_admin_rebuild_bundles($increment, &$context) {
   // init batch.
   if (!isset($context['sandbox']['progress'])) {
     $context['sandbox']['progress'] = 0;
-    $context['sandbox']['max'] = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM advagg_bundles GROUP BY bundle_md5) as temp"));
+    $context['sandbox']['max'] = db_result(db_query("SELECT COUNT(*) FROM (SELECT {bundle_md5} FROM advagg_bundles GROUP BY bundle_md5) as temp"));
 
     // Increment All Counters.
     if ($increment) {
