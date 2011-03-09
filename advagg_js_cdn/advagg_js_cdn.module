@@ -9,7 +9,7 @@
 /**
  * Implement hook_advagg_js_pre_alter.
  */
-function advagg_js_cdn_advagg_js_pre_alter(&$javascript) {
+function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public_downloads) {
   if (module_exists('jquery_update')) {
     $jquery_filepath = drupal_get_path('module', 'jquery_update');
   }

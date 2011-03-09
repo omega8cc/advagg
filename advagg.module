@@ -1074,7 +1074,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
-  drupal_alter('advagg_css_pre', $css);
+  drupal_alter('advagg_css_pre', $css, $preprocess_css, $public_downloads);
 
   foreach ($css as $media => $types) {
     // If CSS preprocessing is off, we still need to output the styles.
@@ -1329,7 +1329,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
 
   // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
-  drupal_alter('advagg_js_pre', $javascript);
+  drupal_alter('advagg_js_pre', $javascript, $preprocess_js, $public_downloads);
 
   foreach ($javascript as $type => $data) {
 
