@@ -982,7 +982,24 @@ function advagg_set_file_data($filename_md5, $data) {
   db_query("UPDATE {advagg_files} SET data = '%s' WHERE filename_md5 = '%s'", $serialized_data, $filename_md5);
 }
 
-
+/**
+ * Given path output uri to that file
+ *
+ * @param $filename_md5
+ *   md5 of filename.
+ * @param $data
+ *   data to store.
+ */
+function advagg_build_uri($path) {
+  // CDN Support.
+  if (module_exists('cdn')) {
+    $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
+    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && function_exists('cdn_theme_registry_alter') == FALSE) {
+      return file_create_url($path);
+    }
+  }
+  return base_path() . $path;
+}
 
 /**
  * ***MODIFIED CORE FUNCTIONS BELOW***
@@ -1021,17 +1038,11 @@ function advagg_process_css_js_prep($noagg = FALSE) {
   // URL changed.
   $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
 
-  // CDN Support.
-  $url_builder = 'url';
-  if (module_exists('cdn')) {
-    $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
-    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && function_exists('cdn_theme_registry_alter') == FALSE) {
-      $url_builder = 'file_create_url';
-    }
-  }
 
-  return array($preprocess, $public_downloads, $query_string, $url_builder);
+
+  return array($preprocess, $public_downloads, $query_string);
 }
+
 
 /**
  * Returns a themed representation of all stylesheets that should be attached to the page.
@@ -1071,7 +1082,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   $theme_no_preprocess = array();
 
   // Get usefull info.
-  list($preprocess_css, $public_downloads, $query_string, $url_builder) = advagg_process_css_js_prep($noagg);
+  list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
@@ -1104,7 +1115,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             if (!$preprocess && $type == 'module') {
               $module_no_preprocess[] = array(
                 'media' => $media,
-                'href' => $url_builder($file) . $query_string,
+                'href' => advagg_build_uri($file) . $query_string,
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1114,7 +1125,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             else if (!$preprocess && $type == 'theme') {
               $theme_no_preprocess[] = array(
                 'media' => $media,
-                'href' => $url_builder($file) . $query_string,
+                'href' => advagg_build_uri($file) . $query_string,
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1122,7 +1133,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             else {
               $output_no_preprocess[] = array(
                 'media' => $media,
-                'href' => $url_builder($file),
+                'href' => advagg_build_uri($file),
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1149,7 +1160,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           $suffix = $extra['suffix'];
           $output_preprocess[] = array(
             'media' => $media,
-            'href' => $url_builder($preprocess_file),
+            'href' => advagg_build_uri($preprocess_file),
             'prefix' => $prefix,
             'suffix' => $suffix,
           );
@@ -1324,7 +1335,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
   $preprocess_list = array();
 
   // Get usefull info.
-  list($preprocess_js, $public_downloads, $query_string, $url_builder) = advagg_process_css_js_prep($noagg);
+  list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
@@ -1356,7 +1367,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
         // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
         foreach ($data as $path => $info) {
           if (!$info['preprocess'] || !$public_downloads || !$preprocess_js) {
-            $output_no_preprocess[$type][] = array($url_builder($path) . ($info['cache'] ? $query_string : '?'. time()), $info['defer']);
+            $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?'. time()), $info['defer']);
           }
           else {
             $preprocess_list[$path] = $info;
@@ -1379,7 +1390,7 @@ function advagg_process_js($scope = 'header', $javascript = NULL, $noagg = FALSE
       if ($extra !== FALSE && is_array($extra)) {
         $prefix = $extra['prefix'];
         $suffix = $extra['suffix'];
-        $output_preprocess[] = array($url_builder($preprocess_file), $prefix, $suffix);
+        $output_preprocess[] = array(advagg_build_uri($preprocess_file), $prefix, $suffix);
       }
       else {
         $good = FALSE;
