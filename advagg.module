@@ -205,7 +205,7 @@ function advagg_init() {
   global $base_path, $conf;
 
   // disable advagg if requested.
-  if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && && user_access('bypass advanced aggregation')) {
+  if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_enabled'] = FALSE;
   }
 
