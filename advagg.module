@@ -202,7 +202,12 @@ function advagg_admin_menu(&$deleted) {
  * Implementation of hook_init().
  */
 function advagg_init() {
-  global $base_path;
+  global $base_path, $conf;
+
+  // disable advagg if requested.
+  if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && && user_access('bypass advanced aggregation')) {
+    $conf['advagg_enabled'] = FALSE;
+  }
 
   // Skip if not an advagg request
   if (strpos($_GET['q'], '/advagg_') === FALSE) {
@@ -390,7 +395,7 @@ function advagg_merge_array($array1, $array2) {
  */
 function advagg_processor(&$variables) {
   // If disabled, skip
-  if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE || (isset($_GET['advagg']) && $_GET['advagg'] == -1)) {
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
     return;
   }
 
