@@ -53,6 +53,7 @@ function advagg_missing_regenerate() {
   // Get filename from request.
   $arg = arg();
   $filename = array_pop($arg);
+  $filename = array_shift(explode('?', $filename));
 
   // Verify requested filename has the correct pattern.
   if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {

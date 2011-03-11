@@ -98,7 +98,16 @@ function advagg_faster_404() {
   }
   list($css_path, $js_path) = advagg_get_root_files_dir();
 
-  // 404 from htaccess.
+  // Normal requests.
+  if (!empty($_GET['q'])) {
+    $css = strpos($_GET['q'], $css_path);
+    $js = strpos($_GET['q'], $js_path);
+    if ($css !== FALSE || $js !== FALSE) {
+      menu_execute_active_handler();
+    }
+  }
+
+  // 404 from htaccess; index.php is the 404 handler.
   if (!empty($_SERVER['REQUEST_URI'])) {
     $css = strpos($_SERVER['REQUEST_URI'], $css_path);
     $js = strpos($_SERVER['REQUEST_URI'], $js_path);
@@ -108,14 +117,6 @@ function advagg_faster_404() {
     }
   }
 
-  // Normal requests.
-  if (!empty($_GET['q'])) {
-    $css = strpos($_GET['q'], $css_path);
-    $js = strpos($_GET['q'], $js_path);
-    if ($css !== FALSE || $js !== FALSE) {
-      menu_execute_active_handler();
-    }
-  }
 }
 
 /**
