@@ -1,8 +1,27 @@
 <?php
-
 /**
- * @file
- * Contains all data neccessary to interpret css.
+ * Various CSS Data for CSSTidy
+ *
+ * This file is part of CSSTidy.
+ *
+ * CSSTidy is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * CSSTidy is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CSSTidy; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package csstidy
+ * @author Florian Schmitz (floele at gmail dot com) 2005
+ * @author Nikolay Matsievsky (speed at webo dot name) 2010
  */
 
 define('AT_START',    1);
@@ -20,7 +39,7 @@ define('DEFAULT_AT', 41);
  * @global array $GLOBALS['csstidy']['whitespace']
  * @version 1.0
  */
-$GLOBALS['csstidy']['whitespace'] = array(' ', "\n", "\t", "\r", "\x0B");
+$GLOBALS['csstidy']['whitespace'] = array(' ',"\n","\t","\r","\x0B");
 
 /**
  * All CSS tokens used by csstidy
@@ -28,7 +47,7 @@ $GLOBALS['csstidy']['whitespace'] = array(' ', "\n", "\t", "\r", "\x0B");
  * @global string $GLOBALS['csstidy']['tokens']
  * @version 1.0
  */
-$GLOBALS['csstidy']['tokens'] = '/@}{;:=\'"(,\\!$%&)+.<>?[]^`|~';
+$GLOBALS['csstidy']['tokens'] = '/@}{;:=\'"(,\\!$%&)*+.<>?[]^`|~';
 
 /**
  * All CSS units (CSS 3 units included)
@@ -37,7 +56,7 @@ $GLOBALS['csstidy']['tokens'] = '/@}{;:=\'"(,\\!$%&)+.<>?[]^`|~';
  * @global array $GLOBALS['csstidy']['units']
  * @version 1.0
  */
-$GLOBALS['csstidy']['units'] = array('in', 'cm', 'mm', 'pt', 'pc', 'px', 'rem', 'em', '%', 'ex', 'gd', 'vw', 'vh', 'vm', 'deg', 'grad', 'rad', 'ms', 's', 'khz', 'hz');
+$GLOBALS['csstidy']['units'] = array('in','cm','mm','pt','pc','px','rem','em','%','ex','gd','vw','vh','vm','deg','grad','rad','ms','s','khz','hz');
 
 /**
  * Available at-rules
@@ -45,14 +64,7 @@ $GLOBALS['csstidy']['units'] = array('in', 'cm', 'mm', 'pt', 'pc', 'px', 'rem', 
  * @global array $GLOBALS['csstidy']['at_rules']
  * @version 1.0
  */
-$GLOBALS['csstidy']['at_rules'] = array(
-  'page' => 'is',
-  'font-face' => 'is',
-  'charset' => 'iv',
-  'import' => 'iv',
-  'namespace' => 'iv',
-  'media' => 'at'
-);
+$GLOBALS['csstidy']['at_rules'] = array('page' => 'is','font-face' => 'is','charset' => 'iv', 'import' => 'iv','namespace' => 'iv','media' => 'at');
 
  /**
  * Properties that need a value with unit
@@ -62,47 +74,11 @@ $GLOBALS['csstidy']['at_rules'] = array(
  * @global array $GLOBALS['csstidy']['unit_values']
  * @version 1.2
  */
-$GLOBALS['csstidy']['unit_values'] = array(
-  'background',
-  'background-position',
-  'border',
-  'border-top',
-  'border-right',
-  'border-bottom',
-  'border-left',
-  'border-width',
-  'border-top-width',
-  'border-right-width',
-  'border-left-width',
-  'border-bottom-width',
-  'bottom',
-  'border-spacing',
-  'font-size',
-  'height',
-  'left',
-  'margin',
-  'margin-top',
-  'margin-right',
-  'margin-bottom',
-  'margin-left',
-  'max-height',
-  'max-width',
-  'min-height',
-  'min-width',
-  'outline',
-  'outline-width',
-  'padding',
-  'padding-top',
-  'padding-right',
-  'padding-bottom',
-  'padding-left',
-  'right',
-  'top',
-  'text-indent',
-  'letter-spacing',
-  'word-spacing',
-  'width'
-);
+$GLOBALS['csstidy']['unit_values'] = array ('background', 'background-position', 'border', 'border-top', 'border-right', 'border-bottom', 'border-left', 'border-width',
+                                            'border-top-width', 'border-right-width', 'border-left-width', 'border-bottom-width', 'bottom', 'border-spacing',
+											'font-size', 'height', 'left', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'max-height',
+											'max-width', 'min-height', 'min-width', 'outline', 'outline-width', 'padding', 'padding-top', 'padding-right', 
+											'padding-bottom', 'padding-left', 'right', 'top', 'text-indent', 'letter-spacing', 'word-spacing', 'width');
 
 /**
  * Properties that allow <color> as value
@@ -301,11 +277,11 @@ $GLOBALS['csstidy']['replace_colors']['yellowgreen'] = '#9acd32';
  * @version 1.0
  */
 $GLOBALS['csstidy']['shorthands'] = array();
-$GLOBALS['csstidy']['shorthands']['border-color'] = array('border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color');
-$GLOBALS['csstidy']['shorthands']['border-style'] = array('border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style');
-$GLOBALS['csstidy']['shorthands']['border-width'] = array('border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width');
-$GLOBALS['csstidy']['shorthands']['margin'] = array('margin-top', 'margin-right', 'margin-bottom', 'margin-left');
-$GLOBALS['csstidy']['shorthands']['padding'] = array('padding-top', 'padding-right', 'padding-bottom', 'padding-left');
+$GLOBALS['csstidy']['shorthands']['border-color'] = array('border-top-color','border-right-color','border-bottom-color','border-left-color');
+$GLOBALS['csstidy']['shorthands']['border-style'] = array('border-top-style','border-right-style','border-bottom-style','border-left-style');
+$GLOBALS['csstidy']['shorthands']['border-width'] = array('border-top-width','border-right-width','border-bottom-width','border-left-width');
+$GLOBALS['csstidy']['shorthands']['margin'] = array('margin-top','margin-right','margin-bottom','margin-left');
+$GLOBALS['csstidy']['shorthands']['padding'] = array('padding-top','padding-right','padding-bottom','padding-left');
 $GLOBALS['csstidy']['shorthands']['-moz-border-radius'] = 0;
 
 /**
@@ -440,172 +416,6 @@ $GLOBALS['csstidy']['all_properties']['stress'] = 'CSS2.0,CSS2.1';
 $GLOBALS['csstidy']['all_properties']['richness'] = 'CSS2.0,CSS2.1';
 $GLOBALS['csstidy']['all_properties']['speak-punctuation'] = 'CSS2.0,CSS2.1';
 $GLOBALS['csstidy']['all_properties']['speak-numeral'] = 'CSS2.0,CSS2.1';
-/* Mozilla Specific */
-$GLOBALS['csstidy']['all_properties']['-moz-appearance'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-background-clip'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-background-inline-policy'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-background-origin'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-background-size'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-binding'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-bottom-colors'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-left-colors'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-right-colors'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-top-colors'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-end'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-end-color'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-end-style'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-end-width'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-image'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-start'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-start-color'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-start-style'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-border-start-width'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-align'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-direction'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-flex'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-flexgroup'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-ordinal-group'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-orient'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-pack'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-box-sizing'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-count'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-gap'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-width'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-rule'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-rule-width'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-rule-style'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-column-rule-color'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-float-edge'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-font-feature-settings'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-font-language-override'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-force-broken-image-icon'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-image-region'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-margin-end'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-margin-start'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-opacity'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-color'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-offset'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-radius'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-radius-bottomleft'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-radius-bottomright'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-radius-topleft'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-radius-topright'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-style'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-outline-width'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-padding-end'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-padding-start'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-stack-sizing'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-tab-size'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transform'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transform-origin'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transition'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transition-delay'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transition-duration'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transition-property'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-transition-timing-function'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-user-focus'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-user-input'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-user-modify'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-user-select'] = 'moz';
-$GLOBALS['csstidy']['all_properties']['-moz-window-shadow'] = 'moz';
-/* Webkit Specific */
-$GLOBALS['csstidy']['all_properties']['-webkit-animation'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-delay'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-direction'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-duration'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-fill-mode'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-iteration-count'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-name'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-play-state'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-animation-timing-function'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-appearance'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-backface-visibility'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-background-clip'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-background-composite'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-background-origin'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-background-size'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-bottom-left-radius'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-bottom-right-radius'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-horizontal-spacing'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-image'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-radius'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-top-left-radius'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-top-right-radius'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-border-vertical-spacing'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-align'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-direction'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-flex'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-flex-group'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-lines'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-ordinal-group'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-orient'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-pack'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-reflect'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-shadow'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-box-sizing'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-break-after'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-break-before'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-break-inside'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-count'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-gap'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-rule'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-rule-color'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-rule-style'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-rule-width'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-column-width'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-columns'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-dashboard-region'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-line-break'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-margin-bottom-collapse'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-margin-collapse'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-margin-start'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-margin-top-collapse'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee-direction'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee-increment'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee-repetition'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee-speed'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-marquee-style'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-attachment'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-box-image'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-clip'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-composite'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-image'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-origin'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-position'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-position-x'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-position-y'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-repeat'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-mask-size'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-nbsp-mode'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-padding-start'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-perspective'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-perspective-origin'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-rtl-ordering'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-tap-highlight-color'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-fill-color'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-security'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-size-adjust'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-stroke'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-stroke-color'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-text-stroke-width'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-touch-callout'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform-origin'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform-origin-x'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform-origin-y'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform-origin-z'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transform-style'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transition'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transition-delay'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transition-duration'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transition-property'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-transition-timing-function'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-user-drag'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-user-modify'] = 'webkit';
-$GLOBALS['csstidy']['all_properties']['-webkit-user-select'] = 'webkit';
 
 /**
  * An array containing all predefined templates.
@@ -629,6 +439,21 @@ $GLOBALS['csstidy']['predefined_templates']['default'][] = '<span class="comment
 $GLOBALS['csstidy']['predefined_templates']['default'][] = '</span>'."\n"; // after comment
 $GLOBALS['csstidy']['predefined_templates']['default'][] = "\n"; // after last line @-rule
 
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '<span class="at">';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '</span> <span class="format">{</span>'."\n";
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '<span class="selector">';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '</span><span class="format">{</span>';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '<span class="property">';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '</span><span class="value">';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '</span><span class="format">;</span>';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '<span class="format">}</span>';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = "\n";
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = "\n". '<span class="format">}'."\n".'</span>';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '';
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '<span class="comment">'; // before comment
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = '</span>'; // after comment
+$GLOBALS['csstidy']['predefined_templates']['high_compression'][] = "\n";
+
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '<span class="at">';
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '</span><span class="format">{</span>';
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '<span class="selector">';
@@ -643,3 +468,20 @@ $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '';
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '<span class="comment">'; // before comment
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '</span>'; // after comment
 $GLOBALS['csstidy']['predefined_templates']['highest_compression'][] = '';
+
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '<span class="at">';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '</span> <span class="format">{</span>'."\n";
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '<span class="selector">';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '</span>'."\n".'<span class="format">{</span>'."\n";
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '	<span class="property">';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '</span><span class="value">';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '</span><span class="format">;</span>'."\n";
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '<span class="format">}</span>';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = "\n\n";
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = "\n".'<span class="format">}</span>'."\n\n";
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '	';
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '<span class="comment">'; // before comment
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = '</span>'."\n"; // after comment
+$GLOBALS['csstidy']['predefined_templates']['low_compression'][] = "\n";
+
+?>

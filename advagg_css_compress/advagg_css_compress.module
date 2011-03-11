@@ -13,7 +13,8 @@
  */
 function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   // Initialize CSSTidy.
-  include_once('parse.inc');
+  $filename = drupal_get_path('module', 'advagg_css_compress') . '/csstidy/class.csstidy.inc';
+  include_once($filename);
   $css = new csstidy();
 
   // Set configuration.
