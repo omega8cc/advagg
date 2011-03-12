@@ -17,7 +17,7 @@ define('ADVAGG_JS_COMPRESS_CALLBACK', FALSE);
 function advagg_js_compress_menu() {
   $items = array();
 
-  $items['advagg_js_compress_test_file.php'] = array(
+  $items['advagg/js_compress_test_file'] = array(
     'page callback' => 'advagg_js_compress_test_file',
     'type' => MENU_CALLBACK,
     'access arguments' => array('access content'),
@@ -184,7 +184,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     if (empty($ip)) {
       $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
     }
-    $url = 'http://' . $ip . $base_path . 'advagg_js_compress_test_file.php';
+    $url = 'http://' . $ip . $base_path . 'advagg/js_compress_test_file';
     $headers = array(
       'Host' => $_SERVER['HTTP_HOST'],
       'Content-Type' => 'application/x-www-form-urlencoded',
