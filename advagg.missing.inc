@@ -90,8 +90,10 @@ function advagg_missing_regenerate() {
     return t('In a Loop.');
   }
 
-  // Remove file from the cache.
-  cache_clear_all($_GET['q'], 'cache_advagg');
+  // Set file(s) in cache to FALSE.
+  $arg[] = $filename;
+  cache_set(implode('/', $arg), FALSE, 'cache_advagg', TRUE);
+  advagg_missing_remove_cache($md5);
 
   // Counter in database.
   $counter_in_db = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $md5));
@@ -106,7 +108,7 @@ function advagg_missing_regenerate() {
 
   // Rebuild file.
   $conf['advagg_async_generation'] = FALSE;
-  $good = advagg_rebuild_bundle($md5, $counter);
+  $good = advagg_rebuild_bundle($md5, $counter, TRUE);
   if (!$good) {
     watchdog('advagg', 'This request could not generate correctly. Aggregate not generated. Request data: %info', array('%info' => $_GET['q']));
     return t('Rebuild Failed.');
@@ -118,4 +120,35 @@ function advagg_missing_regenerate() {
   usleep(250000); // Sleep for 250ms
   header('Location: ' . $uri, TRUE, 307);
   exit;
+}
+
+/**
+ * Set cache value to FALSE.
+ *
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ */
+function advagg_missing_remove_cache($bundle_md5) {
+  $files = array();
+  $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
+  while($row = db_fetch_array($results)) {
+    $files[] = $row['filename'];
+    $type = $row['filetype'];
+  }
+
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  if ($type == 'js') {
+    $file_type_path = $js_path;
+  }
+  if ($type == 'css') {
+    $file_type_path = $css_path;
+  }
+
+  $filenames = advagg_get_filename($files, $type, '', $bundle_md5);
+  foreach ($filenames as $key => $info) {
+    $filename = $info['filename'];
+    $filepath = $file_type_path .'/'. $filename;
+
+    cache_set($filepath, FALSE, 'cache_advagg', TRUE);
+  }
 }

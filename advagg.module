@@ -484,14 +484,20 @@ function advagg_jquery_updater(&$js) {
  *   List of files in the proposed bundle.
  * @param $filetype
  *   css or js.
+ * @param $counter
+ *   (optional) Counter value.
+ * @param $bundle_md5
+ *   (optional) Bundle's machine name.
  * @return
  *   Aggregated filename.
  */
-function advagg_get_filename($files, $filetype, $counter = '') {
+function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '') {
   $filenames = array();
 
   // Create bundle md5
-  $bundle_md5 = md5(implode('', $files));
+  if (empty($bundle_md5)) {
+    $bundle_md5 = md5(implode('', $files));
+  }
 
   $filenames[] = array(
     'filetype' => $filetype,
@@ -913,7 +919,7 @@ function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
   }
 
   $conf['advagg_async_generation'] = FALSE;
-  return advagg_css_js_file_builder($filetype, $files, $counter, $force);
+  return advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
 }
 
 /**
@@ -1493,13 +1499,15 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
  * @param $files
  *   An array of JS files to aggregate and compress into one file.
  * @param $counter
- *   Counter value.
+ *   (optional) Counter value.
  * @param $force
- *   Rebuild even if file already exists.
+ *   (optional) Rebuild even if file already exists.
+ * @param $md5
+ *   (optional) Bundle's machine name.
  * @return
  *   array with the filepath as the key and prefix and suffix in another array.
  */
-function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE) {
+function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
   $data = '';
   list($css_path, $js_path) = advagg_get_root_files_dir();
   if ($type == 'js') {
@@ -1510,7 +1518,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   }
 
   // Send $files, get filename back
-  $filenames = advagg_get_filename($files, $type, $counter);
+  $filenames = advagg_get_filename($files, $type, $counter, $md5);
   $output = array();
   $locks = array();
   foreach ($filenames as $info) {
@@ -1603,6 +1611,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       lock_wait($lock_name);
     }
   }
+
   return $output;
 }
 
