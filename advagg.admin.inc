@@ -276,8 +276,11 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
     advagg_admin_recreate_htaccess();
   }
 
-  // Remove debug info.
-  unset($form_state['values']['advagg_debug_info']);
+  // Remove non variable form info.
+  unset($form_state['values']['advagg_flush']);
+  unset($form_state['values']['advagg_rebuild']);
+  unset($form_state['values']['advagg_forced_build']);
+  unset($form_state['values']['recreate_htaccess']);
 }
 
 /**

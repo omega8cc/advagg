@@ -229,13 +229,10 @@ function advagg_js_compress_test_file($values = NULL) {
     $values['values'] = $_POST['values'];
   }
 
-  // JSMin+ the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.php');
+  // Compression test file if it exists.
   if (file_exists($values['values']['filename'])) {
     $contents = file_get_contents($values['values']['filename']);
-    // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
-    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
-    $contents = JSMinPlus::minify($contents);
+    advagg_js_compress_jsminplus($contents);
   }
 
   echo $values['values']['md5'];

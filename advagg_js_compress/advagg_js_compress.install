@@ -51,8 +51,8 @@ function advagg_js_compress_requirements($phase) {
         'severity'    => REQUIREMENT_OK,
         'value'       => $t('The callback is working correctly.'),
       );
-      if ($advagg_js_compress_callback == TRUE) {
-        varible_set('advagg_js_compress_callback', TRUE);
+      if ($advagg_js_compress_callback == FALSE) {
+        variable_set('advagg_js_compress_callback', TRUE);
       }
     }
   }
