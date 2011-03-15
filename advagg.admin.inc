@@ -80,6 +80,43 @@ function advagg_admin_info_form() {
     }
   }
 
+  // Get hooks in use.
+  $hooks = array(
+    'advagg_css_alter' => array(),
+    'advagg_css_pre_alter' => array(),
+    'advagg_css_extra_alter' => array(),
+    'advagg_js_alter' => array(),
+    'advagg_js_pre_alter' => array(),
+    'advagg_js_extra_alter' => array(),
+    'advagg_filenames_alter' => array(),
+    'advagg_files_table' => array(),
+  );
+  foreach ($hooks as $hook => $values) {
+   $hooks[$hook] = module_implements($hook);
+  }
+
+  // Output hooks in form.
+  foreach ($hooks as $hook => $values) {
+    if (empty($values)) {
+      $form['hooks_implemented'][$hook] = array(
+      '#type'   => 'markup',
+      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;None</div>',
+      );
+    }
+    else {
+      $form['hooks_implemented'][$hook] = array(
+        '#type'   => 'markup',
+        '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . implode('<br />&nbsp;&nbsp;&nbsp;&nbsp;', $values) . '</div>',
+      );
+    }
+  }
+  $form['hooks_implemented'] += array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Modules implementing advagg hooks'),
+  );
+
   // List missing files.
   $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = '-1' ORDER BY filetype ASC");
   while ($row = db_fetch_array($results)) {
