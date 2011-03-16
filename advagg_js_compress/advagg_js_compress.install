@@ -42,7 +42,7 @@ function advagg_js_compress_requirements($phase) {
         'description' => $t('As a result if jsmin+ encounters a file that it cannot compress, it will kill that PHP process.'),
       );
       if ($advagg_js_compress_callback != FALSE) {
-        varible_set('advagg_js_compress_callback', FALSE);
+        variable_set('advagg_js_compress_callback', FALSE);
       }
     }
     else {
