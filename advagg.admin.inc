@@ -100,7 +100,7 @@ function advagg_admin_info_form() {
     if (empty($values)) {
       $form['hooks_implemented'][$hook] = array(
       '#type'   => 'markup',
-      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;None</div>',
+      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . t('None') . '</div>',
       );
     }
     else {
