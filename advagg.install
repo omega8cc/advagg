@@ -64,6 +64,7 @@ function advagg_uninstall() {
  * Implementation of hook_requirements().
  */
 function advagg_requirements($phase) {
+  global $_advagg;
   $requirements = array();
   // Ensure translations don't break at install time
   $t = get_t();
@@ -140,6 +141,22 @@ function advagg_requirements($phase) {
         'severity'    => REQUIREMENT_WARNING,
         'value'       => $t('The BundleCache module is enabled.'),
         'description' => $t('On the <a href="@modules">modules page</a> you can disable it, as this module is no longer needed.', array('@modules' => url('admin/build/modules'))),
+      );
+    }
+    if (isset($_advagg['closure']) && $_advagg['closure'] == FALSE) {
+      $requirements['advagg_closure'] = array(
+        'title'       => $t('Adv CSS/JS Agg - Closure'),
+        'severity'    => REQUIREMENT_WARNING,
+        'value'       => $t('Your theme implements its own closure function.'),
+        'description' => $t('To solve this problem, you unfortunately have to modify your theme. Copy the phptemplate_closure() function found in <a href="@link">advagg.module source code</a> and integrate it into your theme phptemplate_closure() function or <themename>_closure() function.', array('@link' => 'http://drupalcode.org/project/advagg.git/blob/refs/heads/6.x-1.x:/advagg.module#l201')),
+      );
+    }
+    if (!empty($_advagg['closure']) && variable_get('labjs_closure', FALSE)) {
+      $requirements['advagg_labjs_closure'] = array(
+        'title'       => $t('Adv CSS/JS Agg - LABjs Closure'),
+        'severity'    => REQUIREMENT_WARNING,
+        'value'       => $t('LABjs setttings issue.'),
+        'description' => $t('On the <a href="@link">LABjs configuration page</a>, disable the "Rewrite JavaScript blocks in page closure" settting.', array('@link' => url('admin/settings/performance/labjs'))),
       );
     }
     if (module_exists('cdn')) {
