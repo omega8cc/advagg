@@ -50,6 +50,7 @@ Advanced CSS/JS Aggregation Core Module:
    ensures changes go out when using CDNs.
  * Works with Drupal's private file system. Can Use a separate directory for
    serving aggregated files from.
+ * Footer JS gets aggregated as well.
  * Url query string to turn off aggregation for that request. ?advagg=0 will
    turn off file aggregation if the user has the "bypass advanced aggregation"
    permission. ?advagg=-1 will completely bypass all of Advanced CSS/JS
@@ -147,6 +148,9 @@ Hooks:
  * hook_advagg_filenames_alter. Allows for a one to many relationship. A single
    request for a bundle name can result in multiple bundles being returned.
  * hook_advagg_files_table. Allows for modules to mark a file as expired.
+ * hook_advagg_js_header_footer_alter. Allows one to move JS from the header to
+   the footer. Also one can look at both header and footer JS arrays before they
+   get processed.
 
 JS/CSS Theme Override:
 
