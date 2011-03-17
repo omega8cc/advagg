@@ -24,5 +24,23 @@ function drush_advagg_cache_scan() {
   _drupal_flush_css_js();
   advagg_flush_caches();
 
-  drush_log(dt('Advanced CSS/JS Aggregation: Rebuilt !count bundles', array('!count' => count($_advagg['rebuilt']))), 'ok');
+  if (empty($_advagg['files'])) {
+    drush_log(dt('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));
+  }
+  else {
+    if (empty($_advagg['rebuilt'])) {
+      drush_log(dt("Advanced CSS/JS Aggregation cache scanned and out of date bundles have marked.\nOld Files:\n!files\nMarked Bundles Count: !count", array(
+        '!files' => implode("\n", $_advagg['files']),
+        '!count' => count($_advagg['bundles']),
+      )
+      ));
+    }
+    else {
+      drush_log(dt("Advanced CSS/JS Aggregation cache scanned and out of date bundles have been incremented and rebuilt.\nOld Files:\n%files\n%count done.", array(
+        '%files' => implode("\n", $_advagg['files']),
+        '%count' => count($_advagg['rebuilt']),
+      )
+      ));
+    }
+  }
 }

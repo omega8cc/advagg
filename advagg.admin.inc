@@ -100,7 +100,7 @@ function advagg_admin_info_form() {
     if (empty($values)) {
       $form['hooks_implemented'][$hook] = array(
       '#type'   => 'markup',
-      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . t('None') . '</div>',
+      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;None</div>',
       );
     }
     else {
@@ -188,7 +188,7 @@ function advagg_admin_settings_form() {
       '#field_prefix'   => '<div>' . t('You are using a private file system. You can serve aggregated files via a public folder.') . '</div>',
       '#title'          => t('Use a different directory for storing advagg files'),
       '#default_value'  => variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR),
-      '#description'    => t('If left blank it will use drupals default files direcotry. ') . $extra,
+      '#description'    => t('If left blank it will use drupals default files directory. ') . $extra,
     );
   }
   $form['advagg_checksum_mode'] = array(
@@ -288,7 +288,7 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
       }
     }
     else {
-      form_set_error('advagg_custom_files_dir', t('%dir is not a direcotry or is not writable by the web server.', array('%dir' => $files_dir)));
+      form_set_error('advagg_custom_files_dir', t('%dir is not a directory or is not writable by the web server.', array('%dir' => $files_dir)));
     }
   }
 
@@ -328,7 +328,25 @@ function advagg_admin_flush_cache_button() {
   _drupal_flush_css_js();
   advagg_flush_caches();
 
-  drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been incremented and rebuilt. %count done.', array('%count' => count($_advagg['rebuilt']))));
+  if (empty($_advagg['files'])) {
+    drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));
+  }
+  else {
+    if (empty($_advagg['rebuilt'])) {
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have marked. <br />Old Files: <br />%files <br />Marked Bundles Count: %count', array(
+        '%files' => implode('<br />', $_advagg['files']),
+        '%count' => count($_advagg['bundles']),
+      )
+      ));
+    }
+    else {
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been incremented and rebuilt. <br />Old Files: <br />%files <br />%count done.', array(
+        '%files' => implode('<br />', $_advagg['files']),
+        '%count' => count($_advagg['rebuilt']),
+      )
+      ));
+    }
+  }
 }
 
 /**
@@ -359,7 +377,7 @@ function advagg_admin_batch_rebuild($form, &$form_state) {
     $batch['title'] = t('Rebuilding aggregated files');
   }
 
-  // Build batch opertaional data.
+  // Build batch operational data.
   $batch += array(
     'operations' => array(
       array('advagg_admin_rebuild_bundles', array($increment)),
