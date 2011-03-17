@@ -384,7 +384,7 @@ function advagg_admin_batch_rebuild($form, &$form_state) {
     ),
     'finished' => 'advagg_admin_rebuild_bundles_done',
     'init_message' => t('Initializing...'),
-    'progress_message' => t('Processed @current batch operations out of @total.'),
+    'progress_message' => t('@current of @total batch operations done. Percent done: @percentage%.'),
     'error_message' => t('Rebuilding aggregated files encountered an error.'),
     'file' => drupal_get_path('module', 'advagg') . '/advagg.admin.inc',
   );
