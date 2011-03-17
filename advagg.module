@@ -82,9 +82,14 @@ define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder');
 define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder');
 
 /**
- * Default value for rebuliding the bundle on cache flush.
+ * Default value for rebuilding the bundle on cache flush.
  */
 define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
+
+/**
+ * Default value to see if advanced CSS/JS aggregation is enabled.
+ */
+define('ADVAGG_CLOSURE', TRUE);
 
 
 // Handle 404s ASAP
@@ -211,29 +216,31 @@ function advagg_init() {
   }
 
   // Create a closure function that does not add JavaScript.
-  if (!function_exists('phptemplate_closure')) {
-    $_advagg['closure'] = TRUE;
+  if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
+    if (!function_exists('phptemplate_closure')) {
+      $_advagg['closure'] = TRUE;
 
-    /**
-    * Execute hook_footer() which is run at the end of the page right before the
-    * close of the body tag.
-    *
-    * @param $main (optional)
-    *   Whether the current page is the front page of the site.
-    * @return
-    *   A string containing the results of the hook_footer() calls.
-    */
-    function phptemplate_closure($main = 0) {
-      $footer = implode("\n", module_invoke_all('footer', $main));
-      // If advagg is disabled, then include footer JS here.
-      if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
-        $footer .= drupal_get_js('footer');
+      /**
+      * Execute hook_footer() which is run at the end of the page right before
+      * the close of the body tag.
+      *
+      * @param $main (optional)
+      *   Whether the current page is the front page of the site.
+      * @return
+      *   A string containing the results of the hook_footer() calls.
+      */
+      function phptemplate_closure($main = 0) {
+        $footer = implode("\n", module_invoke_all('footer', $main));
+        // If advagg is disabled, then include footer JS here.
+        if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
+          $footer .= drupal_get_js('footer');
+        }
+        return $footer;
       }
-      return $footer;
     }
-  }
-  else {
-    $_advagg['closure'] = FALSE;
+    else {
+      $_advagg['closure'] = FALSE;
+    }
   }
 
 
@@ -1056,7 +1063,7 @@ function advagg_build_uri($path) {
  */
 
 /**
- * Returns an array of values needed for aggregration
+ * Returns an array of values needed for aggregation
  *
  * @param $noagg
  *   (optional) Bool indicating that aggregation should be disabled if TRUE.
@@ -1126,7 +1133,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   $output_preprocess = array();
   $theme_no_preprocess = array();
 
-  // Get usefull info.
+  // Get useful info.
   list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
@@ -1375,7 +1382,7 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
     return '';
   }
 
-  // Get usefull info.
+  // Get useful info.
   list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
   // Invoke hook_advagg_js_header_footer_alter() to give installed modules a chance to
@@ -1392,7 +1399,6 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
     // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
     // modify the data in the $javascript array if necessary.
     drupal_alter('advagg_js_pre', $javascript, $preprocess_js, $public_downloads, $scope);
-
 
     $setting_no_preprocess = array();
     $inline_no_preprocess = array();

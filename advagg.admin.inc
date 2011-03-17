@@ -90,6 +90,7 @@ function advagg_admin_info_form() {
     'advagg_js_extra_alter' => array(),
     'advagg_filenames_alter' => array(),
     'advagg_files_table' => array(),
+    'advagg_js_header_footer_alter' => array(),
   );
   foreach ($hooks as $hook => $values) {
    $hooks[$hook] = module_implements($hook);
@@ -152,6 +153,12 @@ function advagg_admin_settings_form() {
     '#type'           => 'checkbox',
     '#title'          => t('Enable Advanced Aggregation'),
     '#default_value'  => variable_get('advagg_enabled', ADVAGG_ENABLED),
+  );
+  $form['advagg_closure'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Use AdvAgg in closure'),
+    '#default_value'  => variable_get('advagg_closure', ADVAGG_CLOSURE),
+    '#description'    => t('If enabled javascript files in the closure region will be aggregated.'),
   );
   module_load_include('install', 'advagg');
   $ret = advagg_check_missing_handler();
