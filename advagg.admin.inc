@@ -254,6 +254,18 @@ function advagg_admin_settings_form() {
     '#value' => t('Force all counters to be increment by one'),
     '#submit' => array('advagg_admin_batch_rebuild'),
   );
+  $form['master_reset'] = array(
+    '#type'         => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'        => t('Master Reset'),
+    '#description'  => t('Clean Slate - Truncate all advagg tables and delete all advagg files.'),
+  );
+  $form['master_reset']['advagg_reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Master Reset'),
+    '#submit' => array('advagg_admin_master_reset'),
+  );
   $form['htaccess'] = array(
     '#type'         => 'fieldset',
     '#collapsible'   => TRUE,
@@ -261,7 +273,7 @@ function advagg_admin_settings_form() {
     '#title'        => t('Rebuild htaccess files'),
     '#description'  => t('This will recreate the htaccess files located in the advagg_* directories.'),
   );
-  $form['htaccess']['recreate_htaccess'] = array(
+  $form['htaccess']['advagg_recreate_htaccess'] = array(
     '#type' => 'submit',
     '#value' => t('Recreate htaccess files'),
     '#submit' => array('advagg_admin_recreate_htaccess'),
@@ -324,7 +336,26 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   unset($form_state['values']['advagg_flush']);
   unset($form_state['values']['advagg_rebuild']);
   unset($form_state['values']['advagg_forced_build']);
-  unset($form_state['values']['recreate_htaccess']);
+  unset($form_state['values']['advagg_recreate_htaccess']);
+  unset($form_state['values']['advagg_reset']);
+}
+
+/**
+ * Master reset button.
+ */
+function advagg_admin_master_reset () {
+  cache_clear_all('*', 'cache_advagg', TRUE);
+  if (db_table_exists('css_emimage_advagg')) {
+    db_query("TRUNCATE TABLE {css_emimage_advagg}");
+  }
+  db_query("TRUNCATE TABLE {advagg_files}");
+  db_query("TRUNCATE TABLE {advagg_bundles}");
+
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+
+  drupal_set_message(t('Advanced CSS/JS Aggregation has been reset.'));
 }
 
 /**
