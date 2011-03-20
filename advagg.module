@@ -354,7 +354,7 @@ function advagg_get_root_files_dir($reset = FALSE) {
     $js_path = '';
   }
 
-  if (!empty($css_path) && empty($js_path)) {
+  if (!empty($css_path) && !empty($js_path)) {
     return array($css_path, $js_path);
   }
 
@@ -455,7 +455,9 @@ function advagg_processor(&$variables) {
   $js_header_orig = $js_header;
   $js_footer = drupal_add_js(NULL, NULL, 'footer');
   $js_footer_orig = $js_footer;
-  if (!empty($js_header) || !empty($js_header)) {
+  if (!empty($js_header) || !empty($js_footer)) {
+    advagg_jquery_updater($js_header);
+
     list($js_header_processed, $js_footer_processed) = advagg_process_js($js_header, $js_footer);
     if (!empty($js_header_processed)) {
       $variables['scripts'] = $js_header_processed;
@@ -489,10 +491,7 @@ function advagg_processor(&$variables) {
  *   List of files in the header
  */
 function advagg_jquery_updater(&$js) {
-  if (!module_exists('jquery_update')) {
-    return;
-  }
-  if (variable_get('jquery_update_replace', TRUE) == FALSE) {
+  if (!module_exists('jquery_update') || !variable_get('jquery_update_replace', TRUE)) {
     return;
   }
 
