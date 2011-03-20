@@ -170,6 +170,18 @@ function advagg_js_compress_test_compression($files_to_test) {
   global $base_path;
   $bad_files = array();
   foreach ($files_to_test as $info) {
+    // Mark as "bad" by filename.
+    if (   strpos($info['filename'], '.jsmin.js') !== FALSE
+        || strpos($info['filename'], '.min.js') !== FALSE
+        || strpos($info['filename'], '.pack.js') !== FALSE
+        || strpos($info['filename'], '.packed.js') !== FALSE
+          ) {
+      $data['advagg_js_compress']['tested']['jsminplus'] = -1;
+      $bad_files[] = $info;
+      advagg_set_file_data($info['md5'], $data);
+      continue;
+    }
+
     $key = variable_get('advagg_js_compress_url_key', FALSE);
     if (empty($key)) {
       $key = mt_rand();
