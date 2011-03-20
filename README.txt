@@ -130,7 +130,7 @@ Technical Details:
  * In the future support for cache bundles will be added.
  * Every JS file is tested for compressibility. This is necessary because jsmin+
    can bomb on certain files; this allows us to catch these bad files and mark
-   them.
+   them. This doesn't give us 100% success but it is better then nothing.
 
 Hooks:
  * hook_advagg_css_alter. Modify the data before it gets written to the file.
@@ -156,15 +156,6 @@ JS/CSS Theme Override:
 
     $conf['advagg_css_render_function'] - advagg_unlimited_css_builder
     $conf['advagg_js_render_function'] - advagg_js_builder
-
-Changing these variables allow you to change the function used to render the
-CSS markup or the JS markup. This means you can add JS files to a JSON request.
-Example:
-
-    $conf['advagg_js_render_function'] = 'my_js_json_render_function';
-    $scope = 'header';
-    $js = drupal_add_js(NULL, NULL, $scope);
-    return advagg_process_js($scope, $js);
 
 SINGLE HTACCESS RULES
 ---------------------
@@ -194,7 +185,8 @@ place these rules in the Drupal roots htaccess file. Place these rules after
     </FilesMatch>
   </IfModule>
 
-You also need to place these rules at the very end of your htaccess file.
+You also need to place these rules at the very end of your htaccess file, after
+"</IfModule>".
 
 <FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s.*">
   FileETag None
