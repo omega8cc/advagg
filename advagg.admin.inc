@@ -319,6 +319,7 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
 
   if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression'] && $form_state['values']['advagg_dir_htaccess']) {
     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
+    $conf['advagg_dir_htaccess'] = $form_state['values']['advagg_dir_htaccess'];
     advagg_admin_recreate_htaccess();
   }
   if ($form_state['values']['advagg_dir_htaccess'] == FALSE) {
