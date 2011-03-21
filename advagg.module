@@ -440,7 +440,12 @@ function advagg_merge_array($array1, $array2) {
 function advagg_processor(&$variables) {
   // If disabled, skip
   if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
-    return;
+    if (module_exists('jquery_update')) {
+      return jquery_update_preprocess_page($variables);
+    }
+    else {
+      return;
+    }
   }
 
   // CSS
