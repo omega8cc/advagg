@@ -36,6 +36,7 @@ function advagg_js_compress_menu() {
     'access arguments' => array('administer site configuration'),
     'file path' => $file_path,
     'file' => 'advagg_js_compress.admin.inc',
+    'weight' => 10,
   );
 
   return $items;

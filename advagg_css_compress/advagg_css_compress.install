@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @file
+ * Handles AdvAgg CSS compress installation and upgrade tasks.
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function advagg_css_compress_enable() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function advagg_css_compress_uninstall() {
+  // Remove variables.
+  variable_del('advagg_css_compress_preserve_css');
+
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function advagg_css_compress_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+  }
+  return $requirements;
+}
