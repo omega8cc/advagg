@@ -91,7 +91,7 @@ function advagg_admin_info_form() {
     'advagg_filenames_alter'        => array(),
     'advagg_files_table'            => array(),
     'advagg_js_header_footer_alter' => array(),
-    'advagg_maser_reset'            => array(),
+    'advagg_master_reset'           => array(),
   );
   foreach ($hooks as $hook => $values) {
    $hooks[$hook] = module_implements($hook);
@@ -196,7 +196,7 @@ function advagg_admin_settings_form() {
       '#field_prefix'   => '<div>' . t('You are using a private file system. You can serve aggregated files via a public folder.') . '</div>',
       '#title'          => t('Use a different directory for storing advagg files'),
       '#default_value'  => variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR),
-      '#description'    => t('If left blank it will use drupals default files directory. ') . $extra,
+      '#description'    => t('If left blank it will use Drupals default files directory. ') . $extra,
     );
   }
   $form['advagg_checksum_mode'] = array(
@@ -352,7 +352,7 @@ function advagg_admin_master_reset () {
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
 
-  module_implements('advagg_maser_reset');
+  module_implements('advagg_master_reset');
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
   file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
