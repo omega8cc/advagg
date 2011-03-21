@@ -1782,13 +1782,13 @@ function advagg_missing_fast404($msg = '') {
  */
 function advagg_htaccess_check_generate($dest, $force = FALSE) {
   global $base_path;
-  if (!$force || variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
+  if (!$force && variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
     return TRUE;
   }
 
   $dir = dirname($dest);
   $htaccess_file = $dir . '/.htaccess';
-  if (!$force || file_exists($htaccess_file)) {
+  if (!$force && file_exists($htaccess_file)) {
     return TRUE;
   }
 

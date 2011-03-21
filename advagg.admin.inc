@@ -313,15 +313,16 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   }
 
   // Gzip & htaccess checks.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  $css_path .= '/.htaccess';
+  $js_path .= '/.htaccess';
+
   if ($conf['advagg_gzip_compression'] != $form_state['values']['advagg_gzip_compression'] && $form_state['values']['advagg_dir_htaccess']) {
     $conf['advagg_gzip_compression'] = $form_state['values']['advagg_gzip_compression'];
     advagg_admin_recreate_htaccess();
   }
   if ($form_state['values']['advagg_dir_htaccess'] == FALSE) {
-    list($css_path, $js_path) = advagg_get_root_files_dir();
-    $css_path .= '/.htaccess';
-    $js_path .= '/.htaccess';
-
+    $conf['advagg_dir_htaccess'] = FALSE;
     if (file_exists($css_path) || file_exists($js_path)) {
       file_delete($css_path);
       file_delete($js_path);
@@ -330,6 +331,9 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   }
   elseif ($conf['advagg_dir_htaccess'] != $form_state['values']['advagg_dir_htaccess']) {
     $conf['advagg_dir_htaccess'] = $form_state['values']['advagg_dir_htaccess'];
+    advagg_admin_recreate_htaccess();
+  }
+  if ($conf['advagg_dir_htaccess'] && (!file_exists($css_path) || !file_exists($js_path))) {
     advagg_admin_recreate_htaccess();
   }
 
