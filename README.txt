@@ -157,12 +157,17 @@ JS/CSS Theme Override:
     $conf['advagg_css_render_function'] - advagg_unlimited_css_builder
     $conf['advagg_js_render_function'] - advagg_js_builder
 
+JS/CSS File Save Override:
+
+    $conf['advagg_file_save_function'] - advagg_file_saver
+
 SINGLE HTACCESS RULES
 ---------------------
 
 If the directory level htaccess rules are interfering with your server, you can
 place these rules in the Drupal roots htaccess file. Place these rules after
 "RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]" but before "</IfModule>"
+
 
   # Rules to correctly serve gzip compressed CSS and JS files.
   # Requires both mod_rewrite and mod_headers to be enabled.
@@ -185,8 +190,10 @@ place these rules in the Drupal roots htaccess file. Place these rules after
     </FilesMatch>
   </IfModule>
 
+
 You also need to place these rules at the very end of your htaccess file, after
 "</IfModule>".
+
 
 <FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s.*">
   FileETag None
@@ -207,6 +214,7 @@ You also need to place these rules at the very end of your htaccess file, after
     Header append Cache-Control "public"
   </IfModule>
 </FilesMatch>
+
 
 Be sure to disable the "Generate .htaccess files in the advagg_* dirs" setting
 on the admin/settings/advagg page after placing these rules in the webroots

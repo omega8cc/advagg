@@ -82,15 +82,16 @@ function advagg_admin_info_form() {
 
   // Get hooks in use.
   $hooks = array(
-    'advagg_css_alter' => array(),
-    'advagg_css_pre_alter' => array(),
-    'advagg_css_extra_alter' => array(),
-    'advagg_js_alter' => array(),
-    'advagg_js_pre_alter' => array(),
-    'advagg_js_extra_alter' => array(),
-    'advagg_filenames_alter' => array(),
-    'advagg_files_table' => array(),
+    'advagg_css_alter'              => array(),
+    'advagg_css_pre_alter'          => array(),
+    'advagg_css_extra_alter'        => array(),
+    'advagg_js_alter'               => array(),
+    'advagg_js_pre_alter'           => array(),
+    'advagg_js_extra_alter'         => array(),
+    'advagg_filenames_alter'        => array(),
+    'advagg_files_table'            => array(),
     'advagg_js_header_footer_alter' => array(),
+    'advagg_maser_reset'            => array(),
   );
   foreach ($hooks as $hook => $values) {
    $hooks[$hook] = module_implements($hook);
@@ -350,6 +351,8 @@ function advagg_admin_master_reset () {
   }
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
+
+  module_implements('advagg_maser_reset');
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
   file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
