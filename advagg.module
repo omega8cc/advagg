@@ -82,6 +82,11 @@ define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder');
 define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder');
 
 /**
+ * Default function used to save files.
+ */
+define('ADVAGG_FILE_SAVE_FUNCTION', 'advagg_file_saver');
+
+/**
  * Default value for rebuilding the bundle on cache flush.
  */
 define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
@@ -220,6 +225,7 @@ function advagg_init() {
     if (!function_exists('phptemplate_closure')) {
       $_advagg['closure'] = TRUE;
 
+
       /**
       * Execute hook_footer() which is run at the end of the page right before
       * the close of the body tag.
@@ -237,6 +243,8 @@ function advagg_init() {
         }
         return $footer;
       }
+
+
     }
     else {
       $_advagg['closure'] = FALSE;
@@ -599,7 +607,7 @@ function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '')
  * @return
  *   Boolean indicating if the file save was successful.
  */
-function advagg_file_saver($data, $dest) {
+function advagg_file_saver($data, $dest, $force, $type) {
   // Create the JS file.
   $file_save_data = 'file_save_data';
   $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
@@ -622,6 +630,33 @@ function advagg_file_saver($data, $dest) {
       // Filename is bad, create a new one next time.
       file_delete($dest);
       return FALSE;
+    }
+  }
+
+  if ($trygzip && variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
+    if (!file_exists($filepath . '.gz') || $force) {
+      $gzip_dest = $dest . '.gz';
+      $gzip_data = gzencode($data, 9, FORCE_GZIP);
+
+      if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
+        return FALSE;
+      }
+
+      // Make sure filesize is not zero.
+      clearstatcache();
+      if (@filesize($gzip_dest) == 0) {
+        if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
+          return FALSE;
+        }
+        clearstatcache();
+        if (@filesize($gzip_dest) == 0) {
+          // Filename is bad, create a new one next time.
+          file_delete($gzip_dest);
+          return FALSE;
+        }
+      }
+
+
     }
   }
 
@@ -1232,6 +1267,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
     }
   }
 
+  // Default function called: advagg_unlimited_css_builder
   $function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
   return $function($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 }
@@ -1472,6 +1508,7 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
       }
     }
 
+    // Default function called: advagg_js_builder
     $function = variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
     $output[] = $function($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope);
   }
@@ -1643,19 +1680,12 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       // Create the advagg_$type/ within the files folder.
       file_check_directory($file_type_path, FILE_CREATE_DIRECTORY);
 
-      $good = advagg_file_saver($data, $filepath);
+      // Write file. default function called: advagg_file_saver
+      $function = variable_get('advagg_file_save_function', ADVAGG_FILE_SAVE_FUNCTION);
+      $good = $function($data, $filepath, $force, $type);
       if (!$good) {
         $output[$filepath] = FALSE;
         continue;
-      }
-      if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
-        if (!file_exists($filepath . '.gz') || $force) {
-          $good = advagg_file_saver(gzencode($data, 9, FORCE_GZIP), $filepath . '.gz');
-          if (!$good) {
-            $output[$filepath] = FALSE;
-            continue;
-          }
-        }
       }
 
       // Release lock.

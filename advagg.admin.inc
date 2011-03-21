@@ -14,7 +14,7 @@ function advagg_admin_page() {
 }
 
 /**
- * Page generation function for admin/settings/advagg
+ * Page generation function for admin/settings/advagg/info
  */
 function advagg_admin_info_page() {
   $output = '';
