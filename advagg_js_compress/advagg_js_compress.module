@@ -361,6 +361,7 @@ function advagg_js_compress_jspacker(&$contents) {
 
   // Add semicolons to the end of lines if missing.
   $contents = str_replace("}\n", "};\n", $contents);
+  $contents = str_replace("\nfunction", ";\nfunction", $contents);
 
   // Remove char returns, looking at you lightbox2.
   $contents = str_replace("\n\r", "", $contents);
