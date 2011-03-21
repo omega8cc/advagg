@@ -98,7 +98,7 @@ define('ADVAGG_CLOSURE', TRUE);
 
 
 // Handle 404s ASAP
-advagg_faster_404();
+// advagg_faster_404();
 /**
  * Quick check to see if the URL is a advagg one.
  */
@@ -633,11 +633,11 @@ function advagg_file_saver($data, $dest, $force, $type) {
     }
   }
 
-  if ($trygzip && variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
-    if (!file_exists($filepath . '.gz') || $force) {
-      $gzip_dest = $dest . '.gz';
-      $gzip_data = gzencode($data, 9, FORCE_GZIP);
+  if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
+    $gzip_dest = $dest . '.gz';
 
+    if (!file_exists($gzip_dest) || $force) {
+      $gzip_data = gzencode($data, 9, FORCE_GZIP);
       if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
         return FALSE;
       }
@@ -655,8 +655,6 @@ function advagg_file_saver($data, $dest, $force, $type) {
           return FALSE;
         }
       }
-
-
     }
   }
 
