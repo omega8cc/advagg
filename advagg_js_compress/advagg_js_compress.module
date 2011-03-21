@@ -78,68 +78,69 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $p
  * Implement hook_advagg_js_alter.
  */
 function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
-  global $base_path;
-
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $all_ok = TRUE;
+  foreach ($files as $filename) {
+    $filename_md5 = md5($filename);
+    $data = advagg_get_file_data($filename_md5);
+
+    // File needs to be tested.
+    if (empty($data['advagg_js_compress']['tested'])) {
+      $files_to_test[] = array(
+        'md5' => $filename_md5,
+        'filename' => $filename,
+      );
+    }
+    elseif ($data['advagg_js_compress']['tested']['jsminplus'] == -1) {
+      $all_ok = FALSE;
+      $list_bad[$filename] = $filename;
+    }
+  }
+
   $advagg_js_compress_callback = variable_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
   if ($advagg_js_compress_callback) {
-    foreach ($files as $filename) {
-      $filename_md5 = md5($filename);
-      $data = advagg_get_file_data($filename_md5);
-
-      // File needs to be tested.
-      if (empty($data['advagg_js_compress']['tested'])) {
-        $files_to_test[] = array(
-          'md5' => $filename_md5,
-          'filename' => $filename,
-        );
-      }
-      elseif ($data['advagg_js_compress']['tested']['jsminplus'] == -1) {
-        $all_ok = FALSE;
-      }
-    }
-
     // Send test files to worker.
+    $list_bad = array();
     if (!empty($files_to_test)) {
       $compressible = advagg_js_compress_test_compression($files_to_test);
       // If an array then it is a list of files that can not be compressed.
       if (is_array($compressible)) {
-        $contents = '';
+        $all_ok = FALSE;
         // Place filename in an array key.
-        $list_bad = array();
         foreach ($compressible as $file) {
           $file = $file['filename'];
-          $list_bad[$file] = $file;
+          $list_bad[$file] = $file['filename'];
         }
-
-        // Do not compress the file that it bombs on.
-        $list_good = array();
-        foreach ($files as $file) {
-          if (!empty($list_bad[$file])) {
-            $data = advagg_build_js_bundle($list_good);
-            advagg_js_compress_jsminplus($data);
-            $data .= ";\n" . advagg_build_js_bundle(array($file));
-            $contents .= $data;
-            $list_good = array();
-          }
-          else {
-            $list_good[] = $file;
-          }
-        }
-        if (!empty($list_good)) {
-          $data = advagg_build_js_bundle($list_good);
-          advagg_js_compress_jsminplus($data);
-          $contents .= $data;
-        }
-        $all_ok = FALSE;
       }
     }
   }
 
-  // Only compress if all files are compressible.
-  if ($all_ok) {
+  // Bypass bad files & compress the rest.
+  if (!$all_ok && !empty($list_bad)) {
+    $contents = '';
+    // Do not compress the file that it bombs on.
+    $list_good = array();
+    foreach ($files as $file) {
+      if (!empty($list_bad[$file])) {
+        $data = advagg_build_js_bundle($list_good);
+        advagg_js_compress_jsminplus($data);
+        $data .= ";\n" . advagg_build_js_bundle(array($file));
+        $contents .= $data;
+        $list_good = array();
+      }
+      else {
+        $list_good[] = $file;
+      }
+    }
+    if (!empty($list_good)) {
+      $data = advagg_build_js_bundle($list_good);
+      advagg_js_compress_jsminplus($data);
+      $contents .= $data;
+    }
+  }
+  else {
+    // Compress all in one, if all files are compressible.
     advagg_js_compress_jsminplus($contents);
   }
 }
