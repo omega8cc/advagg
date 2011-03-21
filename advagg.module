@@ -436,9 +436,10 @@ function advagg_processor(&$variables) {
   }
 
   // CSS
-  $css = $variables['css'];
-  $css_orig = $css;
-  $css = advagg_merge_array($css, drupal_add_css());
+  $css_var = $variables['css'];
+  $css_orig = $css_var;
+  $css_func = drupal_add_css();
+  $css = advagg_merge_array($css_func, $css_var);
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
@@ -471,8 +472,9 @@ function advagg_processor(&$variables) {
   if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
     $data = array(
       'css_before_vars' => $css_orig,
-      'css_before_function' => drupal_add_css(),
+      'css_before_function' => $css_func,
       'css_before_styles' => $css_styles,
+      'css_merged' => $css,
       'css_after' => $processed_css,
       'js_header_before' => $js_header_orig,
       'js_header_after' => $js_header_processed,
