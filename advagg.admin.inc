@@ -351,13 +351,10 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
  */
 function advagg_admin_master_reset () {
   cache_clear_all('*', 'cache_advagg', TRUE);
-  if (db_table_exists('css_emimage_advagg')) {
-    db_query("TRUNCATE TABLE {css_emimage_advagg}");
-  }
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
 
-  module_implements('advagg_master_reset');
+  module_invoke_all('advagg_master_reset');
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
   file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
