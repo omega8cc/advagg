@@ -1057,11 +1057,11 @@ function advagg_delete_file_if_stale($filename) {
  *   data array from database.
  */
 function advagg_get_file_data($filename_md5) {
-  $data = db_result(db_query("SELECT data FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
-  if (!empty($data)) {
-    $data = unserialize($data);
+  $data = cache_get($filename_md5, 'cache_advagg_files_data');
+  if (empty($data->data)) {
+    return FALSE;
   }
-  return $data;
+  return $data->data;
 }
 
 /**
@@ -1073,8 +1073,7 @@ function advagg_get_file_data($filename_md5) {
  *   data to store.
  */
 function advagg_set_file_data($filename_md5, $data) {
-  $serialized_data = serialize($data);
-  db_query("UPDATE {advagg_files} SET data = '%s' WHERE filename_md5 = '%s'", $serialized_data, $filename_md5);
+  cache_set($filename_md5, $data, 'cache_advagg_files_data');
 }
 
 /**

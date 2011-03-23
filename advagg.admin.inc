@@ -56,7 +56,7 @@ function advagg_admin_info_form() {
     // filename  filename_md5  checksum  filetype  counter   data
     $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = '%s'", $type);
     while ($row = db_fetch_array($results)) {
-      $data = unserialize($row['data']);
+      $data = advagg_get_file_data($row['filename_md5']);
       if (!empty($data)) {
         list($data, $rows) = advagg_form_print_r($data);
 
