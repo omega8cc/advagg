@@ -75,6 +75,8 @@ Advanced CSS/JS Aggregation Submodules:
    library.
  * Google Libraries API. Load jquery.js & jquery-ui.js from Google's CDN network.
    This is a good thing.
+ * Bundler. Will split up an aggregrate into sub aggregates for better load
+   times throughout your site.
 
 CONFIGURATION
 -------------
