@@ -219,6 +219,10 @@ function advagg_init() {
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_enabled'] = FALSE;
   }
+  // enable debugging if requested.
+  if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
+    $conf['advagg_debug'] = TRUE;
+  }
 
   // Create a closure function that does not add JavaScript.
   if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
