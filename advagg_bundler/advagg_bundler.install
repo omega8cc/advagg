@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * @file
+ * Handles AdvAgg Bundler installation and upgrade tasks.
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function advagg_bundler_enable() {
+
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function advagg_bundler_uninstall() {
+  // Remove variables.
+  variable_del('advagg_bundler_max_css');
+  variable_del('advagg_bundler_max_js');
+
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function advagg_bundler_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+  }
+  return $requirements;
+}

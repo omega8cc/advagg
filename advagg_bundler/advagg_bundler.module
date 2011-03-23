@@ -1,0 +1,293 @@
+<?php
+
+/**
+ * @file
+ * Advanced aggregation bundler module.
+ *
+ */
+
+/**
+ * Default value of the maximum number of CSS bundles that can be generated in
+ * a single request.
+ */
+define('ADVAGG_BUNDLER_MAX_CSS', 6);
+
+/**
+ * Default value of the maximum number of JS bundles that can be generated in
+ * a single request.
+ */
+define('ADVAGG_BUNDLER_MAX_JS', 6);
+
+/**
+ * Implementation of hook_menu
+ */
+function advagg_bundler_menu() {
+  $items = array();
+  $file_path = drupal_get_path('module', 'advagg_bundler');
+
+  $items['admin/settings/advagg/bundler'] = array(
+    'title' => 'Bundler',
+    'description' => 'Adjust Bundler settings.',
+    'page callback' => 'advagg_bundler_admin_page',
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg_bundler.admin.inc',
+    'weight' => 10,
+  );
+
+  return $items;
+}
+
+/**
+ * Implement hook_advagg_filenames_alter.
+ */
+function advagg_bundler_advagg_filenames_alter(&$filenames) {
+  $max_css = variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS);
+  $max_js = variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS);
+
+  $output = array();
+  foreach ($filenames as $values) {
+    // Set values.
+    $filetype = $values['filetype'];
+    $files = $values['files'];
+
+    if ($filetype == 'css') {
+      $max = $max_css;
+    }
+    if ($filetype == 'js') {
+      $max = $max_js;
+    }
+    if (empty($max)) {
+      $output[] = $values;
+      continue;
+    }
+
+    // Load up each file.
+    $groupings = array();
+    // Preserve the order for CSS cascading.
+    if ($filetype == 'css') {
+      $last_group = '';
+      foreach ($files as $key => $filename) {
+        // Assign each file to their group.
+        $group = advagg_bundler_analysis($filename);
+        if (empty($last_group)) {
+          $last_group = $group;
+        }
+
+        if ($last_group == $group) {
+          $groupings[$group][] = $filename;
+        }
+        else {
+          $groupings[$key . ' ' . $last_group] = $groupings[$last_group];
+          unset($groupings[$last_group]);
+          $groupings[$group][] = $filename;
+          $last_group = $group;
+        }
+      }
+    }
+    else {
+      foreach ($files as $filename) {
+        // Assign each file to their group.
+        $group = advagg_bundler_analysis($filename);
+        $groupings[$group][] = $filename;
+      }
+    }
+
+    // If only one group then don't do any more processing.
+    if (count($groupings) == 1) {
+      $output[] = $values;
+      continue;
+    }
+
+    // Make sure we didn't go over the max; if we did merge the smallest bundles
+    // together.
+    if ($filetype == 'css') {
+      advagg_bundler_merge_css($groupings, $max);
+    }
+    if ($filetype == 'js') {
+      advagg_bundler_merge_js($groupings, $max);
+    }
+
+    // If only one group then don't do any more processing.
+    if (count($groupings) == 1) {
+      $output[] = $values;
+      continue;
+    }
+
+    // Set groups.
+    foreach ($groupings as $bundle) {
+      $values['files'] = $bundle;
+      $values['bundle_md5'] = md5(implode('', $bundle));
+      $output[] = $values;
+    }
+  }
+
+  // Return groupings.
+  $filenames = $output;
+}
+
+/**
+ * Given a filename return a bundle key.
+ *
+ * TODO Use a cache.
+ *
+ * @param $filename
+ *   filename
+ * @return
+ *   string to be used for the grouping key.
+ */
+function advagg_bundler_analysis($filename = '') {
+  static $analysis;
+  if (empty($analysis)) {
+    $analysis = array();
+    $result = db_query("
+      SELECT
+        LPAD(COUNT(*), 8, '00000000') AS count,
+        bundle_md5,
+        filename
+      FROM {advagg_bundles} AS ab
+      INNER JOIN {advagg_files} AS af USING ( filename_md5 )
+      GROUP BY ( af.filename )
+    ");
+
+    $counter = array();
+    while ($row = db_fetch_array($result)) {
+      $analysis[$row['filename']] = $row['count'] . ' ' . $row['bundle_md5'];
+    }
+  }
+
+  if (empty($filename)) {
+    return $analysis;
+  }
+
+  if (!empty($analysis[$filename])) {
+    return $analysis[$filename];
+  }
+  return 0;
+}
+
+/**
+ * Merge bundles together if too many where created.
+ *
+ * This preserves the order for CSS cascading.
+ *
+ * @param $groupings
+ *   array of requested groups
+ * @param $max
+ *   max number of grouping
+ */
+function advagg_bundler_merge_css(&$groupings, $max) {
+  $group_count = count($groupings);
+
+  if (!empty($max)) {
+    // Keep going till array has been merged to the desired size.
+    while ($group_count > $max) {
+      // Get array sizes.
+      $counts = array();
+      foreach ($groupings as $key => $values) {
+        $counts[$key] = count($values);
+      }
+
+      // Create mapping.
+      $map = array();
+      foreach ($counts as $key => $val) {
+        if (empty($prev_key)) {
+          $prev_key = $key;
+          $prev_val = $val;
+          continue;
+        }
+        $map[] = array(($prev_val + $val) => array($prev_key, $key));
+        $prev_key = $key;
+        $prev_val = $val;
+       }
+
+      // Get best merge canidate.
+      $min = 32767;
+      foreach ($map as $v) {
+        foreach ($v as $key => $values) {
+          $min = min($min, $key);
+          if ($min == $key) {
+            list($first, $last) = $values;
+          }
+        }
+      }
+
+      // Move arrays around.
+      $a = $groupings[$first];
+      $b = $groupings[$last];
+      $new_set = array_merge($a, $b);
+      $new_groupings = array();
+      foreach ($groupings as $key => $files) {
+        if ($key == $first) {
+          $new_groupings[$first . ' ' . $last] = $new_set;
+        }
+        elseif ($key != $last) {
+          $new_groupings[$key] = $files;
+        }
+      }
+      $groupings = $new_groupings;
+      $group_count--;
+    }
+  }
+}
+
+/**
+ * Merge bundles together if too many where created.
+ *
+ * @param $groupings
+ *   array of requested groups
+ * @param $max
+ *   max number of grouping
+ */
+function advagg_bundler_merge_js(&$groupings, $max) {
+  $group_count = count($groupings);
+
+  if (!empty($max)) {
+    // Process bottom up.
+    $groupings = array_reverse($groupings);
+
+    // Record the order
+    $order = array();
+    foreach ($groupings as $key => $values) {
+      $order[] = $key;
+    }
+
+    // Keep going till array has been merged to the desired size.
+    while ($group_count > $max) {
+      // Pick smallest arrays.
+      $count = array();
+      foreach ($groupings as $key => $values) {
+        $count[$key] = count($values);
+      }
+      asort($count);
+      reset($count);
+
+      // Get key values for arrays to be merged.
+      $current = key($count);
+      next($count);
+      $next = key($count);
+
+      // Sorta Preserve order.
+      $current_order = array_search($current, $order);
+      $next_order = array_search($next, $order);
+      if ($current_order < $next_order) {
+        $first = $groupings[$current];
+        $last = $groupings[$next];
+      }
+      else {
+        $first = $groupings[$next];
+        $last = $groupings[$current];
+      }
+
+      // Move arrays around.
+      $groupings[] = array_merge($first, $last);
+      unset($groupings[$current]);
+      unset($groupings[$next]);
+      $group_count--;
+    }
+
+    // Reset order.
+    $groupings = array_reverse($groupings);
+  }
+}

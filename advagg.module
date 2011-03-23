@@ -1675,6 +1675,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       elseif ($type == 'js') {
         $data = advagg_build_js_bundle($files);
       }
+
       // Invoke hook_advagg_js_alter() or hook_advagg_css_alter to give
       // installed modules a chance to modify the data in the bundle if
       // necessary.

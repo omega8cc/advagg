@@ -1,0 +1,5 @@
+name = AdvAgg Bundler
+description = Place commonly used files in one bundle for more awesome sauce.
+package = Advanced CSS/JS Aggregation
+core = 6.x
+dependencies[] = advagg

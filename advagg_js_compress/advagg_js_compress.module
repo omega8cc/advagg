@@ -173,6 +173,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
  */
 function advagg_js_compress_jsminplus(&$contents) {
   // JSMin+ the contents of the aggregated file.
+  set_time_limit(0);
   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.inc');
   // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
   $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
