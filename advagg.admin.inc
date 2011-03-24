@@ -96,6 +96,10 @@ function advagg_admin_info_form() {
   foreach ($hooks as $hook => $values) {
    $hooks[$hook] = module_implements($hook);
   }
+  // Record function overrides. Not working currently.
+//   $hooks['advagg_css_render_function'] = array(variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION));
+//   $hooks['advagg_js_render_function'] = array(variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION));
+//   $hooks['advagg_file_save_function'] = array(variable_get('advagg_file_save_function', ADVAGG_FILE_SAVE_FUNCTION));
 
   // Output hooks in form.
   foreach ($hooks as $hook => $values) {
@@ -119,7 +123,7 @@ function advagg_admin_info_form() {
     '#title'         => t('Modules implementing advagg hooks'),
   );
 
-  // List missing files.
+  // If any files are missing list them.
   $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = '-1' ORDER BY filetype ASC");
   while ($row = db_fetch_array($results)) {
     $form['missing'][$row['filename_md5']] = array(

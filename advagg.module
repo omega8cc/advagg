@@ -96,39 +96,6 @@ define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
  */
 define('ADVAGG_CLOSURE', TRUE);
 
-
-// Handle 404s ASAP
-// advagg_faster_404();
-/**
- * Quick check to see if the URL is a advagg one.
- */
-function advagg_faster_404() {
-  if (empty($_SERVER['REQUEST_URI']) && empty($_GET['q'])) {
-    return;
-  }
-  list($css_path, $js_path) = advagg_get_root_files_dir();
-
-  // Normal requests.
-  if (!empty($_GET['q'])) {
-    $css = strpos($_GET['q'], $css_path);
-    $js = strpos($_GET['q'], $js_path);
-    if ($css !== FALSE || $js !== FALSE) {
-      menu_execute_active_handler();
-    }
-  }
-
-  // 404 from htaccess; index.php is the 404 handler.
-  if (!empty($_SERVER['REQUEST_URI'])) {
-    $css = strpos($_SERVER['REQUEST_URI'], $css_path);
-    $js = strpos($_SERVER['REQUEST_URI'], $js_path);
-    if ($css !== FALSE || $js !== FALSE) {
-      $_GET['q'] = substr($_SERVER['REQUEST_URI'], strpos($_SERVER['REQUEST_URI'], file_directory_path()));
-      menu_execute_active_handler();
-    }
-  }
-
-}
-
 /**
  * Implementation of hook_perm().
  */
@@ -229,7 +196,6 @@ function advagg_init() {
     if (!function_exists('phptemplate_closure')) {
       $_advagg['closure'] = TRUE;
 
-
       /**
       * Execute hook_footer() which is run at the end of the page right before
       * the close of the body tag.
@@ -248,80 +214,11 @@ function advagg_init() {
         return $footer;
       }
 
-
     }
     else {
       $_advagg['closure'] = FALSE;
     }
   }
-
-
-
-  // Skip if not an advagg request
-  if (strpos($_GET['q'], '/advagg_') === FALSE) {
-    return;
-  }
-
-  // Get our advagg file paths.
-  list($css_path, $js_path) = advagg_get_root_files_dir();
-
-  // Skip if this request belongs to us.
-  if (strpos($_GET['q'], $css_path) !== FALSE || strpos($_GET['q'], $js_path) !== FALSE) {
-    return;
-  }
-
-  // Make sure host dir exists.
-  $end = strpos($_GET['q'], '/advagg_');
-  $dir = substr($_GET['q'], 0, $end);
-
-  // Fast 404 if very bad request.
-  if (strpos($dir, "\n") !== FALSE ||  strpos($dir, '..') !== FALSE) {
-    advagg_missing_fast404();
-  }
-
-  // Fast 404 if host dir doesn't exist.
-  if (!is_dir($dir)) {
-    advagg_missing_fast404();
-  }
-
-  // Extract host name from request.
-  $start = strpos($_GET['q'], 'sites/') + 6;
-  $end = strpos($_GET['q'], '/files');
-  // Fast 404 if file structure not in the form /sites/example.com/files/...
-  if ($start === FALSE || $end === FALSE) {
-    advagg_missing_fast404();
-  }
-  $host = substr($_GET['q'], $start, $end - $start);
-
-  // Send request to correct host.
-  $ip = variable_get('advagg_server_addr', FALSE);
-  if (empty($ip)) {
-    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
-  }
-  $url = 'http://' . $ip . $base_path . $_GET['q'];
-  $headers = array(
-    'Host' => $host,
-  );
-
-  // Send request to that host on this server.
-  $socket_timeout = ini_set('default_socket_timeout', variable_get('advagg_socket_timeout', ADVAGG_SOCKET_TIMEOUT));
-  $results = drupal_http_request($url, $headers);
-  ini_set('default_socket_timeout', $socket_timeout);
-
-  // Redirect to file.
-  $_GET['redirect_counter'] = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
-  if ($_GET['redirect_counter'] > 5) {
-    watchdog('advagg', 'This request could not generate correctly. Loop detected. Request data: %info <br> !request', array(
-      '%info' => $_GET['q'],
-      '!request' => str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($results, TRUE)))),
-    ));
-    advagg_missing_fast404();
-  }
-
-  $_GET['redirect_counter']++;
-  $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
-  header('Location: ' . $uri, TRUE, 307);
-  exit;
 }
 
 /**
@@ -485,7 +382,7 @@ function advagg_processor(&$variables) {
     }
   }
 
-  // Output debug info.
+  // Write debug info to watchdog if debugging enabled.
   if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
     $data = array(
       'css_before_vars' => $css_orig,
@@ -589,6 +486,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     drupal_alter('advagg_filenames', $filenames);
   }
 
+  // Write to DB if needed and create filenames.
   $output = array();
   foreach ($filenames as $values) {
     // Get info from array.
@@ -829,7 +727,6 @@ function advagg_file_move(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
  */
 function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
   $directory = dirname($dest);
-
 
   // Process a file upload object.
   if (is_object($source)) {
@@ -1173,8 +1070,6 @@ function advagg_process_css_js_prep($noagg = FALSE) {
   // URL changed.
   $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
 
-
-
   return array($preprocess, $public_downloads, $query_string);
 }
 
@@ -1211,11 +1106,6 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   if (!isset($css)) {
     $css = drupal_add_css();
   }
-  $module_no_preprocess = array();
-  $output_no_preprocess = array();
-  $output_preprocess = array();
-  $theme_no_preprocess = array();
-
   // Get useful info.
   list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
@@ -1223,6 +1113,10 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   // modify the data in the $javascript array if necessary.
   drupal_alter('advagg_css_pre', $css, $preprocess_css, $public_downloads);
 
+  $module_no_preprocess = array();
+  $output_no_preprocess = array();
+  $output_preprocess = array();
+  $theme_no_preprocess = array();
   foreach ($css as $media => $types) {
     // If CSS preprocessing is off, we still need to output the styles.
     // Additionally, go through any remaining styles if CSS preprocessing is on and output the non-cached ones.
@@ -1490,7 +1384,6 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
     $output_no_preprocess = array('core' => array(), 'module' => array(), 'theme' => array());
     $output_preprocess = array();
     $preprocess_list = array();
-
     foreach ($javascript as $type => $data) {
 
       if (!$data) continue;
@@ -1806,8 +1699,6 @@ function advagg_build_js_bundle($files) {
  * Send out a fast 404 and exit.
  */
 function advagg_missing_fast404($msg = '') {
-//   watchdog('x', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($_SERVER, TRUE)))));
-
   global $base_path;
   if (!headers_sent()) {
     header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
