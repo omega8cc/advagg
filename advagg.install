@@ -39,6 +39,7 @@ function advagg_install() {
 function advagg_uninstall() {
   // Remove database tables.
   cache_clear_all('*', 'cache_advagg', TRUE);
+  cache_clear_all('*', 'cache_advagg_files_data', TRUE);
   drupal_uninstall_schema('advagg');
 
   // Remove variables.
@@ -351,6 +352,8 @@ function advagg_check_missing_handler() {
 function advagg_schema() {
   $schema['cache_advagg'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_advagg']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep timestamps and if the file exists.');
+  $schema['cache_advagg_files_data'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_files_data']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about files.');
 
   $schema['advagg_files'] = array(
     'description' => t('Files used in CSS/JS aggregation.'),
@@ -387,12 +390,6 @@ function advagg_schema() {
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'data' => array(
-        'description' => 'Extra data about this file. Example would be what compressors work with it.',
-        'type' => 'text',
-        'not null' => TRUE,
-        'size' => 'big',
       ),
     ),
     'indexes' => array(
@@ -456,3 +453,30 @@ function advagg_update_6100() {
   return $ret;
 }
 
+/**
+ * Update 6101 - Move data column to cache table.
+ */
+function advagg_update_6101() {
+  $ret = array();
+
+  // Create cache table.
+  $schema['cache_advagg_files_data'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_files_data']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about files.');
+  db_create_table($ret, 'cache_advagg_files_data', $schema['cache_advagg_files_data']);
+
+  // Migrate data.
+  $results = db_query("SELECT filename_md5, data FROM advagg_files");
+  while ($row = db_fetch_array($results)) {
+    if (empty($row['data'])) {
+      continue;
+    }
+    $data = unserialize($row['data']);
+    advagg_set_file_data($row['filename_md5'], $data);
+  }
+
+  // Drop in data column.
+  db_drop_field($ret, 'advagg_files', 'data');
+
+
+  return $ret;
+}
