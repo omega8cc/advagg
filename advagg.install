@@ -428,6 +428,12 @@ function advagg_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'root' => array(
+        'description' => 'If 1 then it is a root file. 0 means not root file.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('bundle_md5', 'filename_md5'),
 
@@ -477,6 +483,23 @@ function advagg_update_6101() {
   // Drop in data column.
   db_drop_field($ret, 'advagg_files', 'data');
 
+
+  return $ret;
+}
+
+/**
+ * Update 6102 - Add new field to table.
+ */
+function advagg_update_6102() {
+  $ret = array();
+
+  // Add in data column
+  db_add_field($ret, 'advagg_bundles', 'root', array(
+        'description' => 'If 1 then it is a root file. 0 means not root file.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ));
 
   return $ret;
 }

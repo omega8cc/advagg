@@ -1,4 +1,4 @@
 name = Advanced CSS/JS Aggregation
-description = Better CSS/JS Aggregation.
+description = Aggregates multiple CSS/JS files, serves them with gzip encoding and smart client-side cache headers.
 package = Advanced CSS/JS Aggregation
 core = 6.x

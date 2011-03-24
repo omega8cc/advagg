@@ -148,6 +148,7 @@ function advagg_bundler_analysis($filename = '') {
         filename
       FROM {advagg_bundles} AS ab
       INNER JOIN {advagg_files} AS af USING ( filename_md5 )
+      WHERE ab.root = 1
       GROUP BY ( af.filename )
     ");
 

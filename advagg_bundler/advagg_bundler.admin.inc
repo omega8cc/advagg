@@ -59,11 +59,13 @@ function advagg_bundler_admin_settings_form() {
   );
   module_load_include('inc', 'advagg', 'advagg.admin');
   $analysis = advagg_bundler_analysis();
+  asort($analysis);
+  $analysis = array_reverse($analysis);
   $data = array();
   foreach ($analysis as $filename => $key) {
     $data[$key][] = $filename;
   }
-  asort($analysis);
+
   list($data, $rows) = advagg_form_print_r($data);
   $form['info']['advagg_bundler_info'] = array(
     '#type'         => 'textarea',

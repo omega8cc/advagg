@@ -547,14 +547,33 @@ function advagg_jquery_updater(&$js) {
  * @return
  *   Aggregated filename.
  */
-function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '') {
+function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = '') {
   $filenames = array();
 
-  // Create bundle md5
+  $run_alter = FALSE;
   if (empty($bundle_md5)) {
+    // Create bundle md5
     $bundle_md5 = md5(implode('', $files));
+    $run_alter = TRUE;
+
+    // Record root request in db.
+    // Get counter if there.
+    if (empty($counter)) {
+      $counter = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+    }
+    // If this is a brand new bundle then insert file/bundle info into database.
+    if ($counter === FALSE) {
+      $counter = 0;
+      advagg_insert_bundle_db($files, $filetype, $bundle_md5, TRUE);
+    }
+    // If bundle should be root and is not, then make it root.
+    $root = db_result(db_query("SELECT root FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+    if ($root === 0) {
+      db_query("UPDATE {advagg_bundles} SET root = '1' WHERE bundle_md5 = '%s'", $bundle_md5);
+    }
   }
 
+  // Set orginal array.
   $filenames[] = array(
     'filetype' => $filetype,
     'files' => $files,
@@ -564,10 +583,15 @@ function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '')
 
   // Invoke hook_advagg_filenames_alter() to give installed modules a chance to
   // alter filenames. One to many relationships come to mind.
-  drupal_alter('advagg_filenames', $filenames);
+  // Do not run alter if MD5 was given, we want to generate that file only in
+  // this special case.
+  if ($run_alter) {
+    drupal_alter('advagg_filenames', $filenames);
+  }
 
   $output = array();
   foreach ($filenames as $values) {
+    // Get info from array.
     $filetype = $values['filetype'];
     $files = $values['files'];
     $counter = $values['counter'];
@@ -581,20 +605,9 @@ function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '')
     // If this is a brand new bundle then insert file/bundle info into database.
     if ($counter === FALSE) {
       $counter = 0;
-      foreach ($files as $order => $filename) {
-        $filename_md5 = md5($filename);
-
-        // Insert file into the advagg_files table if it doesn't exist.
-        $checksum = db_result(db_query("SELECT checksum FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
-        if (empty($checksum)) {
-          $checksum = advagg_checksum($filename);
-          db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype) VALUES ('%s', '%s', '%s', '%s')", $filename, $filename_md5, $checksum, $filetype);
-        }
-
-        // Create the entries in the advagg_bundles table.
-        db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder) VALUES ('%s', '%s', '%d', '%d')", $bundle_md5, $filename_md5, $counter, $order);
-      }
+      advagg_insert_bundle_db($files, $filetype, $bundle_md5, FALSE);
     }
+
     // Prefix filename to prevent blocking by firewalls which reject files
     // starting with "ad*".
     $output[] = array(
@@ -604,6 +617,34 @@ function advagg_get_filename($files, $filetype, $counter = '', $bundle_md5 = '')
     );
   }
   return $output;
+}
+
+/**
+ * Insert info into the advagg_files and advagg_bundles database.
+ *
+ * @param $files
+ *   List of files in the proposed bundle.
+ * @param $filetype
+ *   css or js.
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ * @param $root
+ *   Is this a root bundle.
+ */
+function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
+  foreach ($files as $order => $filename) {
+    $filename_md5 = md5($filename);
+
+    // Insert file into the advagg_files table if it doesn't exist.
+    $checksum = db_result(db_query("SELECT checksum FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
+    if (empty($checksum)) {
+      $checksum = advagg_checksum($filename);
+      db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype) VALUES ('%s', '%s', '%s', '%s')", $filename, $filename_md5, $checksum, $filetype);
+    }
+
+    // Create the entries in the advagg_bundles table.
+    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root);
+  }
 }
 
 /**
