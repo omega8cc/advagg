@@ -26,7 +26,7 @@ function advagg_js_compress_admin_settings_form() {
     '#type'           => 'checkbox',
     '#title'          => t('Enable Packer'),
     '#default_value'  => variable_get('advagg_js_compress_packer_enable', ADVAGG_JS_COMPRESS_PACKER_ENABLE),
-    '#description'    => t('If enabled the non gzip version of JS files will be compressed using the JS Packer. WARNING: This has a very HIGH chance of breaking your JS. Only Enable after testing the non gzipped version.'),
+    '#description'    => t('If enabled the non gzip version of JS files will be compressed using the JS Packer. WARNING: This has a high chance of breaking your JS. Only Enable on production after testing the non gzipped version locally.'),
   );
 
   return system_settings_form($form);

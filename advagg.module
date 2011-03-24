@@ -470,7 +470,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     }
   }
 
-  // Set orginal array.
+  // Set original array.
   $filenames[] = array(
     'filetype' => $filetype,
     'files' => $files,

@@ -156,8 +156,8 @@ function advagg_requirements($phase) {
       $requirements['advagg_labjs_closure'] = array(
         'title'       => $t('Adv CSS/JS Agg - LABjs Closure'),
         'severity'    => REQUIREMENT_WARNING,
-        'value'       => $t('LABjs setttings issue.'),
-        'description' => $t('On the <a href="@link">LABjs configuration page</a>, disable the "Rewrite JavaScript blocks in page closure" settting.', array('@link' => url('admin/settings/performance/labjs'))),
+        'value'       => $t('LABjs settings issue.'),
+        'description' => $t('On the <a href="@link">LABjs configuration page</a>, disable the "Rewrite JavaScript blocks in page closure" setting.', array('@link' => url('admin/settings/performance/labjs'))),
       );
     }
     if (module_exists('cdn')) {

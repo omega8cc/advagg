@@ -203,7 +203,7 @@ function advagg_bundler_merge_css(&$groupings, $max) {
         $prev_val = $val;
        }
 
-      // Get best merge canidate.
+      // Get best merge candidate.
       $min = 32767;
       foreach ($map as $v) {
         foreach ($v as $key => $values) {

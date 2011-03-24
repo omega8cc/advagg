@@ -49,7 +49,7 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   $css->set_cfg('preserve_css', variable_get('advagg_css_compress_preserve_css', ADVAGG_CSS_COMPRESS_PRESERVE_CSS));
   $css->set_cfg('remove_last_;', TRUE);
   $css->set_cfg('merge_selectors', TRUE);
-  $css->set_cfg('optimise_shorthands', TRUE);
+  $css->set_cfg('optimize_shorthands', TRUE);
   $css->set_cfg('silent', TRUE);
   $css->set_cfg('compress_colors', TRUE);
   $css->set_cfg('sort_selectors', FALSE);

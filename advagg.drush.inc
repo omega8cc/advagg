@@ -12,7 +12,7 @@
  *   List of cache types that can be cleared.
  */
 function advagg_drush_cache_clear(&$types) {
-  // Add in Adcanced CSS/JS Aggregation
+  // Add in Advanced CSS/JS Aggregation
   $types['advagg'] = 'drush_advagg_cache_scan';
 }
 
