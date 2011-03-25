@@ -69,7 +69,7 @@ function advagg_bundler_admin_settings_form() {
   list($data, $rows) = advagg_form_print_r($data);
   $form['info']['advagg_bundler_info'] = array(
     '#type'         => 'textarea',
-    '#title'        => $row['filename'],
+    '#title'        => check_plain($row['filename']),
     '#default_value'  => $data,
     '#rows'           => $rows-1,
   );

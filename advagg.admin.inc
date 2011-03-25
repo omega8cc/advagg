@@ -51,7 +51,7 @@ function advagg_admin_info_form() {
       '#type'          => 'fieldset',
       '#collapsible'   => TRUE,
       '#collapsed'     => TRUE,
-      '#title'         => t('@type files', array('@type' => strtoupper($type))),
+      '#title'         => t('@type files', array('@type' => drupal_strtoupper($type))),
     );
     // filename  filename_md5  checksum  filetype  counter   data
     $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = '%s'", $type);
@@ -62,7 +62,7 @@ function advagg_admin_info_form() {
 
         $form[$type][$row['filename_md5']] = array(
           '#type'         => 'textarea',
-          '#title'        => $row['filename'],
+          '#title'        => check_plain($row['filename']),
           '#default_value'  => $data,
           '#rows'           => $rows-1,
           '#description'  => t('File has changed %counter times', array('%counter' => $row['counter'])),
@@ -94,7 +94,7 @@ function advagg_admin_info_form() {
     'advagg_master_reset'           => array(),
   );
   foreach ($hooks as $hook => $values) {
-   $hooks[$hook] = module_implements($hook);
+    $hooks[$hook] = module_implements($hook);
   }
   // Record function overrides. Not working currently.
 //   $hooks['advagg_css_render_function'] = array(variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION));
@@ -106,13 +106,13 @@ function advagg_admin_info_form() {
     if (empty($values)) {
       $form['hooks_implemented'][$hook] = array(
       '#type'   => 'markup',
-      '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . t('None') . '</div>',
+      '#value'  => '<div><strong>' . check_plain($hook) . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . t('None') . '</div>',
       );
     }
     else {
       $form['hooks_implemented'][$hook] = array(
         '#type'   => 'markup',
-        '#value'  => '<div><strong>' . $hook . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . implode('<br />&nbsp;&nbsp;&nbsp;&nbsp;', $values) . '</div>',
+        '#value'  => '<div><strong>' . check_plain($hook) . ':</strong><br />&nbsp;&nbsp;&nbsp;&nbsp;' . filter_xss(implode('<br />&nbsp;&nbsp;&nbsp;&nbsp;', $values)) . '</div>',
       );
     }
   }
@@ -128,7 +128,7 @@ function advagg_admin_info_form() {
   while ($row = db_fetch_array($results)) {
     $form['missing'][$row['filename_md5']] = array(
       '#type'   => 'markup',
-      '#value'  => '<div>' . $row['filename'] . '<br /></div>',
+      '#value'  => '<div>' . check_plain($row['filename']) . '<br /></div>',
     );
   }
   if (!empty($form['missing'])) {
@@ -172,7 +172,7 @@ function advagg_admin_settings_form() {
     '#title'          => t('Generate CSS/JS files on request (async mode)'),
     '#default_value'  => variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION),
     '#disabled'       => $ret['advagg_async_generation']['severity'] == REQUIREMENT_ERROR ? TRUE : FALSE,
-    '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
+    '#description'    => t('Current State: @value', array('@value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
   );
   $form['advagg_gzip_compression'] = array(
     '#type'           => 'checkbox',
@@ -200,7 +200,7 @@ function advagg_admin_settings_form() {
       '#field_prefix'   => '<div>' . t('You are using a private file system. You can serve aggregated files via a public folder.') . '</div>',
       '#title'          => t('Use a different directory for storing advagg files'),
       '#default_value'  => variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR),
-      '#description'    => t('If left blank it will use Drupals default files directory. ') . $extra,
+      '#description'    => check_plain(t('If left blank it will use Drupals default files directory.') . ' ' . $extra),
     );
   }
   $form['advagg_checksum_mode'] = array(
@@ -353,7 +353,7 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
 /**
  * Master reset button.
  */
-function advagg_admin_master_reset () {
+function advagg_admin_master_reset() {
   cache_clear_all('*', 'cache_advagg', TRUE);
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
@@ -405,11 +405,11 @@ function advagg_admin_flush_cache() {
 }
 
 /**
-* Set up batch for first and last name loading.
-*
-* This is where Drupal's Batch API comes into play.
-* It's as simple as defining $batch, and then calling batch_set($batch)
-*/
+ * Set up batch for first and last name loading.
+ *
+ * This is where Drupal's Batch API comes into play.
+ * It's as simple as defining $batch, and then calling batch_set($batch)
+ */
 function advagg_admin_batch_rebuild($form, &$form_state) {
   $batch = array();
 

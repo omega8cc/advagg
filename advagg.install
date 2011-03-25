@@ -347,7 +347,7 @@ function advagg_check_missing_handler() {
 
 
 /**
- * Implementation of hook_schema.
+ * Implementation of hook_schema().
  */
 function advagg_schema() {
   $schema['cache_advagg'] = drupal_get_schema_unprocessed('system', 'cache');

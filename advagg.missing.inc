@@ -131,7 +131,7 @@ function advagg_missing_regenerate() {
 function advagg_missing_remove_cache($bundle_md5) {
   $files = array();
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
-  while($row = db_fetch_array($results)) {
+  while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $type = $row['filetype'];
   }

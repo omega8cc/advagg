@@ -618,15 +618,15 @@ function advagg_file_saver($data, $dest, $force, $type) {
 /**
  * ***MODIFIED CORE FUNCTIONS BELOW***
  *
- * @see file_save_data
- * @see file_move
- * @see file_copy
+ * @see file_save_data()
+ * @see file_move()
+ * @see file_copy()
  */
 
 /**
  * Save a string to the specified destination.
  *
- * @see file_save_data
+ * @see file_save_data()
  *
  * @param $data A string containing the contents of the file.
  * @param $dest A string containing the destination location.
@@ -658,7 +658,7 @@ function advagg_file_save_data($data, $dest, $replace = FILE_EXISTS_RENAME) {
 /**
  * Moves a file to a new location.
  *
- * @see file_move
+ * @see file_move()
  *
  * - Checks if $source and $dest are valid and readable/writable.
  * - Performs a file move if $source is not equal to $dest.
@@ -699,7 +699,7 @@ function advagg_file_move(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
 /**
  * Copies a file to a new location.
  *
- * @see file_copy
+ * @see file_copy()
  *
  * This is a powerful function that in many ways performs like an advanced
  * version of copy().
@@ -889,7 +889,7 @@ function advagg_flush_caches() {
   $bundles = array();
   foreach ($needs_refreshing as $filename_md5 => $filename) {
     $results = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s'", $filename_md5);
-    while($row = db_fetch_array($results)) {
+    while ($row = db_fetch_array($results)) {
       $bundles[$row['bundle_md5']] = $row['bundle_md5'];
     }
   }
@@ -934,7 +934,7 @@ function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
   global $conf;
   $files = array();
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
-  while($row = db_fetch_array($results)) {
+  while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $filetype = $row['filetype'];
   }
@@ -1036,10 +1036,10 @@ function advagg_build_uri($path) {
 /**
  * ***MODIFIED CORE FUNCTIONS BELOW***
  *
- * @see drupal_get_css
- * @see drupal_build_css_cache
- * @see drupal_get_js
- * @see drupal_build_js_cache
+ * @see drupal_get_css()
+ * @see drupal_build_css_cache()
+ * @see drupal_get_js()
+ * @see drupal_build_js_cache()
  */
 
 /**
@@ -1077,7 +1077,7 @@ function advagg_process_css_js_prep($noagg = FALSE) {
 /**
  * Returns a themed representation of all stylesheets that should be attached to the page.
  *
- * @see drupal_get_css
+ * @see drupal_get_css()
  *
  * It loads the CSS in order, with 'module' first, then 'theme' afterwards.
  * This ensures proper cascading of styles so themes can easily override
@@ -1151,7 +1151,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             }
             // If a CSS file is not to be preprocessed and it's a theme CSS file, it needs to *always* appear at the *bottom*,
             // regardless of whether preprocessing is on or off.
-            else if (!$preprocess && $type == 'theme') {
+            elseif (!$preprocess && $type == 'theme') {
               $theme_no_preprocess[] = array(
                 'media' => $media,
                 'href' => advagg_build_uri($file) . $query_string,
@@ -1326,7 +1326,7 @@ function advagg_unlimited_css_import($files, &$styles) {
 /**
  * Returns a themed presentation of all JavaScript code for the current page.
  *
- * @see drupal_get_js
+ * @see drupal_get_js()
  *
  * References to JavaScript files are placed in a certain order: first, all
  * 'core' files, then all 'module' and finally all 'theme' JavaScript files
@@ -1527,8 +1527,8 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
 /**
  * Aggregate CSS/JS files, putting them in the files directory.
  *
- * @see drupal_build_js_cache
- * @see drupal_build_css_cache
+ * @see drupal_build_js_cache()
+ * @see drupal_build_css_cache()
  *
  * @param $type
  *   js or css
