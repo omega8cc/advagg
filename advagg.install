@@ -471,7 +471,7 @@ function advagg_update_6101() {
   db_create_table($ret, 'cache_advagg_files_data', $schema['cache_advagg_files_data']);
 
   // Migrate data.
-  $results = db_query("SELECT filename_md5, data FROM advagg_files");
+  $results = db_query("SELECT filename_md5, data FROM {advagg_files}");
   while ($row = db_fetch_array($results)) {
     if (empty($row['data'])) {
       continue;
