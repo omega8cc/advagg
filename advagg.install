@@ -493,7 +493,7 @@ function advagg_update_6101() {
 function advagg_update_6102() {
   $ret = array();
 
-  // Add in data column
+  // Add in root column.
   db_add_field($ret, 'advagg_bundles', 'root', array(
         'description' => 'If 1 then it is a root file. 0 means not root file.',
         'type' => 'int',
