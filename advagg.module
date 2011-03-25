@@ -97,6 +97,11 @@ define('ADVAGG_REBUILD_ON_FLUSH', FALSE);
 define('ADVAGG_CLOSURE', TRUE);
 
 /**
+ * Default value to see if JS bundle matching should be strict.
+ */
+define('ADVAGG_STRICT_JS_BUNDLES', TRUE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
@@ -488,12 +493,25 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
 
   // Write to DB if needed and create filenames.
   $output = array();
+  $used_md5 = array();
   foreach ($filenames as $values) {
     // Get info from array.
     $filetype = $values['filetype'];
     $files = $values['files'];
     $counter = $values['counter'];
     $bundle_md5 = $values['bundle_md5'];
+
+    // See if a JS bundle exists that already has the same files in it, just in a
+    // different order.
+    if ($filetype == 'js' && $run_alter) {
+      advagg_find_existing_bundle($files, $bundle_md5);
+    }
+
+    // Do not add the same bundle twice.
+    if (isset($used_md5[$bundle_md5])) {
+      continue;
+    }
+    $used_md5[$bundle_md5] = TRUE;
 
     // Get counter if there.
     if (empty($counter)) {
@@ -509,12 +527,96 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     // Prefix filename to prevent blocking by firewalls which reject files
     // starting with "ad*".
     $output[] = array(
-      'filename' => $filetype . '_' . $bundle_md5 . '_' . $counter . '.' . $filetype,
+      'filename' => advagg_build_filepath($filetype, $bundle_md5, $counter, $filetype),
       'files' => $files,
       'bundle_md5' => $bundle_md5,
     );
   }
   return $output;
+}
+
+/**
+ * Given a list of files, see if a bundle already exists containing all of those
+ * files. If in strict mode then the file count has to be the same.
+ *
+ * @param $files
+ *   List of files in the proposed bundle.
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ */
+function advagg_find_existing_bundle(&$files, &$bundle_md5) {
+  // Sort files for better cache hits.
+  $temp_files = $files;
+  sort($temp_files);
+  $temp_md5 = md5(implode('', $temp_files));
+  $data = cache_get($temp_md5, 'cache_advagg_bundle_reuse');
+  if (!empty($data->data)) {
+    $files = $data->data[0]['files'];
+    $bundle_md5 = $data->data[0]['bundle_md5'];
+    return;
+  }
+
+  // Build union query.
+  $query = 'SELECT bundle_md5 FROM (';
+  $sub_queries = array();
+  $args = array();
+  foreach ($files as $filename) {
+    $filename_md5 = md5($filename);
+    $sub_queries[] = "\nSELECT * FROM {advagg_bundles} WHERE filename_md5 = '%s'\n";
+    $args[] = $filename_md5;
+  }
+  $query .= implode("\nUNION\n", $sub_queries);
+  $query .= ') AS temp GROUP BY bundle_md5';
+
+  // Find matching bundles and select first good one.
+  $results = db_query($query, $args);
+  $files_count = count($files);
+  $strict = variable_get('advagg_strict_js_bundles', ADVAGG_STRICT_JS_BUNDLES);
+  $counter = array();
+  while ($new_md5 = db_result($results)) {
+    $count = db_result(db_query("SELECT count(*) FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $new_md5));
+    // Make sure bundle has the same number of files if using strict matching.
+    if (!empty($count) && $count == $files_count) {
+      $bundle_md5 = $new_md5;
+      $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
+      cache_set($temp_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      return;
+    }
+    // Only select files that are within 3 for consideration for reuse.
+    if (($count+3) <= $files_count) {
+      $counter[$new_md5] = $count;
+    }
+  }
+  if (!$strict && !empty($counter)) {
+    sort($counter);
+    $new_files = array();
+    foreach ($counter as $new_md5 => $count) {
+      $results = db_query("SELECT filename, ab.count, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $new_md5);
+      while ($row = db_fetch_array($results)) {
+        $new_files[] = $row['filename'];
+      }
+      if (!empty($new_files)) {
+        $bundle_md5 = $new_md5;
+        $files = $new_files;
+        $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
+        cache_set($temp_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+        return;
+      }
+    }
+  }
+}
+
+/**
+ * Given a list of files, see if a bundle already exists containing all of those
+ * files. If in strict mode then the file count has to be the same.
+ *
+ * @param $files
+ *   List of files in the proposed bundle.
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ */
+function advagg_build_filepath($filetype, $bundle_md5, $counter, $filetype) {
+  return $filetype . '_' . $bundle_md5 . '_' . $counter . '.' . $filetype;
 }
 
 /**
@@ -918,6 +1020,7 @@ function advagg_flush_caches() {
   file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
   lock_release('advagg_flush_caches');
+  return array('cache_advagg_bundle_reuse');
 }
 
 /**

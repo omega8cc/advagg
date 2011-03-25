@@ -81,6 +81,12 @@ function advagg_bundler_admin_settings_form() {
  * Validate form values. Used to unset variables before they get saved.
  */
 function advagg_bundler_admin_settings_form_validate($form, &$form_state) {
+  global $conf;
+
+  if ($conf['advagg_bundler_max_css'] != $form_state['values']['advagg_bundler_max_css'] || $conf['advagg_bundler_max_js'] != $form_state['values']['advagg_bundler_max_js'] ) {
+    cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
+  }
+
   // Remove non variable form info.
   unset($form_state['values']['advagg_bundler_info']);
 }

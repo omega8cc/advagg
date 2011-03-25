@@ -51,6 +51,15 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     // Set values.
     $filetype = $values['filetype'];
     $files = $values['files'];
+    $bundle_md5 = $values['bundle_md5'];
+
+    // Try cache first.
+    $data = cache_get($bundle_md5, 'cache_advagg_bundle_reuse');
+    if (!empty($data->data)) {
+      $data = $data->data;
+      $output = array_merge($output, $data);
+      continue;
+    }
 
     if ($filetype == 'css') {
       $max = $max_css;
@@ -60,6 +69,8 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     }
     if (empty($max)) {
       $output[] = $values;
+      $data = array($values);
+      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
@@ -97,6 +108,8 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     // If only one group then don't do any more processing.
     if (count($groupings) == 1) {
       $output[] = $values;
+      $data = array($values);
+      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
@@ -112,15 +125,20 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     // If only one group then don't do any more processing.
     if (count($groupings) == 1) {
       $output[] = $values;
+      $data = array($values);
+      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
     // Set groups.
+    $data = array();
     foreach ($groupings as $bundle) {
       $values['files'] = $bundle;
       $values['bundle_md5'] = md5(implode('', $bundle));
+      $data[] = $values;
       $output[] = $values;
     }
+    cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
   }
 
   // Return groupings.
@@ -129,8 +147,6 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
 
 /**
  * Given a filename return a bundle key.
- *
- * TODO Use a cache.
  *
  * @param $filename
  *   filename

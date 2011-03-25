@@ -192,6 +192,12 @@ function advagg_admin_settings_form() {
     '#default_value'  => variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH),
     '#description'    => t('Enable if your server will not timeout on a request.'),
   );
+  $form['advagg_strict_js_bundles'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Strictly match JS aggregates when trying to reuse existing aggregates'),
+    '#default_value'  => variable_get('advagg_strict_js_bundles', ADVAGG_STRICT_JS_BUNDLES),
+    '#description'    => t('If disabled, advagg will look for aggregates that contain all the files requested & might also contain up to 3 other JS files not requested. Extensive testing must be done before turning this off on production. If you have some JS files that are not safe to be used on all pages then never disable this.'),
+  );
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
   if (!$public_downloads) {
     $extra = module_exists('boost') ? t('If boost is installed, you can use the cache directory for advagg files.') : '';
@@ -342,6 +348,10 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
     advagg_admin_recreate_htaccess();
   }
 
+  if ($conf['advagg_strict_js_bundles'] != $form_state['values']['advagg_strict_js_bundles']) {
+    cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
+  }
+
   // Remove non variable form info.
   unset($form_state['values']['advagg_flush']);
   unset($form_state['values']['advagg_rebuild']);
@@ -355,6 +365,8 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
  */
 function advagg_admin_master_reset() {
   cache_clear_all('*', 'cache_advagg', TRUE);
+  cache_clear_all('*', 'cache_advagg_files_data', TRUE);
+  cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
 
@@ -380,7 +392,7 @@ function advagg_admin_flush_cache_button() {
   }
   else {
     if (empty($_advagg['rebuilt'])) {
-      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have marked. <br />Old Files: <br />%files <br />Marked Bundles Count: %count', array(
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />%files <br />Marked Bundles Count: %count', array(
         '%files' => implode('<br />', $_advagg['files']),
         '%count' => count($_advagg['bundles']),
       )

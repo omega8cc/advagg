@@ -40,6 +40,7 @@ function advagg_uninstall() {
   // Remove database tables.
   cache_clear_all('*', 'cache_advagg', TRUE);
   cache_clear_all('*', 'cache_advagg_files_data', TRUE);
+  cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
   drupal_uninstall_schema('advagg');
 
   // Remove variables.
@@ -352,8 +353,13 @@ function advagg_check_missing_handler() {
 function advagg_schema() {
   $schema['cache_advagg'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_advagg']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep timestamps and if the file exists.');
+
   $schema['cache_advagg_files_data'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_advagg_files_data']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about files.');
+
+  $schema['cache_advagg_bundle_reuse'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_bundle_reuse']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about existing bundles that can be reused.');
+
 
   $schema['advagg_files'] = array(
     'description' => t('Files used in CSS/JS aggregation.'),
@@ -500,6 +506,20 @@ function advagg_update_6102() {
         'not null' => TRUE,
         'default' => 0,
       ));
+
+  return $ret;
+}
+
+/**
+ * Update 6103 - Create a bundle reuse cache table.
+ */
+function advagg_update_6103() {
+  $ret = array();
+
+  // Create cache table.
+  $schema['cache_advagg_bundle_reuse'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_bundle_reuse']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about existing bundles that can be used.');
+  db_create_table($ret, 'cache_advagg_bundle_reuse', $schema['cache_advagg_bundle_reuse']);
 
   return $ret;
 }
