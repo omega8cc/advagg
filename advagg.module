@@ -535,6 +535,19 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   return $output;
 }
 
+function advagg_db_query($query) {
+  $args = func_get_args();
+  array_shift($args);
+  $query = db_prefix_tables($query);
+  if (isset($args[0]) and is_array($args[0])) { // 'All arguments in one array' syntax
+    $args = $args[0];
+  }
+  _db_query_callback($args, TRUE);
+  $query = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $query);
+  return $query;
+}
+
+
 /**
  * Given a list of files, see if a bundle already exists containing all of those
  * files. If in strict mode then the file count has to be the same.
@@ -557,16 +570,28 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   }
 
   // Build union query.
-  $query = 'SELECT bundle_md5 FROM (';
-  $sub_queries = array();
+  $query = 'SELECT root.bundle_md5 FROM {advagg_bundles} AS root';
+  $joins = array();
+  $wheres = array();
   $args = array();
+  $counter = 0;
   foreach ($files as $filename) {
-    $filename_md5 = md5($filename);
-    $sub_queries[] = "\nSELECT * FROM {advagg_bundles} WHERE filename_md5 = '%s'\n";
-    $args[] = $filename_md5;
+    // use char for table aliases.
+    $key = strtr($counter, '01234567890', 'abcdefghij');
+
+    $joins[$key] = "\nINNER JOIN {advagg_bundles} AS $key USING(bundle_md5)\n";
+    if ($counter == 0) {
+      $wheres[$key] = "WHERE $key.filename_md5 = '%s'";
+    }
+    else {
+      $wheres[$key] = "AND $key.filename_md5 = '%s'";
+    }
+    $args[$key] = md5($filename);
+    $counter++;
   }
-  $query .= implode("\nUNION\n", $sub_queries);
-  $query .= ') AS temp GROUP BY bundle_md5';
+  $query .= implode("\n", $joins);
+  $query .= implode("\n", $wheres);
+  $query .= ' GROUP BY bundle_md5';
 
   // Find matching bundles and select first good one.
   $results = db_query($query, $args);
