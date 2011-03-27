@@ -535,19 +535,6 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   return $output;
 }
 
-function advagg_db_query($query) {
-  $args = func_get_args();
-  array_shift($args);
-  $query = db_prefix_tables($query);
-  if (isset($args[0]) and is_array($args[0])) { // 'All arguments in one array' syntax
-    $args = $args[0];
-  }
-  _db_query_callback($args, TRUE);
-  $query = preg_replace_callback(DB_QUERY_REGEXP, '_db_query_callback', $query);
-  return $query;
-}
-
-
 /**
  * Given a list of files, see if a bundle already exists containing all of those
  * files. If in strict mode then the file count has to be the same.
