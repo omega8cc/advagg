@@ -310,7 +310,6 @@ function advagg_get_root_files_dir($reset = FALSE) {
  *   combined array
  */
 function advagg_merge_css($array1, $array2) {
-  $array1;
   foreach ($array2 as $media => $types) {
     foreach ($types as $type => $files) {
       foreach ($files as $file => $preprocess) {
