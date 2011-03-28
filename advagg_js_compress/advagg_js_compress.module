@@ -226,14 +226,9 @@ function advagg_js_compress_test_compression($files_to_test) {
 
     $results = drupal_http_request($url, $headers, 'POST', $query_string);
     $data = advagg_get_file_data($info['md5']);
-    if ($results->data == $info['md5']) {
-      $data['advagg_js_compress']['tested']['jsminplus'] = 1;
-    }
-    else {
-      $data['advagg_js_compress']['tested']['jsminplus'] = -1;
+    if ($results->data != $info['md5']) {
       $bad_files[] = $info;
     }
-    advagg_set_file_data($info['md5'], $data);
   }
   if (empty($bad_files)) {
     return TRUE;
@@ -266,7 +261,14 @@ function advagg_js_compress_test_file($values = NULL) {
   // Compression test file if it exists.
   if (file_exists($values['values']['filename'])) {
     $contents = file_get_contents($values['values']['filename']);
+
+    $data['advagg_js_compress']['tested']['jsminplus'] = -1;
+    advagg_set_file_data($values['values']['md5'], $data);
+
     advagg_js_compress_jsminplus($contents);
+
+    $data['advagg_js_compress']['tested']['jsminplus'] = 1;
+    advagg_set_file_data($values['values']['md5'], $data);
   }
 
   echo $values['values']['md5'];
