@@ -172,7 +172,7 @@ function advagg_admin_settings_form() {
     '#title'          => t('Generate CSS/JS files on request (async mode)'),
     '#default_value'  => variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION),
     '#disabled'       => $ret['advagg_async_generation']['severity'] == REQUIREMENT_ERROR ? TRUE : FALSE,
-    '#description'    => t('Current State: @value', array('@value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
+    '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
   );
   $form['advagg_gzip_compression'] = array(
     '#type'           => 'checkbox',
