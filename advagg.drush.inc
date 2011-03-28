@@ -22,7 +22,10 @@ function advagg_drush_cache_clear(&$types) {
 function drush_advagg_cache_scan() {
   global $_advagg;
   _drupal_flush_css_js();
-  advagg_flush_caches();
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 
   if (empty($_advagg['files'])) {
     drush_log(dt('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));

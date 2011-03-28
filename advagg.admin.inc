@@ -385,7 +385,10 @@ function advagg_admin_master_reset() {
 function advagg_admin_flush_cache_button() {
   global $_advagg;
   _drupal_flush_css_js();
-  advagg_flush_caches();
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 
   if (empty($_advagg['files'])) {
     drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));

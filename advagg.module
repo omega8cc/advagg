@@ -300,7 +300,7 @@ function advagg_get_root_files_dir($reset = FALSE) {
 }
 
 /**
- * Recursively merge 2 arrays together.
+ * Merge 2 css arrays together.
  *
  * @param $array1
  *   first array
@@ -309,32 +309,16 @@ function advagg_get_root_files_dir($reset = FALSE) {
  * @return
  *   combined array
  */
-function advagg_merge_array($array1, $array2) {
-  $final = array();
-  foreach ($array1 as $key => $value) {
-    if (is_array($value)) {
-      $final[$key] = advagg_merge_array($value, $array2[$key]);
-    }
-    elseif (is_array($array2[$key])) {
-      $final[$key] = advagg_merge_array($array2[$key], $value);
-    }
-    else {
-      $final[$key] = $value;
+function advagg_merge_css($array1, $array2) {
+  $array1;
+  foreach ($array2 as $media => $types) {
+    foreach ($types as $type => $files) {
+      foreach ($files as $file => $preprocess) {
+        $array1[$media][$type][$file] = $preprocess;
+      }
     }
   }
-
-  foreach ($array2 as $key => $value) {
-    if (is_array($value)) {
-      $final[$key] = advagg_merge_array($value, $array1[$key]);
-    }
-    elseif (is_array($array1[$key])) {
-      $final[$key] = advagg_merge_array($array1[$key], $value);
-    }
-    else {
-      $final[$key] = $value;
-    }
-  }
-  return $final;
+  return $array1;
 }
 
 /**
@@ -358,7 +342,7 @@ function advagg_processor(&$variables) {
   $css_var = $variables['css'];
   $css_orig = $css_var;
   $css_func = drupal_add_css();
-  $css = advagg_merge_array($css_func, $css_var);
+  $css = advagg_merge_css($css_func, $css_var);
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
@@ -1032,7 +1016,7 @@ function advagg_flush_caches() {
   file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
   lock_release('advagg_flush_caches');
-  return array('cache_advagg_bundle_reuse');
+  return array('cache_advagg_bundle_reuse', 'cache_advagg_file_builder');
 }
 
 /**
@@ -1126,7 +1110,7 @@ function advagg_get_file_data($filename_md5) {
  *   data to store.
  */
 function advagg_set_file_data($filename_md5, $data) {
-  cache_set($filename_md5, $data, 'cache_advagg_files_data');
+  cache_set($filename_md5, $data, 'cache_advagg_files_data', CACHE_PERMANENT);
 }
 
 /**
@@ -1252,7 +1236,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           continue;
         }
         // Only include the stylesheet if it exists.
-        if (file_exists($file)) {
+        if (advagg_file_exists($file)) {
           if (!$preprocess || !($public_downloads && $preprocess_css)) {
             // If a CSS file is not to be preprocessed and it's a module CSS file, it needs to *always* appear at the *top*,
             // regardless of whether preprocessing is on or off.
@@ -1660,6 +1644,14 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
  */
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
   $data = '';
+
+  // Try cache first.
+  $cached_data_key = md5(implode('', $files));
+  $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
+  if (!empty($cached_data->data)) {
+    return $cached_data->data;
+  }
+
   list($css_path, $js_path) = advagg_get_root_files_dir();
   if ($type == 'js') {
     $file_type_path = $js_path;
@@ -1757,6 +1749,9 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
     }
   }
 
+  // Cache the output
+  cache_set($cached_data_key, $output, 'cache_advagg_file_builder', CACHE_TEMPORARY);
+
   return $output;
 }
 
@@ -1769,6 +1764,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
  *   string containing all the files.
  */
 function advagg_build_css_bundle($files) {
+  $data = '';
   // Build aggregate CSS file.
   foreach ($files as $file) {
     $contents = drupal_load_stylesheet($file, TRUE);
@@ -1800,14 +1796,46 @@ function advagg_build_js_bundle($files) {
   if (empty($files)) {
     return '';
   }
+  $data = '';
   // Build aggregate JS file.
   foreach ($files as $file) {
     // Append a ';' and a newline after each JS file to prevent them from running together.
-    if (file_exists($file)) {
+    if (advagg_file_exists($file)) {
       $data .= file_get_contents($file) .";\n";
     }
   }
   return $data;
+}
+
+/**
+ * Use a cache table to see if a file exists.
+ *
+ * @param $filename
+ *   name of file
+ * @return
+ *   TRUE or FALSE
+ */
+function advagg_file_exists($filename) {
+  static $files = array();
+  if (empty($files)) {
+    $data = cache_get('advagg_file_checksum', 'cache');
+    if (empty($data->data)) {
+      $result = db_query("SELECT filename, checksum FROM {advagg_files}");
+      while ($row = db_fetch_array($result)) {
+        $files[$row['filename']] = $row['checksum'];
+      }
+      cache_set('advagg_file_checksum', $files, 'cache', CACHE_TEMPORARY);
+    }
+    else {
+      $files = $data->data;
+    }
+  }
+  if (!empty($files[$filename]) && $files[$filename] != -1) {
+    return TRUE;
+  }
+  else {
+    return file_exists($filename);
+  }
 }
 
 /**
