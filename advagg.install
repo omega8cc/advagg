@@ -551,6 +551,7 @@ function advagg_update_6105() {
   variable_del('advagg_strict_js_bundles');
   cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
   cache_clear_all('*', 'cache_advagg_file_builder', TRUE);
+  $ret[] = array('success' => TRUE, 'query' => 'advagg bundle_reuse & file_builder caches flushed.');
 
   return $ret;
 }
