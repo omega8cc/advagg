@@ -396,8 +396,8 @@ function advagg_admin_flush_cache_button() {
   }
   else {
     if (empty($_advagg['rebuilt'])) {
-      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />%files <br />Marked Bundles Count: %count', array(
-        '%files' => implode('<br />', $_advagg['files']),
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />!files <br />Marked Bundles Count: %count', array(
+        '!files' => implode('<br />', $_advagg['files']),
         '%count' => count($_advagg['bundles']),
       )
       ));
