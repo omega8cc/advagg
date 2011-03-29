@@ -541,3 +541,16 @@ function advagg_update_6104() {
 
   return $ret;
 }
+
+/**
+ * Update 6105 - Remove strict JS variable and reset 2 advagg caches.
+ */
+function advagg_update_6105() {
+  $ret = array();
+
+  variable_del('advagg_strict_js_bundles');
+  cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
+  cache_clear_all('*', 'cache_advagg_file_builder', TRUE);
+
+  return $ret;
+}

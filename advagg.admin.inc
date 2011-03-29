@@ -192,12 +192,6 @@ function advagg_admin_settings_form() {
     '#default_value'  => variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH),
     '#description'    => t('Enable if your server will not timeout on a request.'),
   );
-  $form['advagg_strict_js_bundles'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Strictly match JS aggregates when trying to reuse existing aggregates'),
-    '#default_value'  => variable_get('advagg_strict_js_bundles', ADVAGG_STRICT_JS_BUNDLES),
-    '#description'    => t('If disabled, advagg will look for aggregates that contain all the files requested & might also contain up to 3 other JS files not requested. Extensive testing must be done before turning this off on production. If you have some JS files that are not safe to be used on all pages then never disable this.'),
-  );
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
   if (!$public_downloads) {
     $extra = module_exists('boost') ? t('If boost is installed, you can use the cache directory for advagg files.') : '';

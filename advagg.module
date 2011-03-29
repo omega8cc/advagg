@@ -564,10 +564,8 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   $query .= ' GROUP BY bundle_md5';
 
   // Find matching bundles and select first good one.
-  $results = db_query($query, $args);
   $files_count = count($files);
-  $strict = variable_get('advagg_strict_js_bundles', ADVAGG_STRICT_JS_BUNDLES);
-  $counter = array();
+  $results = db_query($query, $args);
   while ($new_md5 = db_result($results)) {
     $count = db_result(db_query("SELECT count(*) FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $new_md5));
     // Make sure bundle has the same number of files if using strict matching.
@@ -576,27 +574,6 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
       $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
       cache_set($temp_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       return;
-    }
-    // Only select files that are within 3 for consideration for reuse.
-    if (($count+3) <= $files_count) {
-      $counter[$new_md5] = $count;
-    }
-  }
-  if (!$strict && !empty($counter)) {
-    sort($counter);
-    $new_files = array();
-    foreach ($counter as $new_md5 => $count) {
-      $results = db_query("SELECT filename, ab.count, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $new_md5);
-      while ($row = db_fetch_array($results)) {
-        $new_files[] = $row['filename'];
-      }
-      if (!empty($new_files)) {
-        $bundle_md5 = $new_md5;
-        $files = $new_files;
-        $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
-        cache_set($temp_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
-        return;
-      }
     }
   }
 }
