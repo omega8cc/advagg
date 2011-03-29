@@ -67,7 +67,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     if ($filetype == 'js') {
       $max = $max_js;
     }
-    if (empty($max)) {
+    if (empty($max) || $max == 1) {
       $output[] = $values;
       $data = array($values);
       cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
@@ -76,32 +76,23 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
 
     // Load up each file.
     $groupings = array();
-    // Preserve the order for CSS cascading.
-    if ($filetype == 'css') {
-      $last_group = '';
-      foreach ($files as $key => $filename) {
-        // Assign each file to their group.
-        $group = advagg_bundler_analysis($filename);
-        if (empty($last_group)) {
-          $last_group = $group;
-        }
-
-        if ($last_group == $group) {
-          $groupings[$group][] = $filename;
-        }
-        else {
-          $groupings[$key . ' ' . $last_group] = $groupings[$last_group];
-          unset($groupings[$last_group]);
-          $groupings[$group][] = $filename;
-          $last_group = $group;
-        }
+    // Preserve the order while grouping.
+    $last_group = '';
+    foreach ($files as $key => $filename) {
+      // Assign each file to their group.
+      $group = advagg_bundler_analysis($filename);
+      if (empty($last_group)) {
+        $last_group = $group;
       }
-    }
-    else {
-      foreach ($files as $filename) {
-        // Assign each file to their group.
-        $group = advagg_bundler_analysis($filename);
+
+      if ($last_group == $group) {
         $groupings[$group][] = $filename;
+      }
+      else {
+        $groupings[$key . ' ' . $last_group] = $groupings[$last_group];
+        unset($groupings[$last_group]);
+        $groupings[$group][] = $filename;
+        $last_group = $group;
       }
     }
 
@@ -115,12 +106,8 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
 
     // Make sure we didn't go over the max; if we did merge the smallest bundles
     // together.
-    if ($filetype == 'css') {
-      advagg_bundler_merge_css($groupings, $max);
-    }
-    if ($filetype == 'js') {
-      advagg_bundler_merge_js($groupings, $max);
-    }
+    advagg_bundler_merge($groupings, $max);
+
 
     // If only one group then don't do any more processing.
     if (count($groupings) == 1) {
@@ -187,14 +174,14 @@ function advagg_bundler_analysis($filename = '') {
 /**
  * Merge bundles together if too many where created.
  *
- * This preserves the order for CSS cascading.
+ * This preserves the order.
  *
  * @param $groupings
  *   array of requested groups
  * @param $max
  *   max number of grouping
  */
-function advagg_bundler_merge_css(&$groupings, $max) {
+function advagg_bundler_merge(&$groupings, $max) {
   $group_count = count($groupings);
 
   if (!empty($max)) {
@@ -246,65 +233,5 @@ function advagg_bundler_merge_css(&$groupings, $max) {
       $groupings = $new_groupings;
       $group_count--;
     }
-  }
-}
-
-/**
- * Merge bundles together if too many where created.
- *
- * @param $groupings
- *   array of requested groups
- * @param $max
- *   max number of grouping
- */
-function advagg_bundler_merge_js(&$groupings, $max) {
-  $group_count = count($groupings);
-
-  if (!empty($max)) {
-    // Process bottom up.
-    $groupings = array_reverse($groupings);
-
-    // Record the order
-    $order = array();
-    foreach ($groupings as $key => $values) {
-      $order[] = $key;
-    }
-
-    // Keep going till array has been merged to the desired size.
-    while ($group_count > $max) {
-      // Pick smallest arrays.
-      $count = array();
-      foreach ($groupings as $key => $values) {
-        $count[$key] = count($values);
-      }
-      asort($count);
-      reset($count);
-
-      // Get key values for arrays to be merged.
-      $current = key($count);
-      next($count);
-      $next = key($count);
-
-      // Sorta Preserve order.
-      $current_order = array_search($current, $order);
-      $next_order = array_search($next, $order);
-      if ($current_order < $next_order) {
-        $first = $groupings[$current];
-        $last = $groupings[$next];
-      }
-      else {
-        $first = $groupings[$next];
-        $last = $groupings[$current];
-      }
-
-      // Move arrays around.
-      $groupings[] = array_merge($first, $last);
-      unset($groupings[$current]);
-      unset($groupings[$next]);
-      $group_count--;
-    }
-
-    // Reset order.
-    $groupings = array_reverse($groupings);
   }
 }
