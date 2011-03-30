@@ -473,6 +473,8 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   // Do not run alter if MD5 was given, we want to generate that file only in
   // this special case.
   if ($run_alter) {
+    // Force counter to be looked up later.
+    $filenames[0]['counter'] = 0;
     drupal_alter('advagg_filenames', $filenames);
   }
 
@@ -954,7 +956,7 @@ function advagg_flush_caches() {
       }
     }
 
-    // Increment the counter if needed and mark file for bundle refreshment..
+    // Increment the counter if needed and mark file for bundle refreshment.
     if ($checksum != $row['checksum'] || $update == TRUE) {
       $needs_refreshing[$row['filename_md5']] = $row['filename'];
       // Update checksum; increment counter.
