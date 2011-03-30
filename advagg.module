@@ -1626,11 +1626,13 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
   $data = '';
 
-  // Try cache first.
+  // Try cache first. When ever the counter changes this cache gets reset.
   $cached_data_key = md5(implode('', $files));
-  $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
-  if (!empty($cached_data->data)) {
-    return $cached_data->data;
+  if (!$force) {
+    $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
+    if (!empty($cached_data->data)) {
+      return $cached_data->data;
+    }
   }
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
