@@ -80,6 +80,23 @@ function advagg_requirements($phase) {
 
   // Report Drupal version
   if ($phase == 'runtime') {
+    list($css_path, $js_path) = advagg_get_root_files_dir();
+    if (!file_check_directory($css_path, FILE_CREATE_DIRECTORY)) {
+      $requirements['advagg_css_path'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CSS Path'),
+        'severity'    => REQUIREMENT_ERROR,
+        'value'       => $t('CSS directory is not created or writable'),
+        'description' => $t('%path is not setup correctly.', array('%path' => $css_path)),
+      );
+    }
+    if (!file_check_directory($js_path, FILE_CREATE_DIRECTORY)) {
+      $requirements['advagg_js_path'] = array(
+        'title'       => $t('Adv CSS/JS Agg - JS Path'),
+        'severity'    => REQUIREMENT_ERROR,
+        'value'       => $t('JS directory is not created or writable'),
+        'description' => $t('%path is not setup correctly.', array('%path' => $js_path)),
+      );
+    }
     if (variable_get('preprocess_css', FALSE) || variable_get('preprocess_js', FALSE)) {
       $requirements['advagg_core_off'] = array(
         'title'       => $t('Adv CSS/JS Agg - Core Variables'),
