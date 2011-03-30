@@ -296,6 +296,8 @@ function advagg_get_root_files_dir($reset = FALSE) {
 
   $css_path = $custom_path . '/advagg_css';
   $js_path = $custom_path . '/advagg_js';
+  file_check_directory($css_path, FILE_CREATE_DIRECTORY);
+  file_check_directory($js_path, FILE_CREATE_DIRECTORY);
   return array($css_path, $js_path);
 }
 

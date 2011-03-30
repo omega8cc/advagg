@@ -9,6 +9,13 @@
  * Implementation of hook_enable().
  */
 function advagg_enable() {
+  // Create the advagg_css/ path within the files folder.
+  $csspath = file_create_path('advagg_css');
+  file_check_directory($csspath, FILE_CREATE_DIRECTORY);
+  // Create the advagg_js/ path within the files folder.
+  $jspath = file_create_path('advagg_js');
+  file_check_directory($jspath, FILE_CREATE_DIRECTORY);
+
   // Rescan files
   register_shutdown_function('advagg_flush_caches');
 
