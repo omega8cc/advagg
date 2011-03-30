@@ -10,13 +10,13 @@
  * Default value of the maximum number of CSS bundles that can be generated in
  * a single request.
  */
-define('ADVAGG_BUNDLER_MAX_CSS', 6);
+define('ADVAGG_BUNDLER_MAX_CSS', 4);
 
 /**
  * Default value of the maximum number of JS bundles that can be generated in
  * a single request.
  */
-define('ADVAGG_BUNDLER_MAX_JS', 6);
+define('ADVAGG_BUNDLER_MAX_JS', 4);
 
 /**
  * Implementation of hook_menu
