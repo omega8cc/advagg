@@ -102,8 +102,26 @@ function advagg_missing_regenerate() {
   }
 
   // Only process if we got an older counter.
+  // If we have an out of range counter see if a simlar file exists and serve
+  // that up.
   if ($counter > $counter_in_db || $counter < 0) {
-    return t('Counter out of range.');
+    list($css_path, $js_path) = advagg_get_root_files_dir();
+    if ($type == 'js') {
+      $file_type_path = $js_path;
+    }
+    if ($type == 'css') {
+      $file_type_path = $css_path;
+    }
+
+    $new_filename = advagg_build_filename($type, $md5, $counter_in_db);
+    $filepath = $file_type_path .'/'. $new_filename;
+    if (advagg_file_exists($filepath)) {
+      header('Location: ' . advagg_build_uri($filepath), TRUE, 302);
+      exit;
+    }
+    else {
+      return t('Counter out of range.');
+    }
   }
 
   // Rebuild file.

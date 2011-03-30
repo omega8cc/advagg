@@ -512,7 +512,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     // Prefix filename to prevent blocking by firewalls which reject files
     // starting with "ad*".
     $output[] = array(
-      'filename' => advagg_build_filepath($filetype, $bundle_md5, $counter, $filetype),
+      'filename' => advagg_build_filename($filetype, $bundle_md5, $counter),
       'files' => $files,
       'bundle_md5' => $bundle_md5,
     );
@@ -581,15 +581,16 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
 }
 
 /**
- * Given a list of files, see if a bundle already exists containing all of those
- * files. If in strict mode then the file count has to be the same.
+ * Build the filename.
  *
- * @param $files
- *   List of files in the proposed bundle.
+ * @param $filetype
+ *   css or js.
+ * @param $counter
+ *   Counter value.
  * @param $bundle_md5
  *   Bundle's machine name.
  */
-function advagg_build_filepath($filetype, $bundle_md5, $counter, $filetype) {
+function advagg_build_filename($filetype, $bundle_md5, $counter) {
   return $filetype . '_' . $bundle_md5 . '_' . $counter . '.' . $filetype;
 }
 
