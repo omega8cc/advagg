@@ -293,11 +293,30 @@ function advagg_admin_settings_form() {
 function advagg_admin_settings_form_validate($form, &$form_state) {
   global $conf;
 
-  // Custom directory.
+  // Custom directory handling.
   if (!empty($form_state['values']['advagg_custom_files_dir'])) {
     $files_dir = $form_state['values']['advagg_custom_files_dir'];
-    if (file_check_directory($files_dir) == TRUE) {
-      if ($files_dir != $conf['advagg_custom_files_dir']) {
+    if ($files_dir != $conf['advagg_custom_files_dir']) {
+
+      // Try to create dir structure.
+      $cumulative = '';
+      $path_array = explode('/', $files_dir);
+      foreach ($path_array as $dir) {
+        if (empty($cumulative)) {
+          $cumulative = $dir;
+        }
+        else {
+          $cumulative .= '/' . $dir;
+        }
+        // If dir creation fails, bail out of loop.
+        if (!file_check_directory($cumulative, FILE_CREATE_DIRECTORY)) {
+          break;
+        }
+      }
+
+      // See if dir exists and is writable.
+      if (file_check_directory($files_dir) == TRUE) {
+
         // Remove old files.
         list($css_path, $js_path) = advagg_get_root_files_dir();
         file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
@@ -310,9 +329,9 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
         advagg_get_root_files_dir(TRUE);
         menu_rebuild();
       }
-    }
-    else {
-      form_set_error('advagg_custom_files_dir', t('%dir is not a directory or is not writable by the web server.', array('%dir' => $files_dir)));
+      else {
+        form_set_error('advagg_custom_files_dir', t('%dir is not a directory or is not writable by the web server.', array('%dir' => $files_dir)));
+      }
     }
   }
 
