@@ -336,7 +336,7 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   }
 
   // If the IP field is not blank, check that its a valid address.
-  if (!empty($values['advagg_server_addr']) && ip2long($values['advagg_server_addr']) === FALSE) {
+  if (!empty($form_state['values']['advagg_server_addr']) && ip2long($form_state['values']['advagg_server_addr']) === FALSE) {
     form_set_error('advagg_server_addr', t('Must be a valid IP address.'));
   }
 
