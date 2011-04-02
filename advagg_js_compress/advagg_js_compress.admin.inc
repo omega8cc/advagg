@@ -22,6 +22,23 @@ function advagg_js_compress_admin_page() {
 function advagg_js_compress_admin_settings_form() {
   $form = array();
 
+  $description = '';
+  $options = array(0 => t('JSMin+'));
+  if (function_exists('jsmin')) {
+    $options[1] = t('JSMin');
+    $description .= t('JSMin is the C complied version and is about 25 times faster. Recommend using it.');
+  }
+  else {
+    $description .= t('You can use the much faster C version of JSMin by installing the <a href="@php_jsmin">JSMin PHP Extension</a> on this server.', array('@php_jsmin' => 'http://www.ypass.net/software/php_jsmin/'));
+  }
+  $form['advagg_js_compressor'] = array(
+    '#type'           => 'radios',
+    '#title'          => t('Select the compression program to use'),
+    '#default_value'  => variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR),
+    '#options'        => $options,
+    '#description'    => $description,
+  );
+
   $form['advagg_js_compress_packer_enable'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Enable Packer'),

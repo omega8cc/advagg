@@ -17,6 +17,11 @@ define('ADVAGG_JS_COMPRESS_CALLBACK', FALSE);
 define('ADVAGG_JS_COMPRESS_PACKER_ENABLE', FALSE);
 
 /**
+ * Default value to see packer is enabled.
+ */
+define('ADVAGG_JS_COMPRESSOR', 0);
+
+/**
  * Implementation of hook_menu
  */
 function advagg_js_compress_menu() {
@@ -98,6 +103,22 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $p
  * Implement hook_advagg_js_alter.
  */
 function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
+  $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
+  if ($compressor == 0) {
+    advagg_js_compress_prep_jsminplus($contents, $files, $bundle_md5);
+  }
+  if ($compressor == 1) {
+    $contents = jsmin($contents);
+  }
+}
+
+/**
+ * Compress a JS string using jsmin+
+ *
+ * @param $contents
+ *   Javascript string.
+ */
+function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $all_ok = TRUE;
