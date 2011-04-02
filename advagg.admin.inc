@@ -211,7 +211,7 @@ function advagg_admin_settings_form() {
       'mtime' => 'mtime',
       'md5' => 'md5',
     ),
-    '#description'    => t('If Drupal is on multiple servers and the file system is not shared;  using md5 is recommended. The file modification time (mtime) could be different with this type of setup.'),
+    '#description'    => t('If Drupal is on multiple servers and the file system is not shared;  using md5 is recommended. The file modification time (mtime) could be different with this type of setup. WARNING: Changing this value will invalidate all bundles and new ones will have to be built.'),
   );
   $form['advagg_server_addr'] = array(
     '#type'           => 'textfield',
@@ -284,6 +284,7 @@ function advagg_admin_settings_form() {
     '#submit' => array('advagg_admin_recreate_htaccess'),
   );
 
+  $form['#submit'][] = 'advagg_admin_settings_form_submit';
   return system_settings_form($form);
 }
 
@@ -340,6 +341,21 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
     form_set_error('advagg_server_addr', t('Must be a valid IP address.'));
   }
 
+  // Remove non variable form info.
+  unset($form_state['values']['advagg_flush']);
+  unset($form_state['values']['advagg_rebuild']);
+  unset($form_state['values']['advagg_forced_build']);
+  unset($form_state['values']['advagg_recreate_htaccess']);
+  unset($form_state['values']['advagg_reset']);
+}
+
+
+/**
+ * Validate form values. Used to unset variables before they get saved.
+ */
+function advagg_admin_settings_form_submit($form, &$form_state) {
+  global $conf;
+
   // Gzip & htaccess checks.
   list($css_path, $js_path) = advagg_get_root_files_dir();
   $css_path .= '/.htaccess';
@@ -366,16 +382,11 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
     advagg_admin_recreate_htaccess();
   }
 
-  if ($conf['advagg_strict_js_bundles'] != $form_state['values']['advagg_strict_js_bundles']) {
-    cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
+  // If checksum mode changed, smart flush cache with new checksum mode selected.
+  if ($conf['advagg_checksum_mode'] != $form_state['values']['advagg_checksum_mode']) {
+    $conf['advagg_checksum_mode'] = $form_state['values']['advagg_checksum_mode'];
+    advagg_admin_flush_cache_button();
   }
-
-  // Remove non variable form info.
-  unset($form_state['values']['advagg_flush']);
-  unset($form_state['values']['advagg_rebuild']);
-  unset($form_state['values']['advagg_forced_build']);
-  unset($form_state['values']['advagg_recreate_htaccess']);
-  unset($form_state['values']['advagg_reset']);
 }
 
 /**

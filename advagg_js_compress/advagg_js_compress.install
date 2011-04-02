@@ -38,7 +38,7 @@ function advagg_js_compress_requirements($phase) {
       $requirements['advagg_js_compress_callback'] = array(
         'title'       => $t('AdvAgg JS Compress - Callback'),
         'severity'    => REQUIREMENT_WARNING,
-        'value'       => $t('The callback for testing if a JS file is compressable is not working.'),
+        'value'       => $t('The callback for testing if a JS file is compressible is not working.'),
         'description' => $t('As a result if jsmin+ encounters a file that it cannot compress, it will kill that PHP process.'),
       );
       if ($advagg_js_compress_callback != FALSE) {
