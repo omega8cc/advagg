@@ -579,3 +579,17 @@ function advagg_update_6105() {
 
   return $ret;
 }
+
+
+/**
+ * Update 6106 - Clear file cache.
+ */
+function advagg_update_6106() {
+  $ret = array();
+
+  cache_clear_all('*', 'cache_advagg_files_data', TRUE);
+  $ret[] = array('success' => TRUE, 'query' => 'advagg files_data cache flushed.');
+
+  return $ret;
+}
+
