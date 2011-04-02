@@ -121,6 +121,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
 function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
+  $list_bad = array();
   $all_ok = TRUE;
   foreach ($files as $filename) {
     $filename_md5 = md5($filename);
@@ -142,23 +143,22 @@ function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
   $advagg_js_compress_callback = variable_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
   if ($advagg_js_compress_callback) {
     // Send test files to worker.
-    $list_bad = array();
     if (!empty($files_to_test)) {
       $compressible = advagg_js_compress_test_compression($files_to_test);
       // If an array then it is a list of files that can not be compressed.
       if (is_array($compressible)) {
         $all_ok = FALSE;
         // Place filename in an array key.
-        foreach ($compressible as $file) {
-          $file = $file['filename'];
-          $list_bad[$file] = $file['filename'];
+        foreach ($compressible as $filedata) {
+          $filename = $filedata['filename'];
+          $list_bad[$filename] = $filename;
         }
       }
     }
   }
 
   // Bypass bad files & compress the rest.
-  if (!$all_ok && !empty($list_bad)) {
+  if (!empty($list_bad)) {
     $contents = '';
     // Do not compress the file that it bombs on.
     $list_good = array();
@@ -214,10 +214,10 @@ function advagg_js_compress_test_compression($files_to_test) {
   $bad_files = array();
   foreach ($files_to_test as $info) {
     // Mark as "bad" by filename.
-    if (   strpos($info['filename'], '.jsmin.js') !== FALSE
-        || strpos($info['filename'], '.min.js') !== FALSE
-        || strpos($info['filename'], '.pack.js') !== FALSE
-        || strpos($info['filename'], '.packed.js') !== FALSE
+    if (   strpos($info['filename'], 'jsmin.js') !== FALSE
+        || strpos($info['filename'], 'min.js') !== FALSE
+        || strpos($info['filename'], 'pack.js') !== FALSE
+        || strpos($info['filename'], 'packed.js') !== FALSE
           ) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -1;
       $bad_files[] = $info;
