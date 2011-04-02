@@ -55,6 +55,21 @@ function advagg_js_compress_requirements($phase) {
         variable_set('advagg_js_compress_callback', TRUE);
       }
     }
+
+    // Test the 'memory_limit' PHP configuration directive
+    $memory_limit = ini_get('memory_limit');
+    $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
+
+    // If $memory_limit contains a value of -1, the PHP runtime
+    // doesn't impose a limit on memory used by PHP scripts
+    if ($compressor == 0 && $memory_limit && $memory_limit != -1 && parse_size($memory_limit) < parse_size('96M')) {
+      $requirements['advagg_js_compress_memory_limit'] = array(
+        'title'       => $t('AdvAgg JS Compress - Memory Limit'),
+        'value'       => $memory_limit,
+        'severity'    => REQUIREMENT_WARNING,
+        'description' => $t('It is highly recommended that you set your PHP memory_limit at least 96M if you are going to use JSMin+.'),
+      );
+    }
   }
   return $requirements;
 }
