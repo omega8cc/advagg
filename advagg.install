@@ -169,6 +169,14 @@ function advagg_requirements($phase) {
         'description' => $t('On the <a href="@modules">modules page</a> you can disable it, as this module is no longer needed.', array('@modules' => url('admin/build/modules'))),
       );
     }
+    if (module_exists('css_emimage') && !function_exists('css_emimage_advagg_filenames_alter')) {
+      $requirements['advagg_css_emimage'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CSS Embedded Images'),
+        'severity'    => REQUIREMENT_WARNING,
+        'value'       => $t('CSS Embedded Images module needs a patch.'),
+        'description' => $t('You need to apply the latest patch from this issue <a href="@issue">CSS Embedded Images - Add in support for advaggs hooks</a>; otherwise these 2 modules are not compatible with each other.', array('@issue' => 'http://drupal.org/node/1078060')),
+      );
+    }
     if (isset($_advagg['closure']) && $_advagg['closure'] == FALSE) {
       $requirements['advagg_closure'] = array(
         'title'       => $t('Adv CSS/JS Agg - Closure'),
