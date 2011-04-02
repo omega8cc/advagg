@@ -17,7 +17,7 @@ define('ADVAGG_JS_COMPRESS_CALLBACK', FALSE);
 define('ADVAGG_JS_COMPRESS_PACKER_ENABLE', FALSE);
 
 /**
- * Default value to see packer is enabled.
+ * Default value to see what compressor to use. 0 is JSMin+.
  */
 define('ADVAGG_JS_COMPRESSOR', 0);
 
