@@ -186,7 +186,7 @@ place these rules in the Drupal roots htaccess file. Place these rules after
 
     <FilesMatch "\.(j|cs)s\.gz$">
       # Serve correct encoding type.
-      Header append Content-Encoding gzip
+      Header set Content-Encoding gzip
       # Force proxies to cache gzipped & non-gzipped css/js files separately.
       Header append Vary Accept-Encoding
     </FilesMatch>
@@ -197,7 +197,7 @@ You also need to place these rules at the very end of your htaccess file, after
 "</IfModule>".
 
 
-<FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s.*">
+<FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s(\.gz)?">
   FileETag None
   <IfModule mod_expires.c>
     # Enable expirations.

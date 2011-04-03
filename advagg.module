@@ -1911,7 +1911,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     $data .= "</IfModule>\n";
     $data .= "\n";
   }
-  $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_.+\.$ext.*\">\n";
+  $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_.+\.$ext(\.gz)?\">\n";
   $data .= "  FileETag None\n";
   $data .= "  <IfModule mod_expires.c>\n";
   $data .= "    # Enable expirations.\n";
