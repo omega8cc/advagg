@@ -273,7 +273,7 @@ function advagg_check_missing_handler() {
 
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
-    if ($data_cdn->code == 404 && !empty($data_cdn->headers['X-AdvAgg']) && $mode == CDN_MODE_BASIC) {
+    if ($data_cdn->code != 200 && !empty($data_cdn->headers['X-AdvAgg']) && $mode == CDN_MODE_BASIC) {
       // Hook menu works through the cdn
       $async = variable_get('advagg_async_generation', -1);
       if ($async == -1) {
@@ -299,7 +299,7 @@ function advagg_check_missing_handler() {
         );
       }
     }
-    elseif ($data_local->code == 404 && !empty($data_local->headers['X-AdvAgg'])) {
+    elseif ($data_local->code != 200 && !empty($data_local->headers['X-AdvAgg'])) {
       // variable_set('advagg_async_generation', FALSE);
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
@@ -318,7 +318,7 @@ function advagg_check_missing_handler() {
       );
     }
   }
-  elseif ($data_local->code == 404 && !empty($data_local->headers['X-AdvAgg'])) {
+  elseif ($data_local->code != 200 && !empty($data_local->headers['X-AdvAgg'])) {
     // Hook menu works.
     $async = variable_get('advagg_async_generation', -1);
     if ($async == -1) {
