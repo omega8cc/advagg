@@ -329,6 +329,8 @@ function advagg_merge_css($array1, $array2) {
  *   The existing theme data structure.
  */
 function advagg_processor(&$variables) {
+  global $_advagg;
+
   // If disabled, skip
   if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
     if (module_exists('jquery_update')) {
@@ -385,6 +387,7 @@ function advagg_processor(&$variables) {
       'js_footer_before' => $js_footer_orig,
       'js_footer_after' => $js_footer_processed,
     );
+    $data['runtime'] = $_advagg['debug'];
     $data = str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($data, TRUE))));
     watchdog('advagg', 'Debug info: !data', array('!data' => $data), WATCHDOG_DEBUG);
   }
@@ -435,6 +438,7 @@ function advagg_jquery_updater(&$js) {
  *   Aggregated filename.
  */
 function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = '') {
+  global $_advagg;
   $filenames = array();
 
   $run_alter = FALSE;
@@ -481,6 +485,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   // Write to DB if needed and create filenames.
   $output = array();
   $used_md5 = array();
+  $_advagg['debug']['get_filename_post_alter'][] = $filenames;
   foreach ($filenames as $values) {
     // Get info from array.
     $filetype = $values['filetype'];
@@ -1624,6 +1629,7 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
  *   array with the filepath as the key and prefix and suffix in another array.
  */
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
+  global $_advagg;
   $data = '';
 
   // Try cache first. When ever the counter changes this cache gets reset.
@@ -1631,6 +1637,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   if (!$force) {
     $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
     if (!empty($cached_data->data)) {
+      $_advagg['debug']['file_builder_cache_object'][] = array('cache' => $cached_data->data, 'files' => $files);
       return $cached_data->data;
     }
   }
