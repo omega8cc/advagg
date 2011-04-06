@@ -87,3 +87,15 @@ function advagg_js_compress_check_callback() {
   $compressible = advagg_js_compress_test_compression($files_to_test);
   return $compressible;
 }
+
+/**
+ * Update 6100 - Clear file cache.
+ */
+function advagg_js_compress_update_6100() {
+  $ret = array();
+
+  cache_clear_all('*', 'cache_advagg_files_data', TRUE);
+  $ret[] = array('success' => TRUE, 'query' => 'advagg files_data cache flushed.');
+
+  return $ret;
+}
