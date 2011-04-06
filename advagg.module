@@ -361,7 +361,7 @@ function advagg_processor(&$variables) {
   $js_code = array();
   $js_code['header'] = drupal_add_js(NULL, NULL, 'header');
   $js_code['footer'] = drupal_add_js(NULL, NULL, 'footer');
-  $skip_keys = array('styles', 'scripts', 'zebra', 'id', 'directory', 'layout', 'head_title', 'base_path', 'front_page', 'head', 'body_classes', 'header', 'footer');
+  $skip_keys = array('styles', 'scripts', 'zebra', 'id', 'directory', 'layout', 'head_title', 'base_path', 'front_page', 'head', 'body_classes', 'header', 'footer', 'closure');
   foreach ($variables as $key => $value) {
     if (!in_array($key, $skip_keys) && is_string($value) && !empty($value) && !isset($js_code[$key])) {
       $js_code[$key] = drupal_add_js(NULL, NULL, $key);
@@ -1470,7 +1470,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
   $output = array();
   foreach ($master_set as $scope => $javascript) {
-    if (empty($javascript)) {
+    if ($scope != 'header' && $scope != 'footer' && empty($javascript)) {
       continue;
     }
 
