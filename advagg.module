@@ -1784,7 +1784,9 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   }
 
   // Cache the output
-  cache_set($cached_data_key, $output, 'cache_advagg_file_builder', CACHE_TEMPORARY);
+  if (!$force) {
+    cache_set($cached_data_key, $output, 'cache_advagg_file_builder', CACHE_TEMPORARY);
+  }
 
   return $output;
 }
