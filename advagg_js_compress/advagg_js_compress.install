@@ -81,7 +81,7 @@ function advagg_js_compress_check_callback() {
   $filename = drupal_get_path('module', 'advagg_js_compress') . '/jquery.form.js';
   $files_to_test = array();
   $files_to_test[] = array(
-    'md5' => 'test',
+    'md5' => md5($filename),
     'filename' => $filename,
   );
   $compressible = advagg_js_compress_test_compression($files_to_test);
