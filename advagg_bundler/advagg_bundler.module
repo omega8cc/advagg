@@ -43,6 +43,7 @@ function advagg_bundler_menu() {
  * Implement hook_advagg_filenames_alter.
  */
 function advagg_bundler_advagg_filenames_alter(&$filenames) {
+  global $_advagg;
   $max_css = variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS);
   $max_js = variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS);
 
@@ -52,11 +53,30 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     $filetype = $values['filetype'];
     $files = $values['files'];
     $bundle_md5 = $values['bundle_md5'];
+    $cached_data_key = 'bundler_' . $bundle_md5;
 
     // Try cache first.
-    $data = cache_get($bundle_md5, 'cache_advagg_bundle_reuse');
+    $data = cache_get($cached_data_key, 'cache_advagg_bundle_reuse');
     if (!empty($data->data)) {
       $data = $data->data;
+
+      // Debugging.
+      if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+        $bundle_contents = array();
+        foreach ($data as $filename => $extra) {
+          $b_md5 = explode('_', array_pop(explode('/', $filename)));
+          $b_md5 = $b_md5[1];
+          list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
+          $bundle_contents[$filename] = $b_files;
+        }
+        $_advagg['debug']['advagg_bundler_filnames_alter'][] = array(
+          'key' => $cached_data_key,
+          'files' => $files,
+          'cache' => $data,
+          'bundle_contents' => $bundle_contents,
+        );
+      }
+
       $output = array_merge($output, $data);
       continue;
     }
@@ -70,7 +90,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     if (empty($max) || $max == 1) {
       $output[] = $values;
       $data = array($values);
-      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
@@ -100,7 +120,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     if (count($groupings) == 1) {
       $output[] = $values;
       $data = array($values);
-      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
@@ -113,7 +133,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     if (count($groupings) == 1) {
       $output[] = $values;
       $data = array($values);
-      cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       continue;
     }
 
@@ -125,7 +145,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
       $data[] = $values;
       $output[] = $values;
     }
-    cache_set($bundle_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+    cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
   }
 
   // Return groupings.

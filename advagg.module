@@ -497,7 +497,12 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   // Write to DB if needed and create filenames.
   $output = array();
   $used_md5 = array();
-  $_advagg['debug']['get_filename_post_alter'][] = $filenames;
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $_advagg['debug']['get_filename_post_alter'][] = array(
+      'key' => $bundle_md5,
+      'filenames' => $filenames,
+    );
+  }
   foreach ($filenames as $values) {
     // Get info from array.
     $filetype = $values['filetype'];
@@ -1029,15 +1034,28 @@ function advagg_flush_caches() {
  */
 function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
   global $conf;
+  list($filetype, $files) = advagg_get_files_in_bundle($bundle_md5);
+
+  $conf['advagg_async_generation'] = FALSE;
+  return advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
+}
+
+/**
+ * Get list of files and the filetype given a bundle md5.
+ *
+ * @param $bundle_md5
+ *   Bundle's machine name.
+ * @return
+ *   array ($filetype, $files)
+ */
+function advagg_get_files_in_bundle($bundle_md5) {
   $files = array();
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
   while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $filetype = $row['filetype'];
   }
-
-  $conf['advagg_async_generation'] = FALSE;
-  return advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
+  return array($filetype, $files);
 }
 
 /**
@@ -1634,7 +1652,23 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   if (!$force) {
     $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
     if (!empty($cached_data->data)) {
-      $_advagg['debug']['file_builder_cache_object'][] = array('cache' => $cached_data->data, 'files' => $files);
+      // Debugging.
+      if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+        $bundle_contents = array();
+        foreach ($cached_data->data as $filename => $extra) {
+          $b_md5 = explode('_', array_pop(explode('/', $filename)));
+          $b_md5 = $b_md5[1];
+          list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
+          $bundle_contents[$filename] = $b_files;
+        }
+        $_advagg['debug']['file_builder_cache_object'][] = array(
+          'key' => $cached_data_key,
+          'files' => $files,
+          'cache' => $cached_data->data,
+          'bundle_contents' => $bundle_contents,
+        );
+      }
+
       return $cached_data->data;
     }
   }
@@ -1649,6 +1683,14 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
 
   // Send $files, get filename back
   $filenames = advagg_get_filename($files, $type, $counter, $md5);
+
+  // Debugging.
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $_advagg['debug']['file_builder_get_filenames'][] = array(
+      'key' => $cached_data_key,
+      'filenames' => $filenames,
+    );
+  }
   $output = array();
   $locks = array();
   foreach ($filenames as $info) {
