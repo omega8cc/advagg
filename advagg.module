@@ -358,19 +358,33 @@ function advagg_processor(&$variables) {
   }
 
   // JS
-  $js_header = drupal_add_js(NULL, NULL, 'header');
-  $js_header_orig = $js_header;
-  $js_footer = drupal_add_js(NULL, NULL, 'footer');
-  $js_footer_orig = $js_footer;
-  if (!empty($js_header) || !empty($js_footer)) {
-    advagg_jquery_updater($js_header);
-
-    list($js_header_processed, $js_footer_processed) = advagg_process_js($js_header, $js_footer);
-    if (!empty($js_header_processed)) {
-      $variables['scripts'] = $js_header_processed;
+  $js_code = array();
+  $js_code['header'] = drupal_add_js(NULL, NULL, 'header');
+  $js_code['footer'] = drupal_add_js(NULL, NULL, 'footer');
+  $skip_keys = array('styles', 'scripts', 'zebra', 'id', 'directory', 'layout', 'head_title', 'base_path', 'front_page', 'head', 'body_classes', 'header', 'footer');
+  foreach ($variables as $key => $value) {
+    if (!in_array($key, $skip_keys) && is_string($value) && !empty($value) && !isset($js_code[$key])) {
+      $js_code[$key] = drupal_add_js(NULL, NULL, $key);
     }
-    if (!empty($js_footer_processed)) {
-      $variables['closure'] .= $js_footer_processed;
+  }
+  $js_code_orig = $js_code;
+
+  if (!empty($js_code)) {
+    if (!empty($js_code['header'])) {
+      advagg_jquery_updater($js_code['header']);
+    }
+
+    $js_code = advagg_process_js($js_code);
+    foreach ($js_code as $key => $value) {
+      if ($key == 'header') {
+        $variables['scripts'] = $value;
+      }
+      elseif ($key == 'footer') {
+        $variables['closure'] .= $value;
+      }
+      else {
+        $variables[$key] .= $value;
+      }
     }
   }
 
@@ -382,10 +396,8 @@ function advagg_processor(&$variables) {
       'css_before_styles' => $css_styles,
       'css_merged' => $css,
       'css_after' => $processed_css,
-      'js_header_before' => $js_header_orig,
-      'js_header_after' => $js_header_processed,
-      'js_footer_before' => $js_footer_orig,
-      'js_footer_after' => $js_footer_processed,
+      'js_before' => $js_code_orig,
+      'js_after' => $js_code,
     );
     $data['runtime'] = $_advagg['debug'];
     $data = str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($data, TRUE))));
@@ -1418,31 +1430,17 @@ function advagg_unlimited_css_import($files, &$styles) {
  * are added to the page. Then, all settings are output, followed by 'inline'
  * JavaScript code. If running update.php, all preprocessing is disabled.
  *
- * @param $javascript_header
- *   (optional) An array with all JavaScript code. Defaults to the default
- *   JavaScript array for the header.
- * @param $javascript_footer
- *   (optional) An array with all JavaScript code. Defaults to the default
- *   JavaScript array for the footer.
+ * @param $js_code
+ *   An array with all JavaScript code. Key it the region
  * @param $noagg
  *   (optional) Bool indicating that aggregation should be disabled if TRUE.
  * @return
  *   All JavaScript code segments and includes for the scope as HTML tags.
  */
-function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL, $noagg = FALSE) {
+function advagg_process_js($master_set, $noagg = FALSE) {
   global $conf;
   if ((!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update') && function_exists('locale_update_js_files')) {
     locale_update_js_files();
-  }
-
-  if (!isset($javascript_header)) {
-    $javascript_header = drupal_add_js(NULL, NULL, 'header');
-  }
-  if (!isset($javascript_footer)) {
-    $javascript_footer = drupal_add_js(NULL, NULL, 'footer');
-  }
-  if (empty($javascript_header) && empty($javascript_footer)) {
-    return '';
   }
 
   // Get useful info.
@@ -1450,14 +1448,13 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
 
   // Invoke hook_advagg_js_header_footer_alter() to give installed modules a chance to
   // modify the data in the header and footer JS if necessary.
-  $master_set = array(
-    'header' => $javascript_header,
-    'footer' => $javascript_footer,
-  );
   drupal_alter('advagg_js_header_footer', $master_set, $preprocess_js, $public_downloads);
 
   $output = array();
   foreach ($master_set as $scope => $javascript) {
+    if (empty($javascript)) {
+      continue;
+    }
 
     // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
     // modify the data in the $javascript array if necessary.
@@ -1528,14 +1525,14 @@ function advagg_process_js($javascript_header = NULL, $javascript_footer = NULL,
       if (!$good) {
         // Redo with aggregation turned off and return the new value.
         watchdog('advagg', 'JS aggregation failed. %filename could not be saved correctly.', array('%filename' => $preprocess_file), WATCHDOG_ERROR);
-        $data = advagg_process_js($javascript_header, $javascript_footer, TRUE);
+        $data = advagg_process_js($master_set, TRUE);
         return $data;
       }
     }
 
     // Default function called: advagg_js_builder
     $function = variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
-    $output[] = $function($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope);
+    $output[$scope] = $function($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope);
   }
   return $output;
 }
