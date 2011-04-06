@@ -83,7 +83,6 @@ function advagg_js_compress_advagg_files_table($row, $checksum) {
  * Implement hook_advagg_js_pre_alter.
  */
 function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $public_downloads, $scope) {
-  return;
   if (module_exists('jquery_update')) {
     return;
   }
