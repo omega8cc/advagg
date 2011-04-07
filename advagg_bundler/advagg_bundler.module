@@ -43,7 +43,7 @@ function advagg_bundler_menu() {
  * Implement hook_advagg_filenames_alter.
  */
 function advagg_bundler_advagg_filenames_alter(&$filenames) {
-  global $_advagg;
+
   $max_css = variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS);
   $max_js = variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS);
 
@@ -55,29 +55,10 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     $bundle_md5 = $values['bundle_md5'];
     $cached_data_key = 'bundler_' . $bundle_md5;
 
-    // Try cache first.
-    $data = cache_get($cached_data_key, 'cache_advagg_bundle_reuse');
-    if (!empty($data->data)) {
-      $data = $data->data;
-
-      // Debugging.
-      if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
-        $bundle_contents = array();
-        foreach ($data as $filename => $extra) {
-          $b_md5 = explode('_', array_pop(explode('/', $filename)));
-          $b_md5 = $b_md5[1];
-          list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
-          $bundle_contents[$filename] = $b_files;
-        }
-        $_advagg['debug']['advagg_bundler_filnames_alter'][] = array(
-          'key' => $cached_data_key,
-          'files' => $files,
-          'cache' => $data,
-          'bundle_contents' => $bundle_contents,
-        );
-      }
-
-      $output = array_merge($output, $data);
+    // Try cache first; cache table is cache_advagg_bundle_reuse.
+    $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_bundler_filnames_alter');
+    if (!empty($cached_data)) {
+      $output = array_merge($output, $cached_data);
       continue;
     }
 

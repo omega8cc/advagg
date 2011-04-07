@@ -545,6 +545,58 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
 }
 
 /**
+ * Get a bundle from the cache & verify it is good.
+ *
+ * @param $cached_data_key
+ *   cache key for the cache_advagg_bundle_reuse table.
+ * @param $debug_name
+ *   Name to output in the array if debugging is enabled.
+ * @return
+ *   data from the cache.
+ */
+function advagg_cached_bundle_get($cached_data_key, $debug_name) {
+  global $_advagg;
+  $data = cache_get($cached_data_key, 'cache_advagg_bundle_reuse');
+  if (!empty($data->data)) {
+    $data = $data->data;
+    $bundle_contents = array();
+    $good = TRUE;
+    // Verify cached data is good.
+    foreach ($data as $filename => $extra) {
+      if (is_numeric($filename)) {
+        continue;
+      }
+      // Get md5 from aggregated filename.
+      $b_md5 = explode('/', $filename);
+      $b_md5 = explode('_', array_pop($b_md5));
+      $b_md5 = $b_md5[1];
+
+      // Lookup bundle and make sure it is valid.
+      if (!empty($b_md5)) {
+        list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
+        $bundle_contents[$filename] = $b_files;
+        if (empty($b_files)) {
+          $good = FALSE;
+        }
+      }
+    }
+    // Debugging.
+    if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+      $_advagg['debug'][$debug_name][] = array(
+        'key' => $cached_data_key,
+        'files' => $files,
+        'cache' => $data,
+        'bundle_contents' => $bundle_contents,
+      );
+    }
+    if ($good) {
+      return $data;
+    }
+  }
+  return FALSE;
+}
+
+/**
  * Given a list of files, see if a bundle already exists containing all of those
  * files. If in strict mode then the file count has to be the same.
  *
@@ -557,11 +609,13 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   // Sort files for better cache hits.
   $temp_files = $files;
   sort($temp_files);
-  $temp_md5 = md5(implode('', $temp_files));
-  $data = cache_get($temp_md5, 'cache_advagg_bundle_reuse');
-  if (!empty($data->data)) {
-    $files = $data->data[0]['files'];
-    $bundle_md5 = $data->data[0]['bundle_md5'];
+  $cached_data_key = 'advagg_existing_' . md5(implode('', $temp_files));
+
+  // Try cache first; cache table is cache_advagg_bundle_reuse.
+  $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_find_existing_bundle');
+  if (!empty($cached_data)) {
+    $files = $cached_data[0]['files'];
+    $bundle_md5 = $cached_data[0]['bundle_md5'];
     return;
   }
 
@@ -598,7 +652,7 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
     if (!empty($count) && $count == $files_count) {
       $bundle_md5 = $new_md5;
       $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
-      cache_set($temp_md5, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       return;
     }
   }
@@ -1019,7 +1073,7 @@ function advagg_flush_caches() {
   file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
   lock_release('advagg_flush_caches');
-  return array('cache_advagg_bundle_reuse', 'cache_advagg_file_builder');
+  return array('cache_advagg_bundle_reuse');
 }
 
 /**
@@ -1648,28 +1702,12 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   $data = '';
 
   // Try cache first. When ever the counter changes this cache gets reset.
-  $cached_data_key = md5(implode('', $files));
+  $cached_data_key = 'advagg_file_builder_' . md5(implode('', $files));
   if (!$force) {
-    $cached_data = cache_get($cached_data_key, 'cache_advagg_file_builder');
-    if (!empty($cached_data->data)) {
-      // Debugging.
-      if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
-        $bundle_contents = array();
-        foreach ($cached_data->data as $filename => $extra) {
-          $b_md5 = explode('_', array_pop(explode('/', $filename)));
-          $b_md5 = $b_md5[1];
-          list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
-          $bundle_contents[$filename] = $b_files;
-        }
-        $_advagg['debug']['file_builder_cache_object'][] = array(
-          'key' => $cached_data_key,
-          'files' => $files,
-          'cache' => $cached_data->data,
-          'bundle_contents' => $bundle_contents,
-        );
-      }
-
-      return $cached_data->data;
+    // Try cache first; cache table is cache_advagg_bundle_reuse.
+    $cached_data = advagg_cached_bundle_get($cached_data_key, 'file_builder_cache_object');
+    if (!empty($cached_data)) {
+      return $cached_data;
     }
   }
 
@@ -1785,7 +1823,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
 
   // Cache the output
   if (!$force) {
-    cache_set($cached_data_key, $output, 'cache_advagg_file_builder', CACHE_TEMPORARY);
+    cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
   }
 
   return $output;
