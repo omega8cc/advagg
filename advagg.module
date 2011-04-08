@@ -2017,7 +2017,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
   $data .= "</FilesMatch>\n";
   $data .= "\n";
 
-  if (!file_save_data($data, $htaccess_file, FILE_EXISTS_REPLACE)) {
+  if (!advagg_file_save_data($data, $htaccess_file, FILE_EXISTS_REPLACE)) {
     return FALSE;
   }
   return TRUE;
