@@ -396,7 +396,6 @@ function advagg_admin_master_reset() {
   cache_clear_all('*', 'cache_advagg', TRUE);
   cache_clear_all('*', 'cache_advagg_files_data', TRUE);
   cache_clear_all('*', 'cache_advagg_bundle_reuse', TRUE);
-  cache_clear_all('*', 'cache_advagg_file_builder', TRUE);
   db_query("TRUNCATE TABLE {advagg_files}");
   db_query("TRUNCATE TABLE {advagg_bundles}");
 
