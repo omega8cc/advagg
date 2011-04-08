@@ -172,13 +172,26 @@ function advagg_admin_menu(&$deleted) {
   $links = array();
 
   $links[] = array(
-    'title' => 'Adv CSS/JS Agg',
+    'title' => t('Adv CSS/JS Agg'),
     'path' => 'admin_menu/flush-cache/advagg',
     'query' => 'destination',
     'parent_path' => 'admin_menu/flush-cache',
   );
 
   return $links;
+}
+
+/**
+ * Implementation of hook_admin_menu_output_alter().
+ *
+ * Add in a cache flush for advagg.
+ */
+function advagg_admin_menu_output_alter(&$content) {
+  if (!empty($content['icon']['icon']['flush-cache']['#access']) && !empty($content['icon']['icon']['flush-cache']['requisites']) && empty($content['icon']['icon']['flush-cache']['advagg'])) {
+    $content['icon']['icon']['flush-cache']['advagg'] = $content['icon']['icon']['flush-cache']['requisites'];
+    $content['icon']['icon']['flush-cache']['advagg']['#title'] = t('Adv CSS/JS Agg');
+    $content['icon']['icon']['flush-cache']['advagg']['#href'] = 'admin_menu/flush-cache/advagg';
+  }
 }
 
 /**
