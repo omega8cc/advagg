@@ -761,7 +761,7 @@ class csstidy {
 								$this->sub_value_arr[] = $this->sub_value;
 								// [FIX] @font-face with multiple fonts and CSSTidy
 								// (http://www.pixelastic.com/blog/86:csstidy-and-the-woff-fonts)
-								foreach($this->sub_value_arr as &$sub_value) {
+								foreach($this->sub_value_arr as $sub_value) {
 									if (substr($sub_value, 0, 6) == 'format') {
 										$sub_value = str_replace(array('format(', ')'), array('format("', '")'), $sub_value);
 									}
