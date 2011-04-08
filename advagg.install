@@ -603,9 +603,11 @@ function advagg_update_6106() {
 function advagg_update_6107() {
   $ret = array();
 
-  cache_clear_all('*', 'cache_advagg_file_builder', TRUE);
-  $ret[] = array('success' => TRUE, 'query' => 'advagg file_builder cache flushed.');
-  db_drop_table($ret, 'cache_advagg_file_builder');
+  if (db_table_exists('cache_advagg_file_builder')) {
+    cache_clear_all('*', 'cache_advagg_file_builder', TRUE);
+    $ret[] = array('success' => TRUE, 'query' => 'advagg file_builder cache flushed.');
+    db_drop_table($ret, 'cache_advagg_file_builder');
+  }
 
   return $ret;
 }
