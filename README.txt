@@ -198,7 +198,6 @@ You also need to place these rules at the very end of your htaccess file, after
 
 
 <FilesMatch "^(j|cs)s_[0-9a-f]{32}_.+\.(j|cs)s(\.gz)?">
-  FileETag None
   <IfModule mod_expires.c>
     # Enable expirations.
     ExpiresActive On
@@ -208,13 +207,13 @@ You also need to place these rules at the very end of your htaccess file, after
   </IfModule>
   <IfModule mod_headers.c>
     # Unset unnecessary headers.
-    Header unset ETag
     Header unset Last-Modified
     Header unset Pragma
 
     # Make these files publicly cacheable.
     Header append Cache-Control "public"
   </IfModule>
+  FileETag MTime Size
 </FilesMatch>
 
 

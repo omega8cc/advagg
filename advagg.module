@@ -1998,7 +1998,6 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     $data .= "\n";
   }
   $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_.+\.$ext(\.gz)?\">\n";
-  $data .= "  FileETag None\n";
   $data .= "  <IfModule mod_expires.c>\n";
   $data .= "    # Enable expirations.\n";
   $data .= "    ExpiresActive On\n";
@@ -2008,13 +2007,13 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
   $data .= "  </IfModule>\n";
   $data .= "  <IfModule mod_headers.c>\n";
   $data .= "    # Unset unnecessary headers.\n";
-  $data .= "    Header unset ETag\n";
   $data .= "    Header unset Last-Modified\n";
   $data .= "    Header unset Pragma\n";
   $data .= "\n";
   $data .= "    # Make these files publicly cacheable.\n";
   $data .= "    Header append Cache-Control \"public\"\n";
   $data .= "  </IfModule>\n";
+  $data .= "  FileETag MTime Size\n";
   $data .= "</FilesMatch>\n";
   $data .= "\n";
 
