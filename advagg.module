@@ -1332,6 +1332,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             'prefix' => '',
             'suffix' => '',
           );
+          // Unset the file to prevent its inclusion when CSS aggregation is enabled.
+          unset($types[$type][$file]);
           continue;
         }
 
