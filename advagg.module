@@ -1257,7 +1257,8 @@ function advagg_process_css_js_prep($noagg = FALSE) {
 
 
 /**
- * Returns a themed representation of all stylesheets that should be attached to the page.
+ * Returns a themed representation of all stylesheets that should be attached to
+ * the page.
  *
  * @see drupal_get_css()
  *
@@ -1295,13 +1296,15 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   // modify the data in the $javascript array if necessary.
   drupal_alter('advagg_css_pre', $css, $preprocess_css, $public_downloads);
 
+  $external_no_preprocess = array();
   $module_no_preprocess = array();
   $output_no_preprocess = array();
   $output_preprocess = array();
   $theme_no_preprocess = array();
   foreach ($css as $media => $types) {
     // If CSS preprocessing is off, we still need to output the styles.
-    // Additionally, go through any remaining styles if CSS preprocessing is on and output the non-cached ones.
+    // Additionally, go through any remaining styles if CSS preprocessing is on
+    // and output the non-cached ones.
     foreach ($types as $type => $files) {
       if ($type == 'module') {
         // Setup theme overrides for module styles.
@@ -1311,18 +1314,33 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         }
       }
       foreach ($types[$type] as $file => $preprocess) {
-        // If the theme supplies its own style using the name of the module style, skip its inclusion.
-        // This includes any RTL styles associated with its main LTR counterpart.
+        // If the theme supplies its own style using the name of the module
+        // style, skip its inclusion. This includes any RTL styles associated
+        // with its main LTR counterpart.
         if ($type == 'module' && in_array(str_replace('-rtl.css', '.css', basename($file)), $theme_styles)) {
           // Unset the file to prevent its inclusion when CSS aggregation is enabled.
           unset($types[$type][$file]);
           continue;
         }
+        // If a CSS file is not to be preprocessed and it's an external
+        // CSS file, it needs to *always* appear at the *vey top*,
+        // regardless of whether preprocessing is on or off.
+        if ($type == 'external') {
+          $external_no_preprocess[] = array(
+            'media' => $media,
+            'href' => $file,
+            'prefix' => '',
+            'suffix' => '',
+          );
+          continue;
+        }
+
         // Only include the stylesheet if it exists.
         if (advagg_file_exists($file)) {
           if (!$preprocess || !($public_downloads && $preprocess_css)) {
-            // If a CSS file is not to be preprocessed and it's a module CSS file, it needs to *always* appear at the *top*,
-            // regardless of whether preprocessing is on or off.
+            // If a CSS file is not to be preprocessed and it's a module CSS
+            // file, it needs to *always* appear at the *top*, regardless of
+            // whether preprocessing is on or off.
             if (!$preprocess && $type == 'module') {
               $module_no_preprocess[] = array(
                 'media' => $media,
@@ -1331,8 +1349,9 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
                 'suffix' => '',
               );
             }
-            // If a CSS file is not to be preprocessed and it's a theme CSS file, it needs to *always* appear at the *bottom*,
-            // regardless of whether preprocessing is on or off.
+            // If a CSS file is not to be preprocessed and it's a theme CSS
+            // file, it needs to *always* appear at the *bottom*, regardless of
+            // whether preprocessing is on or off.
             elseif (!$preprocess && $type == 'theme') {
               $theme_no_preprocess[] = array(
                 'media' => $media,
@@ -1341,6 +1360,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
                 'suffix' => '',
               );
             }
+
             else {
               $output_no_preprocess[] = array(
                 'media' => $media,
@@ -1392,12 +1412,14 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
 
   // Default function called: advagg_unlimited_css_builder
   $function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
-  return $function($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
+  return $function($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 }
 
 /**
  * Logic to figure out what kind of css tags to use.
  *
+ * @param $external_no_preprocess
+ *   array of css files ($media, $href)
  * @param $module_no_preprocess
  *   array of css files ($media, $href)
  * @param $output_no_preprocess
@@ -1409,10 +1431,10 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
  * @return
  *   html for loading the css. html for the head.
  */
-function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess) {
+function advagg_unlimited_css_builder($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess) {
   global $user;
   $styles = '';
-  $files = array_merge($module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
+  $files = array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
 
   // Select method for css html output
   if (count($files) < variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
@@ -1422,7 +1444,8 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     // Detect IE browsers here
     $is_ie = FALSE;
     if (isset($_SERVER['HTTP_USER_AGENT'])) {
-      // Strings for testing found via http://chrisschuld.com/projects/browser-php-detecting-a-users-browser-from-php/
+      // Strings for testing found via
+      // http://chrisschuld.com/projects/browser-php-detecting-a-users-browser-from-php/
       // Test for v1 - v1.5 IE
       // Test for versions > 1.5
       // Test for Pocket IE
@@ -1439,7 +1462,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     }
 
     if ($is_ie) {
-      advagg_unlimited_css_import(array_merge($module_no_preprocess, $output_no_preprocess), $styles);
+      advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
       advagg_unlimited_css_traditional($output_preprocess, $styles);
       advagg_unlimited_css_import($theme_no_preprocess, $styles);
     }
@@ -1448,7 +1471,7 @@ function advagg_unlimited_css_builder($module_no_preprocess, $output_no_preproce
     }
   }
   else {
-    advagg_unlimited_css_import(array_merge($module_no_preprocess, $output_no_preprocess), $styles);
+    advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
     advagg_unlimited_css_traditional($output_preprocess, $styles);
     advagg_unlimited_css_import($theme_no_preprocess, $styles);
   }
