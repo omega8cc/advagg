@@ -1021,8 +1021,10 @@ function advagg_flush_caches() {
   set_time_limit(0);
   global $_advagg;
   // Only one advagg cache flusher can run at a time.
-  if (!lock_acquire('advagg_flush_caches')) {
-    return;
+  if (function_exists('lock_acquire')) {
+    if (!lock_acquire('advagg_flush_caches')) {
+      return;
+    }
   }
 
   // Find files that have changed.
@@ -1085,7 +1087,9 @@ function advagg_flush_caches() {
   file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
   file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
-  lock_release('advagg_flush_caches');
+  if (function_exists('lock_release')) {
+    lock_release('advagg_flush_caches');
+  }
   return array('cache_advagg_bundle_reuse');
 }
 
@@ -1811,11 +1815,13 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       }
 
       // Only generate once.
-      $lock_name = 'advagg_' . $filename;
-      if (!lock_acquire($lock_name)) {
-        $locks[] = $lock_name;
-        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
-        continue;
+      if (function_exists('lock_acquire')) {
+        $lock_name = 'advagg_' . $filename;
+        if (!lock_acquire($lock_name)) {
+          $locks[] = $lock_name;
+          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
+          continue;
+        }
       }
 
       if ($type == 'css') {
@@ -1842,13 +1848,15 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       }
 
       // Release lock.
-      lock_release($lock_name);
+      if (function_exists('lock_release')) {
+        lock_release($lock_name);
+      }
     }
     $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
   }
 
   // Wait for all locks before returning.
-  if (!empty($locks)) {
+  if (!empty($locks) && function_exists('lock_wait')) {
     foreach ($locks as $lock_name) {
       lock_wait($lock_name);
     }
