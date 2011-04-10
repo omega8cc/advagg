@@ -43,7 +43,10 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   include_once($filename);
   $css = new csstidy();
 
-  set_time_limit(0);
+  // Try to allocate enough time to run CSSTidy.
+  if (function_exists('set_time_limit')) {
+    @set_time_limit(240);
+  }
 
   // Set configuration.
   $css->set_cfg('preserve_css', variable_get('advagg_css_compress_preserve_css', ADVAGG_CSS_COMPRESS_PRESERVE_CSS));
