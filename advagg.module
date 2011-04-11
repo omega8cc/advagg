@@ -1018,7 +1018,11 @@ function advagg_bundle_built($filepath) {
  * Implementation of hook_flush_caches().
  */
 function advagg_flush_caches() {
-  set_time_limit(0);
+  // Try to allocate enough time to flush the cache
+  if (function_exists('set_time_limit')) {
+    @set_time_limit(240);
+  }
+
   global $_advagg;
   // Only one advagg cache flusher can run at a time.
   if (function_exists('lock_acquire')) {
