@@ -2009,7 +2009,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     $type = 'text/javascript';
   }
   elseif ($dir == $css_path) {
-    $type = 'css';
+    $ext = 'css';
     $path = $css_path;
     $type = 'text/css';
   }
