@@ -172,7 +172,7 @@ function advagg_admin_menu(&$deleted) {
   $links = array();
 
   $links[] = array(
-    'title' => t('Adv CSS/JS Agg'),
+    'title' => 'Adv CSS/JS Agg',
     'path' => 'admin_menu/flush-cache/advagg',
     'query' => 'destination',
     'parent_path' => 'admin_menu/flush-cache',

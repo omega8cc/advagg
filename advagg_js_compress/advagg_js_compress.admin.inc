@@ -36,7 +36,7 @@ function advagg_js_compress_admin_settings_form() {
     '#title'          => t('Select the compression program to use'),
     '#default_value'  => variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR),
     '#options'        => $options,
-    '#description'    => $description,
+    '#description'    => filter_xss($description),
   );
 
   $form['advagg_js_compress_packer_enable'] = array(

@@ -172,7 +172,7 @@ function advagg_admin_settings_form() {
     '#title'          => t('Generate CSS/JS files on request (async mode)'),
     '#default_value'  => variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION),
     '#disabled'       => $ret['advagg_async_generation']['severity'] == REQUIREMENT_ERROR ? TRUE : FALSE,
-    '#description'    => t('Current State: !value', array('!value' => $ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description'])),
+    '#description'    => t('Current State: !value', array('!value' => filter_xss($ret['advagg_async_generation']['value'] . ' ' . $ret['advagg_async_generation']['description']))),
   );
   $form['advagg_gzip_compression'] = array(
     '#type'           => 'checkbox',
@@ -425,7 +425,7 @@ function advagg_admin_flush_cache_button() {
   else {
     if (empty($_advagg['rebuilt'])) {
       drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />!files <br />Marked Bundles Count: %count', array(
-        '!files' => implode('<br />', $_advagg['files']),
+        '!files' => filter_xss(implode('<br />', $_advagg['files'])),
         '%count' => count($_advagg['bundles']),
       )
       ));
