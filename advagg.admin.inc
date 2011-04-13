@@ -124,6 +124,7 @@ function advagg_admin_info_form() {
   );
 
   // If any files are missing list them.
+  // TODO: Reset missing files list.
   $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = '-1' ORDER BY filetype ASC");
   while ($row = db_fetch_array($results)) {
     $form['missing'][$row['filename_md5']] = array(
@@ -219,11 +220,11 @@ function advagg_admin_settings_form() {
     '#default_value'  => variable_get('advagg_server_addr', FALSE),
     '#description'    => t('If left blank it will use the same server as the request.'),
   );
-  $form['advagg_debug'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Debug to watchdog.'),
-    '#default_value'  => variable_get('advagg_debug', ADVAGG_DEBUG),
-  );
+//   $form['advagg_debug'] = array(
+//     '#type'           => 'checkbox',
+//     '#title'          => t('Debug to watchdog.'),
+//     '#default_value'  => variable_get('advagg_debug', ADVAGG_DEBUG),
+//   );
 
   $form['flush'] = array(
     '#type'         => 'fieldset',
