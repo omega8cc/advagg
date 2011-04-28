@@ -209,8 +209,12 @@ function advagg_requirements($phase) {
     }
     init_theme();
     $hooks = theme_get_registry();
+    // TODO: Make this exception list into a hook.
     $function = array_pop($hooks['page']['preprocess functions']);
     if (module_exists('labjs')) {
+      $function = array_pop($hooks['page']['preprocess functions']);
+    }
+    if (module_exists('headjs')) {
       $function = array_pop($hooks['page']['preprocess functions']);
     }
     if (module_exists('cdn') && function_exists('cdn_theme_registry_alter')) {
