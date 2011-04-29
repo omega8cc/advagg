@@ -8,11 +8,6 @@
 
 /**
  * Menu Callback; regenerates a missing css file.
- *
- * @param $filepath
- *   filename
- * @return
- *   Boolean indicating if the bundle already exists.
  */
 function advagg_missing_css() {
   ignore_user_abort();
