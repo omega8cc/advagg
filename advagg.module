@@ -420,7 +420,7 @@ function advagg_processor(&$variables) {
       'js_before' => $js_code_orig,
       'js_after' => $js_code,
     );
-    $data['runtime'] = $_advagg['debug'];
+    $data['runtime'] = isset($_advagg['debug']) ? $_advagg['debug'] : FALSE;
     $data = str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($data, TRUE))));
     watchdog('advagg', 'Debug info: !data', array('!data' => $data), WATCHDOG_DEBUG);
   }
@@ -1753,7 +1753,7 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
  *   array with the filepath as the key and prefix and suffix in another array.
  */
 function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
-  global $_advagg;
+  global $_advagg, $base_path;
   $data = '';
 
   // Try cache first. When ever the counter changes this cache gets reset.
