@@ -1978,6 +1978,7 @@ function advagg_missing_fast404($msg = '') {
   print '<body><h1>Not Found</h1>';
   print '<p>The requested URL was not found on this server.</p>';
   print '<p><a href="' . $base_path . '">Home</a></p>';
+  print '<!-- advagg_missing_fast404 -->';
   print '</body></html>';
   exit();
 }

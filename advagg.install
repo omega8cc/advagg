@@ -251,7 +251,7 @@ function advagg_check_missing_handler() {
   if (empty($ip)) {
     $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
   }
-  $filepath = $css_path . '/css_missing' . mt_rand() . '_0.css';
+  $filepath = $css_path . '/css_missing' . mt_rand() . time() . '_0.css';
   $url = 'http://' . $ip . $base_path . $filepath;
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
@@ -277,7 +277,7 @@ function advagg_check_missing_handler() {
 
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
-    if ($data_cdn->code != 200 && !empty($data_cdn->headers['X-AdvAgg']) && $mode == CDN_MODE_BASIC) {
+    if ($data_cdn->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn->headers['X-AdvAgg']) || strpos($data_cdn->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
       // Hook menu works through the cdn
       $async = variable_get('advagg_async_generation', -1);
       if ($async == -1) {
@@ -303,7 +303,7 @@ function advagg_check_missing_handler() {
         );
       }
     }
-    elseif ($data_local->code != 200 && !empty($data_local->headers['X-AdvAgg'])) {
+    elseif ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
       // variable_set('advagg_async_generation', FALSE);
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
@@ -322,7 +322,7 @@ function advagg_check_missing_handler() {
       );
     }
   }
-  elseif ($data_local->code != 200 && !empty($data_local->headers['X-AdvAgg'])) {
+  elseif ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
     // Hook menu works.
     $async = variable_get('advagg_async_generation', -1);
     if ($async == -1) {
