@@ -221,6 +221,9 @@ function advagg_requirements($phase) {
     if (module_exists('headjs')) {
       $function = array_pop($hooks['page']['preprocess functions']);
     }
+    if (module_exists('designkit')) {
+      $function = array_pop($hooks['page']['preprocess functions']);
+    }
     if (module_exists('cdn') && function_exists('cdn_theme_registry_alter')) {
       $function = array_pop($hooks['page']['preprocess functions']);
     }

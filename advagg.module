@@ -262,6 +262,12 @@ function advagg_theme_registry_alter(&$theme_registry) {
       $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
+
+    // If designkit's preprocess function is there already, move it to the bottom.
+    if (module_exists('designkit') && $key = array_search('designkit_preprocess_page', $theme_registry['page']['preprocess functions'])) {
+      $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
+      unset($theme_registry['page']['preprocess functions'][$key]);
+    }
   }
 }
 
