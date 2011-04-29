@@ -36,7 +36,7 @@ function advagg_js_compress_menu() {
   $items['advagg/js_compress_test_file'] = array(
     'page callback' => 'advagg_js_compress_test_file',
     'type' => MENU_CALLBACK,
-    'access arguments' => array('access content'),
+    'access callback' => TRUE,
   );
   $items['admin/settings/advagg/js-compress'] = array(
     'title' => 'JS Compression',

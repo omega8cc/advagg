@@ -27,7 +27,11 @@ function advagg_enable() {
  * Implementation of hook_disable().
  */
 function advagg_disable() {
-  cache_clear_all('*', 'cache_advagg', TRUE);
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 }
 
 /**
@@ -308,7 +312,7 @@ function advagg_check_missing_handler() {
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_WARNING,
-        'value'       => $t('Set to FALSE.'),
+        'value'       => variable_get('advagg_async_generation', FALSE) ? $t('Set to TRUE.') : $t('Set to FALSE.'),
         'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back when routed through the CDN.', array('@cdn' => url('admin/settings/cdn'))),
       );
     }

@@ -9,7 +9,22 @@
  * Implementation of hook_enable().
  */
 function advagg_bundler_enable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+}
 
+/**
+ * Implementation of hook_disable().
+ */
+function advagg_bundler_disable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 }
 
 /**

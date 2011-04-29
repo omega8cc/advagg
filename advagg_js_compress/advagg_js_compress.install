@@ -9,8 +9,25 @@
  * Implementation of hook_enable().
  */
 function advagg_js_compress_enable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+
   // Check runtime requirements
   register_shutdown_function('advagg_js_compress_requirements', 'runtime');
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function advagg_js_compress_disable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 }
 
 /**

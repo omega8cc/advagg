@@ -9,6 +9,22 @@
  * Implementation of hook_enable().
  */
 function advagg_css_compress_enable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function advagg_css_compress_disable() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 }
 
 /**
@@ -18,6 +34,11 @@ function advagg_css_compress_uninstall() {
   // Remove variables.
   variable_del('advagg_css_compress_preserve_css');
 
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
 }
 
 /**

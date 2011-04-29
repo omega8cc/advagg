@@ -119,14 +119,14 @@ function advagg_menu() {
   $items[$css_path . '/%'] = array(
     'page callback' => 'advagg_missing_css',
     'type' => MENU_CALLBACK,
-    'access arguments' => array('access content'),
+    'access callback' => TRUE,
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
   $items[$js_path . '/%'] = array(
     'page callback' => 'advagg_missing_js',
     'type' => MENU_CALLBACK,
-    'access arguments' => array('access content'),
+    'access callback' => TRUE,
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
@@ -1397,6 +1397,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
       }
       $preprocess_files = advagg_css_js_file_builder('css', $files);
       $good = TRUE;
+
       foreach ($preprocess_files as $preprocess_file => $extra) {
         if ($extra !== FALSE && is_array($extra)) {
           $prefix = $extra['prefix'];
@@ -1779,6 +1780,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   }
   $output = array();
   $locks = array();
+  $cacheable = TRUE;
   foreach ($filenames as $info) {
     $filename = $info['filename'];
     $files = $info['files'];
@@ -1842,20 +1844,31 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       // necessary.
       drupal_alter('advagg_' . $type, $data, $files, $bundle_md5);
 
+      // If data is empty then do not include this bundle in the final output.
+      if (empty($data)) {
+        if (function_exists('lock_release')) {
+          lock_release($lock_name);
+        }
+        continue;
+      }
+
       // Create the advagg_$type/ within the files folder.
       file_check_directory($file_type_path, FILE_CREATE_DIRECTORY);
 
       // Write file. default function called: advagg_file_saver
       $function = variable_get('advagg_file_save_function', ADVAGG_FILE_SAVE_FUNCTION);
       $good = $function($data, $filepath, $force, $type);
-      if (!$good) {
-        $output[$filepath] = FALSE;
-        continue;
-      }
 
       // Release lock.
       if (function_exists('lock_release')) {
         lock_release($lock_name);
+      }
+
+      // If file save was not good then downgrade to non aggregrated mode.
+      if (!$good) {
+        $output[$filepath] = FALSE;
+        $cacheable = FALSE;
+        continue;
       }
     }
     $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
@@ -1874,7 +1887,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   }
 
   // Cache the output
-  if (!$force) {
+  if (!$force && $cacheable) {
     cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
   }
 
@@ -1973,6 +1986,8 @@ function advagg_missing_fast404($msg = '') {
     header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
     header('X-AdvAgg: Failed Validation. ' . $msg);
   }
+
+  print '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' . "\n";
   print '<html>';
   print '<head><title>404 Not Found</title></head>';
   print '<body><h1>Not Found</h1>';
