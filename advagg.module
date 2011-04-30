@@ -1813,7 +1813,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
         if (empty($ip)) {
           $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
         }
-        $url = 'http://' . $ip . $base_path . $filepath;
+        $url = 'http://' . $ip . $base_path . $filepath . '?generator=1';
         $headers = array(
           'Host' => $_SERVER['HTTP_HOST'],
         );

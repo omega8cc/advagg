@@ -119,6 +119,11 @@ function advagg_missing_regenerate() {
     }
   }
 
+  // Break connection and do generation in the background.
+  if (!empty($_GET['generator'])) {
+    advagg_missing_async_opp($md5 . ' ' . $counter);
+  }
+
   // Rebuild file.
   $conf['advagg_async_generation'] = FALSE;
   $good = advagg_rebuild_bundle($md5, $counter, TRUE);
@@ -130,8 +135,10 @@ function advagg_missing_regenerate() {
   // Redirect to file.
   $_GET['redirect_counter']++;
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
-  usleep(250000); // Sleep for 250ms
-  header('Location: ' . $uri, TRUE, 307);
+  if (!headers_sent()) {
+    header('Location: ' . $uri, TRUE, 307);
+    usleep(250000); // Sleep for 250ms
+  }
   exit;
 }
 
@@ -163,5 +170,72 @@ function advagg_missing_remove_cache($bundle_md5) {
     $filepath = $file_type_path .'/'. $filename;
 
     cache_set($filepath, FALSE, 'cache_advagg', TRUE);
+  }
+}
+
+/**
+ * Output text & set php in async mode.
+ *
+ * @param $output
+ *  string - Text to output to open connection.
+ * @param $wait
+ *  bool - Wait 1 second?
+ * @param $content_type
+ *  string - Content type header.
+ * @param $length
+ *  int - Content length.
+ */
+function advagg_missing_async_opp($output, $wait = TRUE, $content_type = "text/html; charset=utf-8", $length = 0) {
+  if (headers_sent()) {
+    return FALSE;
+  }
+
+  // Calculate Content Length
+  if ($length == 0) {
+    $output .= "\n";
+    $length = (advagg_missing_strlen($output)-1);
+  }
+  // Prime php for background operations
+  $loop = 0;
+  while (ob_get_level() && $loop < 25) {
+    ob_end_clean();
+    $loop++;
+  }
+  header("Connection: close");
+  ignore_user_abort();
+
+  // Output headers & data
+  ob_start();
+  header("Content-type: " . $content_type);
+  header("Expires: Sun, 19 Nov 1978 05:00:00 GMT");
+  header("Cache-Control: no-cache");
+  header("Cache-Control: must-revalidate");
+  header("Content-Length: " . $length);
+  header("Connection: close");
+  print($output);
+  ob_end_flush();
+  flush();
+  // wait for 1 second
+  if ($wait) {
+    sleep(1);
+  }
+
+  // text returned and connection closed.
+  // Do background processing. Time taken after should not effect page load times.
+  return TRUE;
+}
+
+/**
+ * Get the length of a string in bytes
+ *
+ * @param $string
+ *   get string length
+ */
+function advagg_missing_strlen($string) {
+  if (function_exists('mb_strlen')) {
+    return mb_strlen($string, '8bit');
+  }
+  else {
+    return strlen($string);
   }
 }
