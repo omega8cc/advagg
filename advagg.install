@@ -249,6 +249,8 @@ function advagg_requirements($phase) {
 function advagg_check_missing_handler() {
   global $base_path;
   $ret = array();
+  $async = variable_get('advagg_async_generation', -1);
+
   // Ensure translations don't break at install time
   $t = get_t();
 
@@ -284,9 +286,8 @@ function advagg_check_missing_handler() {
 
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
-    if ($data_cdn->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn->headers['X-AdvAgg']) || strpos($data_cdn->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
+    if ($data_cdn->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn->headers['X-AdvAgg']) || (!empty($data_cdn->data) && strpos($data_cdn->data, '<!-- advagg_missing_fast404 -->') !== FALSE))) {
       // Hook menu works through the cdn
-      $async = variable_get('advagg_async_generation', -1);
       if ($async == -1) {
         variable_set('advagg_async_generation', TRUE);
         $ret['advagg_async_generation'] = array(
@@ -331,7 +332,6 @@ function advagg_check_missing_handler() {
   }
   elseif ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
     // Hook menu works.
-    $async = variable_get('advagg_async_generation', -1);
     if ($async == -1) {
       variable_set('advagg_async_generation', TRUE);
       $ret['advagg_async_generation'] = array(

@@ -58,8 +58,12 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
  *   filename.
  */
 function advagg_get_jquery_ui_filename($file = 'jquery-ui') {
+  $jquery_ui_path_const = 'JQUERY_UI_PATH';
+  if (!defined($jquery_ui_path_const)) {
+    return FALSE;
+  }
+  $jquery_ui_path = constant($jquery_ui_path_const) . '/ui';
   $compression = variable_get('jquery_update_compression_type', 'mini');
-  $jquery_ui_path = JQUERY_UI_PATH . '/ui';
 
   switch ($compression) {
     case 'none':
