@@ -1810,7 +1810,10 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
         // Request file.
         $ip = variable_get('advagg_server_addr', FALSE);
-        if (empty($ip)) {
+        if ($ip == -1) {
+          $ip = $_SERVER['HTTP_HOST'];
+        }
+        elseif (empty($ip)) {
           $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
         }
         $url = 'http://' . $ip . $base_path . $filepath . '?generator=1';

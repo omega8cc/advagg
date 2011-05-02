@@ -55,14 +55,14 @@ function advagg_uninstall() {
   drupal_uninstall_schema('advagg');
 
   // Remove variables.
-  variable_del('advagg_enabled');
-  variable_del('advagg_stale_file_threshold');
   variable_del('advagg_stale_file_last_used_threshold');
   variable_del('advagg_file_last_used_interval');
+  variable_del('advagg_stale_file_threshold');
   variable_del('advagg_gzip_compression');
   variable_del('advagg_async_generation');
   variable_del('advagg_socket_timeout');
   variable_del('advagg_server_addr');
+  variable_del('advagg_enabled');
   variable_del('advagg_debug');
 
   // Remove files.
@@ -256,10 +256,13 @@ function advagg_check_missing_handler() {
 
   // Setup request
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  $ip = variable_get('advagg_server_addr', FALSE);
-  if (empty($ip)) {
-    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
-  }
+    $ip = variable_get('advagg_server_addr', FALSE);
+    if ($ip == -1) {
+      $ip = $_SERVER['HTTP_HOST'];
+    }
+    elseif (empty($ip)) {
+      $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
+    }
   $filepath = $css_path . '/css_missing' . mt_rand() . time() . '_0.css';
   $url = 'http://' . $ip . $base_path . $filepath;
   $headers = array(

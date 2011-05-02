@@ -27,7 +27,17 @@ with one like this:
 
     if (!strpos($_SERVER['QUERY_STRING'], 'imagecache') && !strpos($_SERVER['QUERY_STRING'], '/advagg_')) {
 
-This will most likely be in your settings.php file. If you are still having
+This will most likely be in your settings.php file.
+
+If using Nginx make sure there is a rule similar to this in your configuration.
+http://drupal.org/node/1116618#comment-4321724
+
+If this is still an issue you can try setting the
+"IP Address to send all asynchronous requests to" setting on the
+admin/settings/advagg/config page to -1. This will use the hostname instead of
+an IP address when making the http request.
+
+If you are still having
 problems, open an issue on the advagg issue queue:
 http://drupal.org/project/issues/advagg
 
