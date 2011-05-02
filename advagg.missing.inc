@@ -110,7 +110,7 @@ function advagg_missing_regenerate() {
 
     $new_filename = advagg_build_filename($type, $md5, $counter_in_db);
     $filepath = $file_type_path .'/'. $new_filename;
-    if (advagg_file_exists($filepath)) {
+    if (file_exists($filepath)) {
       header('Location: ' . advagg_build_uri($filepath), TRUE, 302);
       exit;
     }
