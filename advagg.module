@@ -387,9 +387,11 @@ function advagg_processor(&$variables) {
   $css_var = $variables['css'];
   $css_orig = $css_var;
   $css_func = drupal_add_css();
-  $css_func_inline = advagg_add_css_inline();
   $css = advagg_merge_css($css_func, $css_var);
-  $css = advagg_merge_inline_css($css, $css_func_inline);
+  $css_func_inline = advagg_add_css_inline();
+  if (!empty($css_func_inline)) {
+    $css = advagg_merge_inline_css($css, $css_func_inline);
+  }
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
