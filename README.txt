@@ -37,8 +37,7 @@ If this is still an issue you can try setting the
 admin/settings/advagg/config page to -1. This will use the hostname instead of
 an IP address when making the http request.
 
-If you are still having
-problems, open an issue on the advagg issue queue:
+If you are still having problems, open an issue on the advagg issue queue:
 http://drupal.org/project/issues/advagg
 
 FEATURES & BENEFITS
@@ -190,6 +189,10 @@ JS/CSS Theme Override:
 JS/CSS File Save Override:
 
     $conf['advagg_file_save_function'] - advagg_file_saver
+
+Public Functions:
+ * advagg_add_css_inline. Adds the ability to add in inline CSS to the page with
+   a prefix and suffix being set as well.
 
 SINGLE HTACCESS RULES
 ---------------------

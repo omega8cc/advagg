@@ -342,6 +342,29 @@ function advagg_merge_css($array1, $array2) {
 }
 
 /**
+ * Merge 2 css arrays together.
+ *
+ * @param $array1
+ *   first array
+ * @param $array2
+ *   second array
+ * @return
+ *   combined array
+ */
+function advagg_merge_inline_css($array1, $array2) {
+  foreach ($array2 as $media => $types) {
+    foreach ($types as $type => $blobs) {
+      foreach ($blobs as $prefix => $data) {
+        foreach ($data as $suffix => $blob) {
+          $array1[$media][$type][$prefix][$suffix] = $blob;
+        }
+      }
+    }
+  }
+  return $array1;
+}
+
+/**
  * Process variables for page.tpl.php
  *
  * @param $variables
@@ -364,7 +387,9 @@ function advagg_processor(&$variables) {
   $css_var = $variables['css'];
   $css_orig = $css_var;
   $css_func = drupal_add_css();
+  $css_func_inline = advagg_add_css_inline();
   $css = advagg_merge_css($css_func, $css_var);
+  $css = advagg_merge_inline_css($css, $css_func_inline);
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
@@ -415,6 +440,7 @@ function advagg_processor(&$variables) {
       'css_before_vars' => $css_orig,
       'css_before_function' => $css_func,
       'css_before_styles' => $css_styles,
+      'css_before_inline' => $css_func_inline,
       'css_merged' => $css,
       'css_after' => $processed_css,
       'js_before' => $js_code_orig,
@@ -1317,6 +1343,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   $output_no_preprocess = array();
   $output_preprocess = array();
   $theme_no_preprocess = array();
+  $inline_no_preprocess = array();
   foreach ($css as $media => $types) {
     // If CSS preprocessing is off, we still need to output the styles.
     // Additionally, go through any remaining styles if CSS preprocessing is on
@@ -1339,7 +1366,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           continue;
         }
         // If a CSS file is not to be preprocessed and it's an external
-        // CSS file, it needs to *always* appear at the *vey top*,
+        // CSS file, it needs to *always* appear at the *very top*,
         // regardless of whether preprocessing is on or off.
         if ($type == 'external') {
           $external_no_preprocess[] = array(
@@ -1348,7 +1375,21 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             'prefix' => '',
             'suffix' => '',
           );
-          // Unset the file to prevent its inclusion when CSS aggregation is enabled.
+          // Unset the file to prevent its inclusion.
+          unset($types[$type][$file]);
+          continue;
+        }
+        // If a CSS file is not to be preprocessed and it's an inline CSS blob
+        // it needs to *always* appear at the *very bottom*.
+        if ($type == 'inline') {
+          foreach ($preprocess as $suffix => $blob)
+          $inline_no_preprocess[] = array(
+            'media' => $media,
+            'data' => $blob,
+            'prefix' => $file,
+            'suffix' => $suffix,
+          );
+          // Unset to prevent its inclusion.
           unset($types[$type][$file]);
           continue;
         }
@@ -1431,7 +1472,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
 
   // Default function called: advagg_unlimited_css_builder
   $function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
-  return $function($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
+  return $function($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess);
 }
 
 /**
@@ -1447,13 +1488,15 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
  *   array of css files ($media, $href, $prefix, $suffix)
  * @param $theme_no_preprocess
  *   array of css files ($media, $href)
+ * @param $inline_no_preprocess
+ *   array of css data to inline ($media, $data)
  * @return
  *   html for loading the css. html for the head.
  */
-function advagg_unlimited_css_builder($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess) {
+function advagg_unlimited_css_builder($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess) {
   global $user;
   $styles = '';
-  $files = array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess);
+  $files = array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess);
 
   // Select method for css html output
   if (count($files) < variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
@@ -1484,6 +1527,7 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
       advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
       advagg_unlimited_css_traditional($output_preprocess, $styles);
       advagg_unlimited_css_import($theme_no_preprocess, $styles);
+      advagg_unlimited_css_traditional($inline_no_preprocess, $styles);
     }
     else {
       advagg_unlimited_css_traditional($files, $styles);
@@ -1493,6 +1537,7 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
     advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
     advagg_unlimited_css_traditional($output_preprocess, $styles);
     advagg_unlimited_css_import($theme_no_preprocess, $styles);
+    advagg_unlimited_css_traditional($inline_no_preprocess, $styles);
   }
 
   return $styles;
@@ -1508,11 +1553,20 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
  */
 function advagg_unlimited_css_traditional($files, &$styles) {
   foreach ($files as $css_file) {
-    $media = $css_file['media'];
-    $href = $css_file['href'];
-    $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'];
-    $suffix = empty($css_file['suffix']) ? '' : $css_file['suffix'];
-    $styles .= $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . $suffix . "\n";
+    if (isset($css_file['href'])) {
+      $media = $css_file['media'];
+      $href = $css_file['href'];
+      $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'] . "\n";
+      $suffix = empty($css_file['suffix']) ? '' : "\n" . $css_file['suffix'];
+      $styles .= $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . $suffix . "\n";
+    }
+    else {
+      $media = $css_file['media'];
+      $data = $css_file['data'];
+      $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'] . "\n";
+      $suffix = empty($css_file['suffix']) ? '' : "\n" . $css_file['suffix'];
+      $styles .= $prefix . '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . $suffix . "\n";
+    }
   }
 }
 
@@ -1533,7 +1587,7 @@ function advagg_unlimited_css_import($files, &$styles) {
     $href = $css_file['href'];
     if ($media_new != $media || $counter > variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
       if ($media && !empty($import)) {
-        $styles .= "\n".'<style type="text/css" media="'. $media .'">'."\n". $import .'</style>';
+        $styles .= "\n" . '<style type="text/css" media="'. $media .'">' . "\n". $import .'</style>';
         $import = '';
       }
       $counter = 0;
@@ -1873,7 +1927,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
         lock_release($lock_name);
       }
 
-      // If file save was not good then downgrade to non aggregrated mode.
+      // If file save was not good then downgrade to non aggregated mode.
       if (!$good) {
         $output[$filepath] = FALSE;
         $cacheable = FALSE;
@@ -2098,4 +2152,37 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     return FALSE;
   }
   return TRUE;
+}
+
+/**
+ * Adds a CSS file to the stylesheet queue.
+ *
+ * @param $data
+ *   (optional) The CSS data that will be set. If not set then the inline CSS
+ *   array will be passed back.
+ * @param $media
+ *   (optional) The media type for the stylesheet, e.g., all, print, screen.
+ * @param $prefix
+ *   (optional) prefix to add before the inlined css.
+ * @param $suffix
+ *   (optional) suffix to add after the inlined css.
+ * @return
+ *   An array of CSS files.
+ */
+function advagg_add_css_inline($data = NULL, $media = 'all', $prefix = NULL, $suffix = NULL) {
+  static $css = array();
+
+  // Store inline data in a static.
+  if (isset($data)) {
+    if (!isset($css[$media]['inline'][$prefix][$suffix])) {
+      $css[$media]['inline'][$prefix][$suffix] = $data;
+    }
+    else {
+      $css[$media]['inline'][$prefix][$suffix] .= "\n" . $data;
+    }
+    return;
+  }
+  else {
+    return $css;
+  }
 }
