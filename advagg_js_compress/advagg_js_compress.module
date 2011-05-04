@@ -27,6 +27,11 @@ define('ADVAGG_JS_COMPRESSOR', 0);
 define('ADVAGG_JS_COMPRESS_RATIO', 0.1);
 
 /**
+ * Default value for the compression ratio test.
+ */
+define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.98);
+
+/**
  * Implementation of hook_menu
  */
 function advagg_js_compress_menu() {
@@ -168,7 +173,13 @@ function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
     }
     else {
       $data = advagg_build_js_bundle(array($file));
-      advagg_js_compress_jsminplus($data);
+      list($before, $after) = advagg_js_compress_jsminplus($data);
+      $ratio = ($before - $after)/$before;
+      // Make sure the returned string is not empty or has a VERY high
+      // compression ratio.
+      if (empty($data) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+        $data = advagg_build_js_bundle(array($file));
+      }
       $contents .= $data . ";\n";
     }
   }
@@ -293,6 +304,13 @@ function advagg_js_compress_test_file($values = NULL) {
       echo $md5;
       exit;
     }
+    if ($ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+      $data['advagg_js_compress']['tested']['jsminplus'] = -3;
+      advagg_set_file_data($md5, $data);
+      echo $md5;
+      exit;
+    }
+
 
     $data['advagg_js_compress']['tested']['jsminplus'] = 1;
     advagg_set_file_data($md5, $data);
