@@ -1655,7 +1655,9 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
       switch ($type) {
         case 'setting':
-          $setting_no_preprocess[] = 'jQuery.extend(Drupal.settings, ' . advagg_drupal_to_js(call_user_func_array('array_merge_recursive', $data)) . ");";
+          $js_settings = advagg_drupal_to_js(call_user_func_array('array_merge_recursive', $data));
+          $js_settings = preg_replace(array('/"DRUPAL_JS_RAW\:/', '/\:DRUPAL_JS_RAW"/'), array('', ''), $js_settings);
+          $setting_no_preprocess[] = 'jQuery.extend(Drupal.settings, ' . $js_settings . ");";
           break;
 
         case 'inline':
