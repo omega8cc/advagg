@@ -1629,10 +1629,6 @@ function advagg_process_js($master_set, $noagg = FALSE) {
   // Get useful info.
   list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
-  // Invoke hook_advagg_js_header_footer_alter() to give installed modules a chance to
-  // modify the data in the header and footer JS if necessary.
-  drupal_alter('advagg_js_header_footer', $master_set, $preprocess_js, $public_downloads);
-
   $output = array();
   foreach ($master_set as $scope => $javascript) {
     if ($scope != 'header' && $scope != 'footer' && empty($javascript)) {
@@ -1642,6 +1638,17 @@ function advagg_process_js($master_set, $noagg = FALSE) {
     // Invoke hook_advagg_js_pre_alter() to give installed modules a chance to
     // modify the data in the $javascript array if necessary.
     drupal_alter('advagg_js_pre', $javascript, $preprocess_js, $public_downloads, $scope);
+    $master_set[$scope] = $javascript;
+  }
+
+  // Invoke hook_advagg_js_header_footer_alter() to give installed modules a chance to
+  // modify the data in the header and footer JS if necessary.
+  drupal_alter('advagg_js_header_footer', $master_set, $preprocess_js, $public_downloads);
+
+  foreach ($master_set as $scope => $javascript) {
+    if ($scope != 'header' && $scope != 'footer' && empty($javascript)) {
+      continue;
+    }
 
     $setting_no_preprocess = array();
     $inline_no_preprocess = array();
