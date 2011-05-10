@@ -487,8 +487,19 @@ function advagg_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'timestamp' => array(
+        'description' => 'Last used timestamp of the bundle.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
-    'primary key' => array('bundle_md5', 'filename_md5'),
+    'indexes' => array(
+      'root'        => array('root'),
+      'timestamp'   => array('timestamp'),
+      'counter'     => array('counter'),
+    ),
+    'primary key'   => array('bundle_md5', 'filename_md5'),
 
   );
 
@@ -622,6 +633,65 @@ function advagg_update_6107() {
     $ret[] = array('success' => TRUE, 'query' => 'advagg file_builder cache flushed.');
     db_drop_table($ret, 'cache_advagg_file_builder');
   }
+
+  return $ret;
+}
+
+/**
+ * Update 6108 - Add new field & add indexes to advagg_bundles table.
+ */
+function advagg_update_6108() {
+  $ret = array();
+
+  // Add in timestamp column.
+  db_add_field($ret, 'advagg_bundles', 'timestamp', array(
+        'description' => 'Last used timestamp of the bundle.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ));
+
+  // Add in indexes.
+ db_add_index($ret, 'advagg_bundles', 'root', array('root'));
+ db_add_index($ret, 'advagg_bundles', 'timestamp', array('timestamp'));
+ db_add_index($ret, 'advagg_bundles', 'counter', array('counter'));
+
+  // Populate timestamps.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  $results = db_query("
+    SELECT
+      ab.bundle_md5,
+      ab.counter,
+      af.filetype
+    FROM {advagg_bundles} AS ab
+    INNER JOIN {advagg_files} AS af USING ( filename_md5 )
+    GROUP BY bundle_md5");
+  while ($row = db_fetch_array($results)) {
+    $filename = advagg_build_filename($row['filetype'], $row['bundle_md5'], $row['counter']);
+    if ($row['filetype'] == 'css') {
+      $file_type_path = $css_path;
+    }
+    else {
+      $file_type_path = $js_path;
+    }
+    $filepath = $file_type_path .'/'. $filename;
+
+    $data = cache_get($filepath, 'cache_advagg');
+    if (!empty($data->data)) {
+      // Set timestamp if it exists in the cache.
+      db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", $data->data, $row['bundle_md5']);
+      $ret[] = array('success' => TRUE, 'query' => 'Timestamp added for: ' . $filename . '.');
+    }
+    else {
+      $ret[] = array('success' => TRUE, 'query' => 'No timestamp found for: ' . $filename . '.');
+    }
+  }
+
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+  $ret[] = array('success' => TRUE, 'query' => 'AdvAgg Caches Flushed.');
 
   return $ret;
 }

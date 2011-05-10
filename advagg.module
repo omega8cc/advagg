@@ -519,9 +519,10 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
       advagg_insert_bundle_db($files, $filetype, $bundle_md5, TRUE);
     }
     // If bundle should be root and is not, then make it root.
-    $root = db_result(db_query("SELECT root FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
-    if ($root === 0) {
-      db_query("UPDATE {advagg_bundles} SET root = '1' WHERE bundle_md5 = '%s'", $bundle_md5);
+    // Refresh timestamp if older then 12 hours.
+    $row = db_fetch_array(db_query("SELECT root, timestamp FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+    if ($row['root'] === 0 || time() - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
+      db_query("UPDATE {advagg_bundles} SET root = '1', timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
     }
   }
 
@@ -660,7 +661,7 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   sort($temp_files);
   $cached_data_key = 'advagg_existing_' . md5(implode('', $temp_files));
 
-  // Try cache first; cache table is cache_advagg_bundle_reuse.
+  // Try cache first; cache table is cache_advagg_bundle_reuse. string is debug name.
   $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_find_existing_bundle');
   if (!empty($cached_data)) {
     $files = $cached_data[0]['files'];
@@ -675,7 +676,7 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   $args = array();
   $counter = 0;
   foreach ($files as $filename) {
-    // use char for table aliases.
+    // Use alpha for table aliases; numerics do not work.
     $key = strtr($counter, '01234567890', 'abcdefghij');
 
     $joins[$key] = "\nINNER JOIN {advagg_bundles} AS $key USING(bundle_md5)\n";
@@ -745,7 +746,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
     }
 
     // Create the entries in the advagg_bundles table.
-    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root);
+    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
   }
 }
 
@@ -1018,7 +1019,7 @@ function advagg_checksum($filename) {
 }
 
 /**
- * See if this bundle has been built yet.
+ * See if this bundle has been built.
  *
  * @param $filepath
  *   filename
@@ -1026,11 +1027,20 @@ function advagg_checksum($filename) {
  *   Boolean indicating if the bundle already exists.
  */
 function advagg_bundle_built($filepath) {
+  $data = advagg_get_bundle_from_filename(basename($filepath));
+  if (is_array($data)) {
+    list($type, $md5, $counter) = $data;
+  }
+  else {
+    return FALSE;
+  }
+
   $data = cache_get($filepath, 'cache_advagg');
-  if (!empty($data->data)) {
+  if (isset($data->data)) {
     // Refresh timestamp if older then 12 hours.
     if (time() - $data->data > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
       cache_set($filepath, time(), 'cache_advagg', CACHE_PERMANENT);
+      db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $md5);
     }
     return TRUE;
   }
@@ -1047,7 +1057,41 @@ function advagg_bundle_built($filepath) {
   }
   // File existed on disk; place in cache.
   cache_set($filepath, time(), 'cache_advagg', CACHE_PERMANENT);
+  db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $md5);
   return TRUE;
+}
+
+function advagg_get_bundle_from_filename($filename) {
+  // Verify requested filename has the correct pattern.
+  if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {
+    return t('Wrong Pattern.');
+  }
+
+  // Get type
+  $type = substr($filename, 0, strpos($filename, '_'));
+
+  // Get extension
+  $ext = substr($filename, strpos($filename, '.', 37)+1);
+
+  // Make sure extension is the same as the type.
+  if ($ext != $type) {
+    return t('Type does not match extension.');
+  }
+
+  // Extract info from wanted filename.
+  if ($type == 'css') {
+    $md5 = substr($filename, 4, 32);
+    $counter = substr($filename, 37, strpos($filename, '.', 38)-37);
+  }
+  elseif ($type == 'js') {
+    $md5 = substr($filename, 3, 32);
+    $counter = substr($filename, 36, strpos($filename, '.', 37)-36);
+  }
+  else {
+    return t('Wrong file type.');
+  }
+
+  return array($type, $md5, $counter);
 }
 
 /**
@@ -1106,7 +1150,7 @@ function advagg_flush_caches() {
 
   foreach ($bundles as $bundle_md5) {
     // Increment Counter
-    db_query("UPDATE {advagg_bundles} SET counter = counter + 1 WHERE bundle_md5 = '%s'", $bundle_md5);
+    db_query("UPDATE {advagg_bundles} SET counter = counter + 1, timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
 
     if (variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH)) {
       // Rebuild bundles
@@ -1229,7 +1273,7 @@ function advagg_get_file_data($filename_md5) {
 }
 
 /**
- * Get data about a file.
+ * Set data about a file.
  *
  * @param $filename_md5
  *   md5 of filename.
@@ -1827,6 +1871,10 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
     // Try cache first; cache table is cache_advagg_bundle_reuse.
     $cached_data = advagg_cached_bundle_get($cached_data_key, 'file_builder_cache_object');
     if (!empty($cached_data)) {
+      foreach ($cached_data as $filepath => $values) {
+        // Ping cache.
+        advagg_bundle_built($filepath);
+      }
       return $cached_data;
     }
   }

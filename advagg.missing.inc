@@ -50,33 +50,12 @@ function advagg_missing_regenerate() {
   $filename = array_pop($arg);
   $filename = array_shift(explode('?', $filename));
 
-  // Verify requested filename has the correct pattern.
-  if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {
-    return t('Wrong Pattern.');
-  }
-
-  // Get type
-  $type = substr($filename, 0, strpos($filename, '_'));
-
-  // Get extension
-  $ext = substr($filename, strpos($filename, '.', 37)+1);
-
-  // Make sure extension is the same as the type.
-  if ($ext != $type) {
-    return t('Type does not match extension.');
-  }
-
-  // Extract info from wanted filename.
-  if ($type == 'css') {
-    $md5 = substr($filename, 4, 32);
-    $counter = substr($filename, 37, strpos($filename, '.', 38)-37);
-  }
-  elseif ($type == 'js') {
-    $md5 = substr($filename, 3, 32);
-    $counter = substr($filename, 36, strpos($filename, '.', 37)-36);
+  $data = advagg_get_bundle_from_filename($filename);
+  if (is_array($data)) {
+    list($type, $md5, $counter) = $data;
   }
   else {
-    return t('Wrong file type.');
+    return $data;
   }
 
   $_GET['redirect_counter'] = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
