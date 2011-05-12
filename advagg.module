@@ -2252,6 +2252,16 @@ function advagg_add_css_inline($data = NULL, $media = 'all', $prefix = NULL, $su
  * We use HTML-safe strings, i.e. with <, > and & escaped.
  */
 function advagg_drupal_to_js($var) {
+  static $php530;
+  if (!isset($php530)) {
+    $php530 = version_compare(PHP_VERSION, '5.3.0', '>=');
+  }
+
+  // json_encode on PHP prior to PHP 5.3.0 doesn't support options.
+  if ($php530) {
+    return json_encode($var, JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS);
+  }
+
   // if json_encode exists, use it.
   if (function_exists('json_encode')) {
     return str_replace(array("<", ">", "&"), array('\u003c', '\u003e', '\u0026'), json_encode($var));
@@ -2318,25 +2328,25 @@ function advagg_drupal_to_js($var) {
         "\xe2\x80\xa9" => '\u2029', // U+2029, Paragraph Separator.
       );
 
-      return '"'. str_replace($var, $replace_pairs) .'"';
+      return '"' . strtr($var, $replace_pairs) . '"';
     case 'array':
       // Arrays in JSON can't be associative. If the array is empty or if it
       // has sequential whole number keys starting with 0, it's not associative
       // so we can go ahead and convert it as an array.
-      if (empty ($var) || array_keys($var) === range(0, sizeof($var) - 1)) {
+      if (empty($var) || array_keys($var) === range(0, sizeof($var) - 1)) {
         $output = array();
         foreach ($var as $v) {
           $output[] = advagg_drupal_to_js($v);
         }
-        return '[ '. implode(', ', $output) .' ]';
+        return '[ ' . implode(', ', $output) . ' ]';
       }
       // Otherwise, fall through to convert the array as an object.
     case 'object':
       $output = array();
       foreach ($var as $k => $v) {
-        $output[] = advagg_drupal_to_js(strval($k)) .': '. advagg_drupal_to_js($v);
+        $output[] = advagg_drupal_to_js(strval($k)) . ': ' . advagg_drupal_to_js($v);
       }
-      return '{ '. implode(', ', $output) .' }';
+      return '{ ' . implode(', ', $output) .' }';
     default:
       return 'null';
   }
