@@ -1428,13 +1428,14 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         // If a CSS file is not to be preprocessed and it's an inline CSS blob
         // it needs to *always* appear at the *very bottom*.
         if ($type == 'inline') {
-          foreach ($preprocess as $suffix => $blob)
-          $inline_no_preprocess[] = array(
-            'media' => $media,
-            'data' => $blob,
-            'prefix' => $file,
-            'suffix' => $suffix,
-          );
+          foreach ($preprocess as $suffix => $blob) {
+            $inline_no_preprocess[] = array(
+              'media' => $media,
+              'data' => $blob,
+              'prefix' => $file,
+              'suffix' => $suffix,
+            );
+           }
           // Unset to prevent its inclusion.
           unset($types[$type][$file]);
           continue;
