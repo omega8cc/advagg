@@ -1428,14 +1428,24 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         // If a CSS file is not to be preprocessed and it's an inline CSS blob
         // it needs to *always* appear at the *very bottom*.
         if ($type == 'inline') {
-          foreach ($preprocess as $suffix => $blob) {
+          if (is_array($preprocess)) {
+            foreach ($preprocess as $suffix => $blob) {
+              $inline_no_preprocess[] = array(
+                'media' => $media,
+                'data' => advagg_drupal_load_stylesheet_content($blob, $preprocess),
+                'prefix' => $file,
+                'suffix' => $suffix,
+              );
+            }
+          }
+          else {
             $inline_no_preprocess[] = array(
               'media' => $media,
-              'data' => $blob,
-              'prefix' => $file,
-              'suffix' => $suffix,
+              'data' => advagg_drupal_load_stylesheet_content($file, $preprocess),
+              'prefix' => '',
+              'suffix' => '',
             );
-           }
+          }
           // Unset to prevent its inclusion.
           unset($types[$type][$file]);
           continue;
@@ -2351,4 +2361,88 @@ function advagg_drupal_to_js($var) {
     default:
       return 'null';
   }
+}
+
+/**
+ * Process the contents of a stylesheet for aggregation.
+ *
+ * @param $contents
+ *   The contents of the stylesheet.
+ * @param $optimize
+ *   (optional) Boolean whether CSS contents should be minified. Defaults to
+ *   FALSE.
+ * @return
+ *   Contents of the stylesheet including the imported stylesheets.
+ */
+function advagg_drupal_load_stylesheet_content($contents, $optimize = FALSE) {
+  // Remove multiple charset declarations for standards compliance (and fixing Safari problems).
+  $contents = preg_replace('/^@charset\s+[\'"](\S*)\b[\'"];/i', '', $contents);
+
+  if ($optimize) {
+    // Perform some safe CSS optimizations.
+    // Regexp to match comment blocks.
+    $comment     = '/\*[^*]*\*+(?:[^/*][^*]*\*+)*/';
+    // Regexp to match double quoted strings.
+    $double_quot = '"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"';
+    // Regexp to match single quoted strings.
+    $single_quot = "'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'";
+    // Strip all comment blocks, but keep double/single quoted strings.
+    $contents = preg_replace(
+      "<($double_quot|$single_quot)|$comment>Ss",
+      "$1",
+      $contents
+    );
+    // Remove certain whitespace.
+    // There are different conditions for removing leading and trailing
+    // whitespace.
+    // @see http://php.net/manual/en/regexp.reference.subpatterns.php
+    $contents = preg_replace('<
+      # Strip leading and trailing whitespace.
+        \s*([@{};,])\s*
+      # Strip only leading whitespace from:
+      # - Closing parenthesis: Retain "@media (bar) and foo".
+      | \s+([\)])
+      # Strip only trailing whitespace from:
+      # - Opening parenthesis: Retain "@media (bar) and foo".
+      # - Colon: Retain :pseudo-selectors.
+      | ([\(:])\s+
+    >xS',
+      // Only one of the three capturing groups will match, so its reference
+      // will contain the wanted value and the references for the
+      // two non-matching groups will be replaced with empty strings.
+      '$1$2$3',
+      $contents
+    );
+    // End the file with a new line.
+    $contents = trim($contents);
+    $contents .= "\n";
+  }
+
+  // Replaces @import commands with the actual stylesheet content.
+  // This happens recursively but omits external files.
+  $contents = preg_replace_callback('/@import\s*(?:url\(\s*)?[\'"]?(?![a-z]+:)([^\'"\()]+)[\'"]?\s*\)?\s*;/', '_advagg_drupal_load_stylesheet', $contents);
+  return $contents;
+}
+
+/**
+ * Loads stylesheets recursively and returns contents with corrected paths.
+ *
+ * This function is used for recursive loading of stylesheets and
+ * returns the stylesheet content with all url() paths corrected.
+ */
+function _advagg_drupal_load_stylesheet($matches) {
+  $filename = $matches[1];
+  // Load the imported stylesheet and replace @import commands in there as well.
+  $file = advagg_build_css_bundle(array($filename));
+
+  // Determine the file's directory.
+  $directory = dirname($filename);
+  // If the file is in the current directory, make sure '.' doesn't appear in
+  // the url() path.
+  $directory = $directory == '.' ? '' : $directory . '/';
+
+  // Alter all internal url() paths. Leave external paths alone. We don't need
+  // to normalize absolute paths here (i.e. remove folder/... segments) because
+  // that will be done later.
+  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1'. $directory, $file);
 }
