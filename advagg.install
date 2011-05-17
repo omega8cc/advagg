@@ -227,6 +227,9 @@ function advagg_requirements($phase) {
     if (module_exists('cdn') && function_exists('cdn_theme_registry_alter')) {
       $function = array_pop($hooks['page']['preprocess functions']);
     }
+    if (module_exists('conditional_styles')) {
+      $function = array_pop($hooks['page']['preprocess functions']);
+    }
     if ($function != 'advagg_processor') {
       $requirements['advagg_theme'] = array(
         'title'       => $t('Adv CSS/JS Agg - Theme Hook'),

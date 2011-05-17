@@ -257,14 +257,20 @@ function advagg_theme_registry_alter(&$theme_registry) {
     // Add our own preprocessing function to the end of the array.
     $theme_registry['page']['preprocess functions'][] = 'advagg_processor';
 
-    // If labjs's preprocess function is there already, move it to the bottom.
+    // If labjs's is enabled, move it to the bottom.
     if (module_exists('labjs') && $key = array_search('labjs_preprocess_page', $theme_registry['page']['preprocess functions'])) {
       $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
 
-    // If designkit's preprocess function is there already, move it to the bottom.
+    // If designkit is enabled, move it to the bottom.
     if (module_exists('designkit') && $key = array_search('designkit_preprocess_page', $theme_registry['page']['preprocess functions'])) {
+      $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
+      unset($theme_registry['page']['preprocess functions'][$key]);
+    }
+
+    // If conditional styles is enabled, move it to the bottom.
+    if (module_exists('conditional_styles') && $key = array_search('conditional_styles_preprocess_page', $theme_registry['page']['preprocess functions'])) {
       $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
