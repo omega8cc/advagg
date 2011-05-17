@@ -21,6 +21,10 @@ function advagg_enable() {
 
   // Check for fast404
   register_shutdown_function('advagg_check_missing_handler');
+
+  if (module_exists('javascript_aggregator')) {
+    variable_set('advagg_closure', FALSE);
+  }
 }
 
 /**
@@ -138,7 +142,10 @@ function advagg_requirements($phase) {
         'title'       => $t('Adv CSS/JS Agg - Javascript Aggregator'),
         'severity'    => REQUIREMENT_WARNING,
         'value'       => $t('The Javascript Aggregator is enabled'),
-        'description' => $t('On the <a href="@modules">modules page</a> you can disable it, as this module is no longer needed.', array('@modules' => url('admin/build/modules'))),
+        'description' => $t('On the <a href="@modules">modules page</a> you can disable it, as this module is no longer needed. Once uninstalled be sure to enable the "Use AdvAgg in closure" setting on the <a href="@config">advagg config page</a>', array(
+          '@modules' => url('admin/build/modules'),
+          '@config' => url('admin/settings/advagg/config'),
+        )),
       );
     }
     if (module_exists('unlimited_css')) {
