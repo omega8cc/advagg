@@ -665,9 +665,9 @@ function advagg_update_6108() {
       ));
 
   // Add in indexes.
- db_add_index($ret, 'advagg_bundles', 'root', array('root'));
- db_add_index($ret, 'advagg_bundles', 'timestamp', array('timestamp'));
- db_add_index($ret, 'advagg_bundles', 'counter', array('counter'));
+  db_add_index($ret, 'advagg_bundles', 'root', array('root'));
+  db_add_index($ret, 'advagg_bundles', 'timestamp', array('timestamp'));
+  db_add_index($ret, 'advagg_bundles', 'counter', array('counter'));
 
   // Populate timestamps.
   list($css_path, $js_path) = advagg_get_root_files_dir();
@@ -692,6 +692,7 @@ function advagg_update_6108() {
     $data = cache_get($filepath, 'cache_advagg');
     if (!empty($data->data)) {
       // Set timestamp if it exists in the cache.
+      // Not using update_sql() so we can pass in % arguments.
       db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", $data->data, $row['bundle_md5']);
       $ret[] = array('success' => TRUE, 'query' => 'Timestamp added for: ' . $filename . '.');
     }
