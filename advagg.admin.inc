@@ -166,6 +166,7 @@ function advagg_admin_settings_form() {
     '#default_value'  => variable_get('advagg_closure', ADVAGG_CLOSURE),
     '#description'    => t('If enabled javascript files in the closure region will be aggregated.'),
   );
+  include_once './includes/install.inc';
   module_load_include('install', 'advagg');
   $ret = advagg_check_missing_handler();
   $form['advagg_async_generation'] = array(
