@@ -66,11 +66,11 @@ function advagg_bundler_admin_settings_form() {
     $data[$key][] = $filename;
   }
 
-  list($data, $rows) = advagg_form_print_r($data);
+  list($rawtext, $rows) = advagg_form_print_r($data);
   $form['info']['advagg_bundler_info'] = array(
-    '#type'         => 'textarea',
-    '#title'        => check_plain($row['filename']),
-    '#default_value'  => $data,
+    '#type'           => 'textarea',
+    '#title'          => t('%count different groupings', array('%count' => count($data))),
+    '#default_value'  => $rawtext,
     '#rows'           => $rows-1,
   );
 
