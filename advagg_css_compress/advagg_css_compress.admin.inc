@@ -22,6 +22,16 @@ function advagg_css_compress_admin_page() {
 function advagg_css_compress_admin_settings_form() {
   $form = array();
 
+  $form['advagg_css_compress_agg_files'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Compress CSS Files'),
+    '#default_value'  => variable_get('advagg_css_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES),
+  );
+  $form['advagg_css_compress_inline'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Compress Inline CSS'),
+    '#default_value'  => variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE),
+  );
   $form['advagg_css_compress_preserve_css'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Preserve CSS'),

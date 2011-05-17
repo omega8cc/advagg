@@ -163,22 +163,28 @@ Technical Details:
 Hooks:
  * hook_advagg_css_alter. Modify the data before it gets written to the file.
    Useful for compression.
+ * hook_advagg_css_inline_alter. Modify the data before it gets embedded in the
+   page. Useful for compression.
  * hook_advagg_css_pre_alter. Modify the raw $variables['css'] before it gets
    processed. Useful for file replacement.
  * hook_advagg_css_extra_alter. Allows one to set the a prefix and suffix to be
    added into the HTML DOM. Useful for CSS conditionals.
+
  * hook_advagg_js_alter. Modify the data before it gets written to the file.
    Useful for compression.
+ * hook_advagg_js_inline_alter. Modify the data before it gets embedded in the
+   page. Useful for compression.
  * hook_advagg_js_pre_alter. Modify the raw $javascript before it gets
    processed. Useful for file replacement.
  * hook_advagg_js_extra_alter. Allows one to set the a prefix and suffix to be
    added into the HTML DOM.
- * hook_advagg_filenames_alter. Allows for a one to many relationship. A single
-   request for a bundle name can result in multiple bundles being returned.
- * hook_advagg_files_table. Allows for modules to mark a file as expired.
  * hook_advagg_js_header_footer_alter. Allows one to move JS from the header to
    the footer. Also one can look at both header and footer JS arrays before they
    get processed.
+
+ * hook_advagg_filenames_alter. Allows for a one to many relationship. A single
+   request for a bundle name can result in multiple bundles being returned.
+ * hook_advagg_files_table. Allows for modules to mark a file as expired.
  * advagg_master_reset. Allows other modules to take part in a master reset.
 
 JS/CSS Theme Override:

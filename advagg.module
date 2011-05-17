@@ -1430,18 +1430,28 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         if ($type == 'inline') {
           if (is_array($preprocess)) {
             foreach ($preprocess as $suffix => $blob) {
+              $blob = advagg_drupal_load_stylesheet_content($blob, $preprocess);
+              // Invoke hook_advagg_css_inline_alter() to give installed modules
+              // a chance to modify the contents of $blob if necessary.
+              drupal_alter('advagg_css_inline', $blob);
+
               $inline_no_preprocess[] = array(
                 'media' => $media,
-                'data' => advagg_drupal_load_stylesheet_content($blob, $preprocess),
+                'data' => $blob,
                 'prefix' => $file,
                 'suffix' => $suffix,
               );
             }
           }
           else {
+            $file = advagg_drupal_load_stylesheet_content($file, $preprocess);
+            // Invoke hook_advagg_css_inline_alter() to give installed modules a
+            // chance to modify the contents of $file if necessary.
+            drupal_alter('advagg_css_inline', $file);
+
             $inline_no_preprocess[] = array(
               'media' => $media,
-              'data' => advagg_drupal_load_stylesheet_content($file, $preprocess),
+              'data' => $file,
               'prefix' => '',
               'suffix' => '',
             );
@@ -1701,7 +1711,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
   drupal_alter('advagg_js_header_footer', $master_set, $preprocess_js, $public_downloads);
 
   foreach ($master_set as $scope => $javascript) {
-    if ($scope != 'header' && $scope != 'footer' && empty($javascript)) {
+    if (empty($javascript)) {
       continue;
     }
 
@@ -1712,8 +1722,9 @@ function advagg_process_js($master_set, $noagg = FALSE) {
     $output_preprocess = array();
     $preprocess_list = array();
     foreach ($javascript as $type => $data) {
-
-      if (!$data) continue;
+      if (empty($data)) {
+        continue;
+      }
 
       switch ($type) {
         case 'setting':
@@ -1724,6 +1735,9 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
         case 'inline':
           foreach ($data as $info) {
+            // Invoke hook_advagg_js_inline_alter() to give installed modules a
+            // chance to modify the contents of $info['code'] if necessary.
+            drupal_alter('advagg_js_inline', $info['code']);
             $inline_no_preprocess[] = array($info['code'], $info['defer']);
           }
           break;

@@ -22,6 +22,17 @@ function advagg_js_compress_admin_page() {
 function advagg_js_compress_admin_settings_form() {
   $form = array();
 
+  $form['advagg_js_compress_agg_files'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Compress JS Files'),
+    '#default_value'  => variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES),
+  );
+  $form['advagg_js_compress_inline'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Compress Inline JS'),
+    '#default_value'  => variable_get('advagg_js_compress_inline', ADVAGG_JS_COMPRESS_INLINE),
+  );
+
   $description = '';
   $options = array(0 => t('JSMin+'));
   if (function_exists('jsmin')) {

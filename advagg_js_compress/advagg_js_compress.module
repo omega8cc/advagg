@@ -32,6 +32,16 @@ define('ADVAGG_JS_COMPRESS_RATIO', 0.1);
 define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.98);
 
 /**
+ * Default value to see if this will compress aggregated files.
+ */
+define('ADVAGG_JS_COMPRESS_AGG_FILES', TRUE);
+
+/**
+ * Default value to see if this will compress inline js.
+ */
+define('ADVAGG_JS_COMPRESS_INLINE', TRUE);
+
+/**
  * Implementation of hook_menu
  */
 function advagg_js_compress_menu() {
@@ -113,9 +123,30 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $p
  * Implement hook_advagg_js_alter.
  */
 function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
+  if (!variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES)) {
+    return;
+  }
+
   $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
   if ($compressor == 0) {
     advagg_js_compress_prep_jsminplus($contents, $files, $bundle_md5);
+  }
+  if ($compressor == 1) {
+    $contents = jsmin($contents);
+  }
+}
+
+/**
+ * Implement hook_advagg_js_inline_alter.
+ */
+function advagg_js_compress_advagg_js_inline_alter(&$contents) {
+  if (!variable_get('advagg_js_compress_inline', ADVAGG_JS_COMPRESS_INLINE)) {
+    return;
+  }
+
+  $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
+  if ($compressor == 0) {
+    advagg_js_compress_jsminplus($contents);
   }
   if ($compressor == 1) {
     $contents = jsmin($contents);
