@@ -31,6 +31,9 @@ function advagg_enable() {
  * Implementation of hook_disable().
  */
 function advagg_disable() {
+  // Make sure the advagg_flush_caches function is available.
+  drupal_load('module', 'advagg');
+
   // Flush advagg caches.
   $cache_tables = advagg_flush_caches();
   foreach ($cache_tables as $table) {
