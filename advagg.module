@@ -1214,18 +1214,14 @@ function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
  */
 function advagg_get_files_in_bundle($bundle_md5) {
   $files = array();
+  $filetype = NULL;
   $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
   while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $filetype = $row['filetype'];
   }
 
-  if (isset($filetype) && !empty($files)) {
-    return array($filetype, $files);
-  }
-  else {
-    return array(NULL, NULL);
-  }
+  return array($filetype, $files);
 }
 
 /**
