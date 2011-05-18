@@ -1219,7 +1219,13 @@ function advagg_get_files_in_bundle($bundle_md5) {
     $files[] = $row['filename'];
     $filetype = $row['filetype'];
   }
-  return array($filetype, $files);
+
+  if (isset($filetype) && !empty($files)) {
+    return array($filetype, $files);
+  }
+  else {
+    return array(NULL, NULL);
+  }
 }
 
 /**
