@@ -50,7 +50,13 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
     return;
   }
 
-  advagg_css_compress_css_tidy($contents);
+  $compressor = variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR);
+  if ($compressor == 0) {
+    advagg_css_compress_css_tidy($contents);
+  }
+  if ($compressor == 1) {
+    advagg_css_compress_css_compressor($contents);
+  }
 }
 
 /**
@@ -61,7 +67,13 @@ function advagg_css_compress_advagg_css_inline_alter(&$contents) {
     return;
   }
 
-  advagg_css_compress_css_tidy($contents);
+  $compressor = variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR);
+  if ($compressor == 0) {
+    advagg_css_compress_css_tidy($contents);
+  }
+  if ($compressor == 1) {
+    advagg_css_compress_css_compressor($contents);
+  }
 }
 
 /**
@@ -96,4 +108,18 @@ function advagg_css_compress_css_tidy(&$contents) {
   // Compress CSS.
   $css->parse($contents);
   $contents = $css->print->plain();
+}
+
+/**
+ * Use the CSS Compressor library to compress the CSS.
+ *
+ * TODO have compression level be selectable from GUI.
+ */
+function advagg_css_compress_css_compressor(&$contents) {
+  // Initialize CSSTidy.
+  $filename = drupal_get_path('module', 'advagg_css_compress') . '/css-compressor-3.x/src/CSSCompression.inc';
+  include_once($filename);
+
+  $CSSC = new CSSCompression('sane');
+  $contents = $CSSC->compress($contents);
 }
