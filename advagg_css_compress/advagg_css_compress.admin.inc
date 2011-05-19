@@ -32,11 +32,26 @@ function advagg_css_compress_admin_settings_form() {
     '#title'          => t('Compress Inline CSS'),
     '#default_value'  => variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE),
   );
+  $form['advagg_css_compressor'] = array(
+    '#type'           => 'radios',
+    '#title'          => t('Select the compression library to use'),
+    '#default_value'  => variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR),
+    '#options'        => array(
+      0 => 'CSSTidy',
+      1 => 'CSS Compressor',
+    ),
+    '#description'    => t('<a href="@csscompressor">CSS Compressor</a> is a faster CSS compression alternative. <a href="@csstidy">CSSTidy</a> is a well known CSS compression library, but it has some known issues/limitations.',
+      array(
+        '@csscompressor'  => 'http://www.codenothing.com/css-compressor/',
+        '@csstidy'        => 'https://github.com/Cerdic/CSSTidy',
+      )
+    ),
+  );
   $form['advagg_css_compress_preserve_css'] = array(
     '#type'           => 'checkbox',
-    '#title'          => t('Preserve CSS'),
+    '#title'          => t('CSSTidy: Preserve CSS'),
     '#default_value'  => variable_get('advagg_css_compress_preserve_css', ADVAGG_CSS_COMPRESS_PRESERVE_CSS),
-    '#description'    => t('If disabled CSS selectors will try to be merged together, significantly reducing the css file size. May result in broken layouts is disabled.'),
+    '#description'    => t('If disabled CSS selectors will try to be merged together, significantly reducing the css file size. May result in broken layouts is disabled. This only applies to compression through CSSTidy.'),
   );
 
   return system_settings_form($form);
