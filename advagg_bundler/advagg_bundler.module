@@ -226,7 +226,7 @@ function advagg_bundler_merge(&$groupings, $max) {
         }
       }
 
-//       watchdog('debug', $first . "<br>\n" . $last . "<br>\n" . str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($groupings, TRUE)))) . "<br>\n<br>\n" . str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($map, TRUE)))) . "<br>\n<br>\n" . str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($counts, TRUE)))));
+//       watchdog('debug', $first . "<br>\n" . $last . "<br>\n" . str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r(array($groupings, $map, $counts), TRUE)))));
 
       // Move arrays around.
       $a = $groupings[$first];
@@ -245,4 +245,54 @@ function advagg_bundler_merge(&$groupings, $max) {
       $group_count--;
     }
   }
+
+  // Make sure there isn't a group that has all files that don't exist or empty.
+  $bad_groups = array();
+  $counts = array();
+  foreach ($groupings as $key => $group) {
+    $missing_counter = 0;
+    $counts[$key] = count($group);
+    foreach ($group as $i => $file) {
+      if (!file_exists($file) || filesize($file) == 0) {
+        $missing_counter++;
+      }
+    }
+
+    // If all files are missing/empty in this group then it is a bad set.
+    if ($missing_counter == count($group)) {
+      $bad_groups[$key] = TRUE;
+    }
+  }
+
+  // Add the bad groups to the smallest grouping in this set.
+  if (!empty($bad_groups)) {
+    $merge_candidate_key = '';
+    $merge_candidate_count = 32767;
+    $bad_group = array();
+    foreach ($groupings as $key => $group) {
+      if (isset($bad_groups[$key])) {
+        // Merge all bad groups into one.
+        $bad_group = array_merge($bad_group, $group);
+
+        // Delete the bad group from the master set.
+        unset($groupings[$key]);
+        continue;
+      }
+
+      // Find the smallest good grouping.
+      $min = min($merge_candidate_count, count($group));
+      if ($min < $merge_candidate_count) {
+        $merge_candidate_key = $key;
+        $merge_candidate_count = $min;
+      }
+    }
+
+    // Move the bad files into the smallest good group.
+    $new_set = $groupings[$merge_candidate_key];
+    $new_set = array_merge($new_set, $bad_group);
+    $groupings[$merge_candidate_key] = $new_set;
+  }
+
+  // Output Debugging info to watchdog.
+  // watchdog('debug', str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(print_r($groupings, TRUE)))));
 }
