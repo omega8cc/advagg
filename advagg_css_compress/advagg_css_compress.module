@@ -22,6 +22,11 @@ define('ADVAGG_CSS_COMPRESS_AGG_FILES', TRUE);
 define('ADVAGG_CSS_COMPRESS_INLINE', TRUE);
 
 /**
+ * Default value for which css compression library to use.
+ */
+define('ADVAGG_CSS_COMPRESSOR', 0);
+
+/**
  * Implementation of hook_menu
  */
 function advagg_css_compress_menu() {
@@ -63,7 +68,7 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
  * Implement hook_advagg_css_inline_alter.
  */
 function advagg_css_compress_advagg_css_inline_alter(&$contents) {
-  if (variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE)) {
+  if (!variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE)) {
     return;
   }
 

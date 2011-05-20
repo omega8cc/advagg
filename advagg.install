@@ -55,6 +55,16 @@ function advagg_install() {
  * Implementation of hook_uninstall().
  */
 function advagg_uninstall() {
+  // Make sure the advagg_get_root_files_dir function is available.
+  drupal_load('module', 'advagg');
+
+  // Remove files.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($css_path);
+  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  @unlink($js_path);
+
   // Remove database tables.
   cache_clear_all('*', 'cache_advagg', TRUE);
   cache_clear_all('*', 'cache_advagg_files_data', TRUE);
@@ -71,13 +81,6 @@ function advagg_uninstall() {
   variable_del('advagg_server_addr');
   variable_del('advagg_enabled');
   variable_del('advagg_debug');
-
-  // Remove files.
-  list($css_path, $js_path) = advagg_get_root_files_dir();
-  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
-  @unlink($css_path);
-  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
-  @unlink($js_path);
 }
 
 /**
