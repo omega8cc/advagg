@@ -24,7 +24,7 @@ define('ADVAGG_CSS_COMPRESS_INLINE', TRUE);
 /**
  * Default value for which css compression library to use.
  */
-define('ADVAGG_CSS_COMPRESSOR', 0);
+define('ADVAGG_CSS_COMPRESSOR', 1);
 
 /**
  * Implementation of hook_menu
