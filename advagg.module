@@ -1120,6 +1120,11 @@ function advagg_flush_caches() {
     }
   }
 
+  // Only run code below if the advagg db tables exist.
+  if (!db_table_exists('advagg_files')) {
+    return array('cache_advagg_bundle_reuse');
+  }
+
   // Find files that have changed.
   $needs_refreshing = array();
   $results = db_query("SELECT * FROM {advagg_files}");
