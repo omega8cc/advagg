@@ -1167,14 +1167,9 @@ function advagg_flush_caches() {
     db_query("UPDATE {advagg_bundles} SET counter = counter + 1, timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
 
     if (variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH)) {
-      // Rebuild bundles
-      $good = advagg_rebuild_bundle($bundle_md5);
-      if (!$good) {
-        watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
-      }
-      else {
-        $_advagg['rebuilt'][] = $bundle_md5;
-      }
+      // Rebuild bundles on shutdown in the background. This is needed so that
+      // the cache_advagg_bundle_reuse table has been cleared.
+      register_shutdown_function('advagg_rebuild_bundle', $bundle_md5, '', TRUE);
     }
   }
   $_advagg['bundles'] = $bundles;
@@ -1202,11 +1197,18 @@ function advagg_flush_caches() {
  *   Rebuild even if file already exists.
  */
 function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
-  global $conf;
+  global $conf, $_advagg;
   list($filetype, $files) = advagg_get_files_in_bundle($bundle_md5);
 
   $conf['advagg_async_generation'] = FALSE;
-  return advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
+  $good = advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
+  if (!$good) {
+    watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
+  }
+  else {
+    $_advagg['rebuilt'][] = $bundle_md5;
+  }
+  return $good;
 }
 
 /**
@@ -1941,6 +1943,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   $output = array();
   $locks = array();
   $cacheable = TRUE;
+  $files_used = array();
   foreach ($filenames as $info) {
     $filename = $info['filename'];
     $files = $info['files'];
@@ -1961,7 +1964,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
 
     if (!$built || $force) {
       // Generate on request?
-      if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION)) {
+      if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION) && !$force) {
         // Request file.
         $ip = variable_get('advagg_server_addr', FALSE);
         if ($ip == -1) {
@@ -2011,6 +2014,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
       // installed modules a chance to modify the data in the bundle if
       // necessary.
       drupal_alter('advagg_' . $type, $data, $files, $bundle_md5);
+      $files_used = array_merge($files_used, $files);
 
       // If data is empty then do not include this bundle in the final output.
       if (empty($data) && !$force) {
@@ -2056,7 +2060,11 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
 
   // Cache the output
   if (!$force && $cacheable) {
-    cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+    $new_cached_data_key = 'advagg_file_builder_' . md5(implode('', $files_used));
+    // Verify the files in equals the files out.
+    if ($new_cached_data_key == $cached_data_key) {
+      cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+    }
   }
 
   return $output;
