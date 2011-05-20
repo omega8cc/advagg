@@ -386,12 +386,12 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
 
     // Make sure filesize is not zero.
     clearstatcache();
-    if (@filesize($gzip_dest) == 0) {
+    if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
       if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
         return FALSE;
       }
       clearstatcache();
-      if (@filesize($gzip_dest) == 0) {
+      if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
         // Filename is bad, create a new one next time.
         file_delete($gzip_dest);
         return FALSE;
@@ -409,12 +409,12 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
 
   // Make sure filesize is not zero.
   clearstatcache();
-  if (@filesize($dest) == 0) {
+  if (@filesize($dest) == 0 && !empty($data)) {
     if (!$file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
       return FALSE;
     }
     clearstatcache();
-    if (@filesize($dest) == 0) {
+    if (@filesize($dest) == 0 && !empty($data)) {
       // Filename is bad, create a new one next time.
       file_delete($dest);
       return FALSE;
