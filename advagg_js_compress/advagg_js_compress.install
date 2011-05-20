@@ -35,8 +35,11 @@ function advagg_js_compress_disable() {
  */
 function advagg_js_compress_uninstall() {
   // Remove variables.
+  variable_del('advagg_js_compress_packer_enable');
+  variable_del('advagg_js_compress_agg_files');
   variable_del('advagg_js_compress_callback');
-
+  variable_del('advagg_js_compress_inline');
+  variable_del('advagg_js_compressor');
 }
 
 /**

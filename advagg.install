@@ -75,12 +75,20 @@ function advagg_uninstall() {
   variable_del('advagg_stale_file_last_used_threshold');
   variable_del('advagg_file_last_used_interval');
   variable_del('advagg_stale_file_threshold');
+  variable_del('advagg_custom_files_dir');
   variable_del('advagg_gzip_compression');
   variable_del('advagg_async_generation');
+  variable_del('advagg_rebuild_on_flush');
   variable_del('advagg_socket_timeout');
+  variable_del('advagg_checksum_mode');
+  variable_del('advagg_dir_htaccess');
   variable_del('advagg_server_addr');
   variable_del('advagg_enabled');
+  variable_del('advagg_closure');
   variable_del('advagg_debug');
+
+  // Remove cache.inc variables.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'cache_flush_cache_advagg%'");
 }
 
 /**

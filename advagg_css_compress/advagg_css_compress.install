@@ -31,14 +31,18 @@ function advagg_css_compress_disable() {
  * Implementation of hook_uninstall().
  */
 function advagg_css_compress_uninstall() {
-  // Remove variables.
-  variable_del('advagg_css_compress_preserve_css');
-
   // Flush advagg caches.
   $cache_tables = advagg_flush_caches();
   foreach ($cache_tables as $table) {
     cache_clear_all('*', $table, TRUE);
   }
+
+  // Remove variables.
+  variable_del('advagg_css_compress_preserve_css');
+  variable_del('advagg_css_compress_agg_files');
+  variable_del('advagg_css_compress_inline');
+  variable_del('advagg_css_compressor');
+
 }
 
 /**
