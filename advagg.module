@@ -2217,6 +2217,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
   if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION)) {
     $data .= "<IfModule mod_rewrite.c>\n";
     $data .= "  RewriteEngine on\n";
+    $data .= "  RewriteBase ${base_path}${path}\n";
     $data .= "\n";
     $data .= "  # Send 404's back to index.php\n";
     $data .= "  RewriteCond %{REQUEST_FILENAME} !-s\n";
