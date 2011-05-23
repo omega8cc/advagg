@@ -12,14 +12,14 @@
 define('ADVAGG_ENABLED', TRUE);
 
 /**
- * Default stale file threshold is 30 days for mtime.
+ * Default stale file threshold is 6 days for mtime.
  */
-define('ADVAGG_STALE_FILE_THRESHOLD', 2592000);
+define('ADVAGG_STALE_FILE_THRESHOLD', 518400);
 
 /**
- * Default stale file threshold is 15 days for atime.
+ * Default stale file threshold is 3 days for atime.
  */
-define('ADVAGG_STALE_FILE_LAST_USED_THRESHOLD', 1296000);
+define('ADVAGG_STALE_FILE_LAST_USED_THRESHOLD', 259200);
 
 /**
  * Default file last used check-in is 12 hours.
