@@ -1004,12 +1004,14 @@ function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
  *   Checksum value.
  */
 function advagg_checksum($filename) {
+  clearstatcache();
   if (file_exists($filename)) {
     $mode = variable_get('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
     if ($mode == 'mtime') {
       $checksum = @filemtime($filename);
       if ($checksum === FALSE) {
         touch($filename);
+        clearstatcache();
         $checksum = @filemtime($filename);
         // Use md5 as a last option.
         if ($checksum === FALSE) {
