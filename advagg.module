@@ -200,13 +200,19 @@ function advagg_admin_menu_output_alter(&$content) {
 function advagg_init() {
   global $base_path, $conf, $_advagg;
 
-  // disable advagg if requested.
+  // Disable advagg if requested.
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_enabled'] = FALSE;
   }
-  // enable debugging if requested.
+  // Enable debugging if requested.
   if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_debug'] = TRUE;
+  }
+
+  // Disable ctools_ajax_page_preprocess() if this functionality is available.
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED) && function_exists('ctools_ajax_run_page_preprocess')) {
+    ctools_ajax_run_page_preprocess(FALSE);
+    $_advagg['ctools_patched'] = TRUE;
   }
 
   // Create a closure function that does not add JavaScript.
@@ -226,7 +232,7 @@ function advagg_init() {
       function phptemplate_closure($main = 0) {
         $footer = implode("\n", module_invoke_all('footer', $main));
         // If advagg is disabled, then include footer JS here.
-        if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
+        if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
           $footer .= drupal_get_js('footer');
         }
         return $footer;
@@ -248,9 +254,18 @@ function advagg_init() {
  *   The existing theme registry data structure.
  */
 function advagg_theme_registry_alter(&$theme_registry) {
+  global $_advagg;
   if (isset($theme_registry['page'])) {
     // If jquery_update's preprocess function is there already, remove it.
     if (module_exists('jquery_update') && $key = array_search('jquery_update_preprocess_page', $theme_registry['page']['preprocess functions'])) {
+      unset($theme_registry['page']['preprocess functions'][$key]);
+    }
+
+    // If ctools hasn't been patched remove it from getting pre-processed.
+    if (   !empty($_advagg['ctools_patched'])
+        && module_exists('ctools')
+        && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
+          ) {
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
 
@@ -380,7 +395,7 @@ function advagg_processor(&$variables) {
   global $_advagg;
 
   // If disabled, skip
-  if (variable_get('advagg_enabled', ADVAGG_ENABLED) == FALSE) {
+  if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
     if (module_exists('jquery_update')) {
       return jquery_update_preprocess_page($variables);
     }
@@ -1074,7 +1089,7 @@ function advagg_bundle_built($filepath) {
 
 function advagg_get_bundle_from_filename($filename) {
   // Verify requested filename has the correct pattern.
-  if (preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename) == FALSE) {
+  if (!preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename)) {
     return t('Wrong Pattern.');
   }
 
@@ -1316,7 +1331,7 @@ function advagg_build_uri($path) {
   // CDN Support.
   if (module_exists('cdn')) {
     $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
-    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE) == FALSE) {
+    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && !variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE)) {
       return file_create_url($path);
     }
   }
@@ -2186,7 +2201,7 @@ function advagg_missing_fast404($msg = '') {
  */
 function advagg_htaccess_check_generate($dest, $force = FALSE) {
   global $base_path;
-  if (!$force && variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS) == FALSE) {
+  if (!$force && !variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS)) {
     return TRUE;
   }
 
@@ -2525,7 +2540,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
   // Parse the URL and make sure we can handle the schema.
   $uri = @parse_url($url);
 
-  if ($uri == FALSE) {
+  if (empty($uri)) {
     $result->error = 'unable to parse URL';
     $result->code = -1001;
     return $result;
@@ -2722,4 +2737,104 @@ function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 1)
   // Free memory.
   $requests = array();
   return TRUE;
+}
+
+/**
+ * Implement hook_advagg_js_header_footer_alter.
+ */
+function advagg_advagg_js_header_footer_alter(&$master_set, $preprocess_js, $public_downloads) {
+  // Don't run the code below if ctools ajax is not loaded.
+  if (!defined('CTOOLS_AJAX_INCLUDED')) {
+    return;
+  }
+
+  // Get all JS files set to be loaded.
+  $js_files = array();
+  foreach ($master_set as $scope => $scripts) {
+    if (empty($scripts)) {
+      continue;
+    }
+    advagg_ctools_process_js_files($js_files, $scope, $scripts);
+  }
+
+  // Add list of CSS & JS files loaded to the settings in the footer.
+  $loaded = array('CToolsAJAX' => array('scripts' => $js_files));
+  // Save to the js settings array even though we do not reload it in advagg.
+  drupal_add_js($loaded, 'setting', 'footer');
+
+  // Add it to the settings array in the footer.
+  if (!isset($master_set['footer']['setting']) || !is_array($master_set['footer']['setting'])) {
+    $master_set['footer']['setting'] = array();
+  }
+  $master_set['footer']['setting'][] = $loaded;
+}
+
+/**
+ * Implement hook_advagg_css_pre_alter.
+ */
+function advagg_advagg_css_pre_alter(&$css, $preprocess_css, $public_downloads) {
+  // Don't run the code below if ctools ajax is not loaded.
+  if (!defined('CTOOLS_AJAX_INCLUDED')) {
+    return;
+  }
+
+  // Get all CSS files set to be loaded.
+  $css_files = array();
+  ctools_process_css_files($css_files, $css);
+
+  // Save to the js settings array.
+  drupal_add_js(array('CToolsAJAX' => array('css' => $css_files)), 'setting', 'footer');
+}
+
+/**
+ * Create a list of javascript files that are on the page.
+ *
+ * @param $js_files
+ *   Array of js files that are loaded on this page.
+ * @param $scope
+ *   String usually containing header or footer.
+ * @param $scripts
+ *   (Optional) array returned from drupal_add_js(). If NULL then it will load
+ *   the array from drupal_add_js for the given scope.
+ * @return array $settings
+ *   The JS 'setting' array for the given scope.
+ */
+function advagg_ctools_process_js_files(&$js_files, $scope, $scripts = NULL) {
+  // Automatically extract any 'settings' added via drupal_add_js() and make
+  // them the first command.
+  $scripts = drupal_add_js(NULL, NULL, $scope);
+  if (empty($scripts)) {
+    $scripts = drupal_add_js(NULL, NULL, $scope);
+  }
+
+  // Get replacements that are going to be made by contrib modules and take
+  // them into account so we don't double-load scripts.
+  static $replacements = NULL;
+  if (!isset($replacements)) {
+  $replacements = module_invoke_all('js_replacements');
+  }
+
+  $settings = array();
+  foreach ($scripts as $type => $data) {
+    switch ($type) {
+      case 'setting':
+        $settings = $data;
+        break;
+      case 'inline':
+      case 'theme':
+        // Presently we ignore inline javascript.
+        // Theme JS is already added and because of admin themes, this could add
+        // improper JS to the page.
+        break;
+      default:
+        // If JS preprocessing is off, we still need to output the scripts.
+        // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
+        foreach ($data as $path => $info) {
+          // If the script is being replaced, take that replacment into account.
+          $final_path = isset($replacements[$type][$path]) ? $replacements[$type][$path] : $path;
+          $js_files[base_path() . $final_path] = TRUE;
+        }
+    }
+  }
+  return $settings;
 }
