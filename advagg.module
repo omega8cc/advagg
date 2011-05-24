@@ -586,9 +586,9 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
 
     // See if a JS bundle exists that already has the same files in it, just in a
     // different order.
-    if ($filetype == 'js' && $run_alter) {
-      advagg_find_existing_bundle($files, $bundle_md5);
-    }
+//     if ($filetype == 'js' && $run_alter) {
+//       advagg_find_existing_bundle($files, $bundle_md5);
+//     }
 
     // Do not add the same bundle twice.
     if (isset($used_md5[$bundle_md5])) {
