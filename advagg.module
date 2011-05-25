@@ -577,6 +577,20 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
       'filenames' => $filenames,
     );
   }
+
+  // Get all counters at once
+  $counters = array();
+  foreach ($filenames as $key => $values) {
+    if (empty($values['counter'])) {
+      $counters[$key] = $values['bundle_md5'];
+    }
+  }
+  $result = advagg_db_multi_select_in('advagg_bundles', 'bundle_md5', "'%s'", $counters, array('counter', 'bundle_md5'), 'GROUP BY bundle_md5');
+  while ($row = db_fetch_array($result)) {
+    $key = array_search($row['bundle_md5'], $counters);
+    $filenames[$key]['counter'] = $row['counter'];
+  }
+
   foreach ($filenames as $values) {
     // Get info from array.
     $filetype = $values['filetype'];
@@ -595,11 +609,6 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
       continue;
     }
     $used_md5[$bundle_md5] = TRUE;
-
-    // Get counter if there.
-    if (empty($counter)) {
-      $counter = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
-    }
 
     // If this is a brand new bundle then insert file/bundle info into database.
     if ($counter === FALSE) {
@@ -2866,4 +2875,41 @@ function advagg_clearstatcache($clear_realpath_cache = FALSE, $filename = NULL) 
   else {
     return clearstatcache();
   }
+}
+
+/**
+ * Select records in the database matching where IN(...).
+ *
+ * NOTE Be aware of the servers max_packet_size variable.
+ *
+ * @param $table
+ *   The name of the table.
+ * @param $field
+ *  field name to be compared to
+ * @param $placeholder
+ *   db_query placeholders; like %d or '%s'
+ * @param $data
+ *   array of values you wish to compare to
+ * @param $returns
+ *   array of db fields you return
+ * @return
+ *   returns db_query() result.
+ */
+function advagg_db_multi_select_in($table, $field, $placeholder, $data, $returns = array(), $groupby = '') {
+  // Set returns if empty
+  if (empty($returns)) {
+    $returns[] = '*';
+  }
+  // Get the number of rows that will be inserted
+  $rows = count($data);
+  // Create what goes in the IN ()
+  $in = $placeholder;
+  // Add the rest of the place holders
+  for ($i = 1; $i < $rows; $i++) {
+    $in .= ', ' . $placeholder;
+  }
+  // Build the query
+  $query = "SELECT " . implode(', ', $returns) . " FROM {" . $table . "} WHERE $field IN ($in) $groupby";
+  // Run the query
+  return db_query($query, $data);
 }
