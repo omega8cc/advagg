@@ -317,6 +317,7 @@ function advagg_js_compress_test_file($values = NULL) {
   $md5 = $values['values']['md5'];
 
   // Compression test file if it exists.
+  advagg_clearstatcache(TRUE, $filename);
   if (file_exists($filename)) {
     $contents = file_get_contents($filename);
     $filesize = filesize($filename);
@@ -378,6 +379,7 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
 
   // Gzip first.
   $gzip_dest = $dest . '.gz';
+  advagg_clearstatcache(TRUE, $gzip_dest);
   if (!file_exists($gzip_dest) || $force) {
     $gzip_data = gzencode($data, 9, FORCE_GZIP);
     if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
@@ -385,12 +387,12 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
     }
 
     // Make sure filesize is not zero.
-    clearstatcache();
+    advagg_clearstatcache(TRUE, $gzip_dest);
     if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
       if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
         return FALSE;
       }
-      clearstatcache();
+      advagg_clearstatcache(TRUE, $gzip_dest);
       if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
         // Filename is bad, create a new one next time.
         file_delete($gzip_dest);
@@ -408,12 +410,12 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
   }
 
   // Make sure filesize is not zero.
-  clearstatcache();
+  advagg_clearstatcache(TRUE, $dest);
   if (@filesize($dest) == 0 && !empty($data)) {
     if (!$file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
       return FALSE;
     }
-    clearstatcache();
+    advagg_clearstatcache(TRUE, $dest);
     if (@filesize($dest) == 0 && !empty($data)) {
       // Filename is bad, create a new one next time.
       file_delete($dest);

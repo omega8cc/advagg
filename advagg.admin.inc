@@ -370,6 +370,8 @@ function advagg_admin_settings_form_submit($form, &$form_state) {
   }
   if ($form_state['values']['advagg_dir_htaccess'] == FALSE) {
     $conf['advagg_dir_htaccess'] = FALSE;
+    advagg_clearstatcache(TRUE, $css_path);
+    advagg_clearstatcache(TRUE, $js_path);
     if (file_exists($css_path) || file_exists($js_path)) {
       file_delete($css_path);
       file_delete($js_path);
@@ -380,6 +382,8 @@ function advagg_admin_settings_form_submit($form, &$form_state) {
     $conf['advagg_dir_htaccess'] = $form_state['values']['advagg_dir_htaccess'];
     advagg_admin_recreate_htaccess();
   }
+  advagg_clearstatcache(TRUE, $css_path);
+  advagg_clearstatcache(TRUE, $js_path);
   if ($conf['advagg_dir_htaccess'] && (!file_exists($css_path) || !file_exists($js_path))) {
     advagg_admin_recreate_htaccess();
   }
@@ -427,7 +431,7 @@ function advagg_admin_flush_cache_button() {
   else {
     if (empty($_advagg['rebuilt'])) {
       drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />!files <br />Marked Bundles Count: %count', array(
-        '!files' => filter_xss(implode('<br />', $_advagg['files'])),
+        '!files' => nl2br(filter_xss(implode("\n", $_advagg['files']))),
         '%count' => count($_advagg['bundles']),
       )
       ));

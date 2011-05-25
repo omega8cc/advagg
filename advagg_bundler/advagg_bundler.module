@@ -253,6 +253,7 @@ function advagg_bundler_merge(&$groupings, $max) {
     $missing_counter = 0;
     $counts[$key] = count($group);
     foreach ($group as $i => $file) {
+      advagg_clearstatcache(TRUE, $file);
       if (!file_exists($file) || filesize($file) == 0) {
         $missing_counter++;
       }

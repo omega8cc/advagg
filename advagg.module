@@ -797,12 +797,12 @@ function advagg_file_saver($data, $dest, $force, $type) {
   }
 
   // Make sure filesize is not zero.
-  clearstatcache();
+  advagg_clearstatcache(TRUE, $dest);
   if (@filesize($dest) == 0 && !empty($data)) {
     if (!$file_save_data($data, $dest, FILE_EXISTS_REPLACE)) {
       return FALSE;
     }
-    clearstatcache();
+    advagg_clearstatcache(TRUE, $dest);
     if (@filesize($dest) == 0 && !empty($data)) {
       // Filename is bad, create a new one next time.
       file_delete($dest);
@@ -812,7 +812,7 @@ function advagg_file_saver($data, $dest, $force, $type) {
 
   if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION) && extension_loaded('zlib')) {
     $gzip_dest = $dest . '.gz';
-
+    advagg_clearstatcache(TRUE, $gzip_dest);
     if (!file_exists($gzip_dest) || $force) {
       $gzip_data = gzencode($data, 9, FORCE_GZIP);
       if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
@@ -820,12 +820,12 @@ function advagg_file_saver($data, $dest, $force, $type) {
       }
 
       // Make sure filesize is not zero.
-      clearstatcache();
+      advagg_clearstatcache(TRUE, $gzip_dest);
       if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
         if (!$file_save_data($gzip_data, $gzip_dest, FILE_EXISTS_REPLACE)) {
           return FALSE;
         }
-        clearstatcache();
+        advagg_clearstatcache(TRUE, $gzip_dest);
         if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
           // Filename is bad, create a new one next time.
           file_delete($gzip_dest);
@@ -967,6 +967,7 @@ function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
   }
 
   $source = realpath($source);
+  advagg_clearstatcache(TRUE, $source);
   if (!file_exists($source)) {
     drupal_set_message(t('The selected file %file could not be copied, because no file by that name exists. Please check that you supplied the correct filename.', array('%file' => $source)), 'error');
     return 0;
@@ -1019,14 +1020,14 @@ function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
  *   Checksum value.
  */
 function advagg_checksum($filename) {
-  clearstatcache();
+  advagg_clearstatcache(TRUE, $filename);
   if (file_exists($filename)) {
     $mode = variable_get('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
     if ($mode == 'mtime') {
       $checksum = @filemtime($filename);
       if ($checksum === FALSE) {
         touch($filename);
-        clearstatcache();
+        advagg_clearstatcache(TRUE, $filename);
         $checksum = @filemtime($filename);
         // Use md5 as a last option.
         if ($checksum === FALSE) {
@@ -1072,7 +1073,7 @@ function advagg_bundle_built($filepath) {
   }
 
   // If not in cache check disk.
-  clearstatcache();
+  advagg_clearstatcache(TRUE, $filepath);
   if (file_exists($filepath)) {
     if (@filesize($filepath) == 0) {
       return FALSE;
@@ -1264,6 +1265,7 @@ function advagg_delete_file_if_stale($filename) {
   $file_last_used = variable_get('advagg_stale_file_last_used_threshold', ADVAGG_STALE_FILE_LAST_USED_THRESHOLD);
 
   // Default stale file threshold is 30 days.
+  advagg_clearstatcache(TRUE, $filename);
   if ($now - filemtime($filename) <= $file_last_mod) {
     return;
   }
@@ -1271,6 +1273,7 @@ function advagg_delete_file_if_stale($filename) {
   // Check to see if this file is still in use.
   $data = cache_get($filename, 'cache_advagg');
   if (!empty($data->data)) {
+    advagg_clearstatcache(TRUE, $filename);
     $file_last_a = @fileatime($filename);
     $file_last_agz = @fileatime($filename . '.gz');
     $file_last_a = max($file_last_a, $file_last_agz);
@@ -2166,6 +2169,7 @@ function advagg_file_exists($filename) {
     return TRUE;
   }
   else {
+    advagg_clearstatcache(TRUE, $filename);
     return file_exists($filename);
   }
 }
@@ -2207,6 +2211,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
 
   $dir = dirname($dest);
   $htaccess_file = $dir . '/.htaccess';
+  advagg_clearstatcache(TRUE, $htaccess_file);
   if (!$force && file_exists($htaccess_file)) {
     return TRUE;
   }
@@ -2837,4 +2842,28 @@ function advagg_ctools_process_js_files(&$js_files, $scope, $scripts = NULL) {
     }
   }
   return $settings;
+}
+
+/**
+ * Wrapper around clearstatcache so it can use php 5.3's new features.
+ *
+ * @param $clear_realpath_cache
+ *   Bool.
+ * @param $filename
+ *   String.
+ * @return
+ *   value from clearstatcache().
+ */
+function advagg_clearstatcache($clear_realpath_cache = FALSE, $filename = NULL) {
+  static $php530;
+  if (!isset($php530)) {
+    $php530 = version_compare(PHP_VERSION, '5.3.0', '>=');
+  }
+
+  if ($php530) {
+    return clearstatcache($clear_realpath_cache, $filename);
+  }
+  else {
+    return clearstatcache();
+  }
 }
