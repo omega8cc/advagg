@@ -31,15 +31,32 @@ function advagg_js_compress_disable() {
 }
 
 /**
+ * Implementation of hook_install().
+ */
+function advagg_js_compress_install() {
+  drupal_install_schema('advagg_js_compress');
+}
+
+/**
  * Implementation of hook_uninstall().
  */
 function advagg_js_compress_uninstall() {
+  // Flush advagg caches.
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+
   // Remove variables.
   variable_del('advagg_js_compress_packer_enable');
   variable_del('advagg_js_compress_agg_files');
   variable_del('advagg_js_compress_callback');
   variable_del('advagg_js_compress_inline');
   variable_del('advagg_js_compressor');
+
+  // Remove our cache table.
+  cache_clear_all('*', 'cache_advagg_js_compress_inline', TRUE);
+  drupal_uninstall_schema('advagg_js_compress');
 }
 
 /**
@@ -116,6 +133,33 @@ function advagg_js_compress_update_6100() {
 
   cache_clear_all('*', 'cache_advagg_files_data', TRUE);
   $ret[] = array('success' => TRUE, 'query' => 'advagg files_data cache flushed.');
+
+  return $ret;
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function advagg_js_compress_schema() {
+  $schema = array();
+
+  // Create cache tables.
+  $schema['cache_advagg_js_compress_inline'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_js_compress_inline']['description'] = t('Cache table for Advanced CSS/JS Aggregations JS Compress module. Used to keep inline versions of compressed JS.');
+
+  return $schema;
+}
+
+
+/**
+ * Update 6101 - Create the cache_advagg_css_compress_inline cache table.
+ */
+function advagg_js_compress_update_6101() {
+  $ret = array();
+
+  // Create cache table.
+  $schema = advagg_js_compress_schema();
+  db_create_table($ret, 'cache_advagg_js_compress_inline', $schema['cache_advagg_js_compress_inline']);
 
   return $ret;
 }

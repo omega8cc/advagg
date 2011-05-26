@@ -1938,7 +1938,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
   $data = '';
 
   // Try cache first. When ever the counter changes this cache gets reset.
-  $cached_data_key = 'advagg_file_builder_' . md5(implode('', $files));
+  $cached_data_key = 'advagg_file_builder_' . md5(implode('', array_filter(array_unique($files))));
   if (!$force) {
     // Try cache first; cache table is cache_advagg_bundle_reuse.
     $cached_data = advagg_cached_bundle_get($cached_data_key, 'file_builder_cache_object');
@@ -2072,6 +2072,9 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
         continue;
       }
     }
+    else {
+      $files_used = array_merge($files_used, $files);
+    }
     $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
   }
 
@@ -2089,7 +2092,7 @@ function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE
 
   // Cache the output
   if (!$force && $cacheable) {
-    $new_cached_data_key = 'advagg_file_builder_' . md5(implode('', $files_used));
+    $new_cached_data_key = 'advagg_file_builder_' . md5(implode('', array_filter(array_unique($files_used))));
     // Verify the files in equals the files out.
     if ($new_cached_data_key == $cached_data_key) {
       cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);

@@ -22,6 +22,11 @@ define('ADVAGG_CSS_COMPRESS_AGG_FILES', TRUE);
 define('ADVAGG_CSS_COMPRESS_INLINE', TRUE);
 
 /**
+ * Default value to see if this will cache the compressed inline css.
+ */
+define('ADVAGG_CSS_COMPRESS_INLINE_CACHE', TRUE);
+
+/**
  * Default value for which css compression library to use.
  */
 define('ADVAGG_CSS_COMPRESSOR', 1);
@@ -71,13 +76,29 @@ function advagg_css_compress_advagg_css_inline_alter(&$contents) {
   if (!variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE)) {
     return;
   }
-
   $compressor = variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR);
+
+  // If using a cache, try to get the contents of it.
+  if (variable_get('advagg_css_compress_inline_cache', ADVAGG_CSS_COMPRESS_INLINE_CACHE)) {
+    $key = md5($contents) . $compressor;
+    $table = 'cache_advagg_css_compress_inline';
+    $data = cache_get($key, $table);
+    if (!empty($data->data)) {
+      $contents = $data->data;
+      return;
+    }
+  }
+
   if ($compressor == 0) {
     advagg_css_compress_css_tidy($contents);
   }
   if ($compressor == 1) {
     advagg_css_compress_css_compressor($contents);
+  }
+
+  // If using a cache set it.
+  if (isset($key)) {
+    cache_set($key, $contents, $table, CACHE_TEMPORARY);
   }
 }
 
@@ -127,4 +148,11 @@ function advagg_css_compress_css_compressor(&$contents) {
 
   $CSSC = new CSSCompression('sane');
   $contents = $CSSC->compress($contents);
+}
+
+/**
+ * Implementation of hook_flush_caches().
+ */
+function advagg_css_compress_flush_caches() {
+  return array('cache_advagg_css_compress_inline');
 }
