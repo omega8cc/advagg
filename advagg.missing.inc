@@ -64,16 +64,16 @@ function advagg_missing_regenerate() {
     return t('In a Loop.');
   }
 
-  // Set file(s) in cache to FALSE.
-  $arg[] = $filename;
-  cache_set(implode('/', $arg), FALSE, 'cache_advagg', TRUE);
-  advagg_missing_remove_cache($md5);
-
   // Counter in database.
   $counter_in_db = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $md5));
   if ($counter_in_db === FALSE) {
     return t('Not a valid bundle.');
   }
+
+  // Set file(s) in cache to FALSE.
+  $arg[] = $filename;
+  cache_set(implode('/', $arg), FALSE, 'cache_advagg', TRUE);
+  advagg_missing_remove_cache($md5);
 
   // Only process if we got an older counter.
   // If we have an out of range counter see if a simlar file exists and serve
@@ -139,11 +139,13 @@ function advagg_missing_remove_cache($bundle_md5) {
   }
 
   $filenames = advagg_get_filename($files, $type, '', $bundle_md5);
-  foreach ($filenames as $key => $info) {
-    $filename = $info['filename'];
-    $filepath = $file_type_path .'/'. $filename;
+  if (!empty($filenames)) {
+    foreach ($filenames as $key => $info) {
+      $filename = $info['filename'];
+      $filepath = $file_type_path .'/'. $filename;
 
-    cache_set($filepath, FALSE, 'cache_advagg', TRUE);
+      cache_set($filepath, FALSE, 'cache_advagg', TRUE);
+    }
   }
 }
 

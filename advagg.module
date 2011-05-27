@@ -523,6 +523,10 @@ function advagg_jquery_updater(&$js) {
  *   Aggregated filename.
  */
 function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = '') {
+  if (empty($files) || empty($filetype)) {
+    return FALSE;
+  }
+
   global $_advagg;
   $filenames = array();
 
@@ -564,7 +568,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   // this special case.
   if ($run_alter) {
     // Force counter to be looked up later.
-    $filenames[0]['counter'] = 0;
+    $filenames[0]['counter'] = FALSE;
     drupal_alter('advagg_filenames', $filenames);
   }
 
@@ -588,7 +592,9 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   $result = advagg_db_multi_select_in('advagg_bundles', 'bundle_md5', "'%s'", $counters, array('counter', 'bundle_md5'), 'GROUP BY bundle_md5');
   while ($row = db_fetch_array($result)) {
     $key = array_search($row['bundle_md5'], $counters);
-    $filenames[$key]['counter'] = $row['counter'];
+    if (empty($filenames[$key]['counter']) && $filenames[$key]['counter'] !== 0) {
+      $filenames[$key]['counter'] = intval($row['counter']);
+    }
   }
 
   foreach ($filenames as $values) {
@@ -611,7 +617,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     $used_md5[$bundle_md5] = TRUE;
 
     // If this is a brand new bundle then insert file/bundle info into database.
-    if ($counter === FALSE) {
+    if (empty($counter) && $counter !== 0) {
       $counter = 0;
       advagg_insert_bundle_db($files, $filetype, $bundle_md5, FALSE);
     }
@@ -1933,7 +1939,7 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
  * @return
  *   array with the filepath as the key and prefix and suffix in another array.
  */
-function advagg_css_js_file_builder($type, $files, $counter = '', $force = FALSE, $md5 = '') {
+function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FALSE, $md5 = '') {
   global $_advagg, $base_path;
   $data = '';
 
