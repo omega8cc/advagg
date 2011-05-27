@@ -320,7 +320,8 @@ function advagg_check_missing_handler() {
 
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
 
-  $extra_404 = module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly.') : '';
+  $extra_404 = $t('If you are still haveing issues you can go to the <a href="@info">AdvAgg information tab</a> and select Asynchronous debug info. If creating an issue on d.o be sure to include this information.', array('@info' => url('admin/settings/advagg/info')));
+  $extra_404 .= module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly.') : '';
 
   // Check response and set async variable accordingly.
   if (isset($data_cdn)) {
@@ -355,7 +356,7 @@ function advagg_check_missing_handler() {
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_WARNING,
         'value'       => variable_get('advagg_async_generation', FALSE) ? $t('Set to TRUE.') : $t('Set to FALSE.'),
-        'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back when routed through the CDN.', array('@cdn' => url('admin/settings/cdn'))),
+        'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back when routed through the CDN. ', array('@cdn' => url('admin/settings/cdn'))) . $extra_404,
       );
     }
     else {

@@ -141,6 +141,56 @@ function advagg_admin_info_form() {
     );
   }
 
+  // Asynchronous raw output
+  $form['async'] = array(
+    '#type'          => 'fieldset',
+    '#collapsible'   => TRUE,
+    '#collapsed'     => TRUE,
+    '#title'         => t('Asynchronous debug info'),
+  );
+
+  global $base_path;
+
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+    $ip = variable_get('advagg_server_addr', FALSE);
+    if ($ip == -1) {
+      $ip = $_SERVER['HTTP_HOST'];
+    }
+    elseif (empty($ip)) {
+      $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
+    }
+  $filepath = $css_path . '/css_missing' . mt_rand() . time() . '_0.css';
+  $url = 'http://' . $ip . $base_path . $filepath;
+  $headers = array(
+    'Host' => $_SERVER['HTTP_HOST'],
+  );
+
+  timer_start(__FUNCTION__ . 'local');
+  $data_local = drupal_http_request($url, $headers);
+  $data_local->timer = timer_stop(__FUNCTION__ . 'local');
+  list($data, $rows) = advagg_form_print_r($data_local);
+  $form['async']['normal'] = array(
+    '#type'           => 'textarea',
+    '#title'          => check_plain($url),
+    '#default_value'  => $data,
+    '#rows'           => min($rows+1, 50),
+  );
+
+  if (module_exists('cdn')) {
+    $url_cdn = file_create_url($filepath);
+    // Send request and also time it.
+    timer_start(__FUNCTION__ . 'cdn');
+    $data_cdn = drupal_http_request($url_cdn);
+    $data_cdn->timer = timer_stop(__FUNCTION__ . 'cdn');
+    list($data, $rows) = advagg_form_print_r($data_cdn);
+    $form['async']['cdn'] = array(
+      '#type'           => 'textarea',
+      '#title'          => check_plain($url_cdn),
+      '#default_value'  => $data,
+      '#rows'           => min($rows+1, 50),
+    );
+  }
+
   return $form;
 }
 
