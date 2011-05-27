@@ -278,6 +278,17 @@ function advagg_check_missing_handler() {
   // Ensure translations don't break at install time
   $t = get_t();
 
+  // Don't run the test if site is offline
+  if (variable_get('site_offline', 0)) {
+    $ret['advagg_async_offline'] = array(
+      'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
+      'severity'    => REQUIREMENT_WARNING,
+      'value'       => $t('Unknown. Currently set to @value.', array('@value' => $async ? 'TRUE' : 'FALSE')),
+      'description' => $t('This can not be tested while the site is in <a href="@maintenance">offline mode</a>', array('@maintenance' => url('admin/settings/site-maintenance'))),
+    );
+    return $ret;
+  }
+
   // Setup request
   list($css_path, $js_path) = advagg_get_root_files_dir();
     $ip = variable_get('advagg_server_addr', FALSE);
