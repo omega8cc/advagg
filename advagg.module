@@ -413,15 +413,14 @@ function advagg_processor(&$variables) {
   if (!empty($css_func_inline)) {
     $css = advagg_merge_inline_css($css, $css_func_inline);
   }
+  $css_conditional_styles = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
   $css_styles = $variables['styles'];
   if (!empty($css)) {
     $processed_css = advagg_process_css($css);
     if (!empty($processed_css)) {
       $variables['styles'] = $processed_css;
     }
-    if (!empty($vars['conditional_styles'])) {
-      $variables['styles'] .= "\n". $vars['conditional_styles'];
-    }
+    $variables['styles'] .= "\n". $css_conditional_styles;
   }
 
   // JS
@@ -467,6 +466,7 @@ function advagg_processor(&$variables) {
       'css_before_function' => $css_func,
       'css_before_styles' => $css_styles,
       'css_before_inline' => $css_func_inline,
+      'css_before_conditional_styles' => $css_conditional_styles,
       'css_merged' => $css,
       'css_after' => $processed_css,
       'js_before' => $js_code_orig,
