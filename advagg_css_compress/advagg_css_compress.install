@@ -45,7 +45,9 @@ function advagg_css_compress_uninstall() {
   }
 
   // Remove variables.
+  variable_del('advagg_css_compress_compressor_level');
   variable_del('advagg_css_compress_preserve_css');
+  variable_del('advagg_css_compress_inline_cache');
   variable_del('advagg_css_compress_agg_files');
   variable_del('advagg_css_compress_inline');
   variable_del('advagg_css_compressor');
