@@ -298,8 +298,8 @@ function advagg_check_missing_handler() {
     elseif (empty($ip)) {
       $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
     }
-  $filepath = $css_path . '/css_missing' . mt_rand() . time() . '_0.css';
-  $url = 'http://' . $ip . $base_path . $filepath;
+  $filepath = '/missing' . mt_rand() . time();
+  $url = 'http://' . $ip . $base_path . $css_path . $filepath . '.css';
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
   );
@@ -309,81 +309,120 @@ function advagg_check_missing_handler() {
   $data_local = drupal_http_request($url, $headers);
   $time_local = timer_stop(__FUNCTION__ . 'local');
 
+  // Test CDN module; JS & CSS paths.
   if (module_exists('cdn')) {
-    $url_cdn = file_create_url($filepath);
-    // Send request and also time it.
-    timer_start(__FUNCTION__ . 'cdn');
-    $data_cdn = drupal_http_request($url_cdn);
-    $time_cdn = timer_stop(__FUNCTION__ . 'cdn');
-    $mode = variable_get(CDN_MODE_VARIABLE, CDN_MODE_BASIC);
+    // Make sure CDN module is on.
+    $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
+    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && !variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE)) {
+
+      $url_cdn_css = file_create_url($css_path . $filepath . '.css');
+      $parts_css = @parse_url($url_cdn_css);
+      // Do not test CDN CSS if the hosts are the same.
+      if (strcmp($parts_css['host'], $_SERVER['HTTP_HOST']) == 0) {
+        $parts_css = FALSE;
+      }
+
+      $url_cdn_js = file_create_url($js_path . $filepath . '.js');
+      $parts_js = @parse_url($url_cdn_js);
+      // Do not test CDN JS if the hosts are the same.
+      if (strcmp($parts_js['host'], $_SERVER['HTTP_HOST']) == 0) {
+        $parts_js = FALSE;
+      }
+
+      if (!empty($parts_css)) {
+        // Send request and also time it.
+        timer_start(__FUNCTION__ . 'cdn_css');
+        $data_cdn_css = drupal_http_request($url_cdn_css);
+        $time_cdn_css = timer_stop(__FUNCTION__ . 'cdn_css');
+      }
+      if (!empty($parts_js)) {
+        // Send request and also time it.
+        timer_start(__FUNCTION__ . 'cdn_js');
+        $data_cdn_js = drupal_http_request($url_cdn_js);
+        $time_cdn_js = timer_stop(__FUNCTION__ . 'cdn_js');
+      }
+      $mode = variable_get(CDN_MODE_VARIABLE, CDN_MODE_BASIC);
+    }
   }
 
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
 
-  $extra_404 = $t('If you are still haveing issues you can go to the <a href="@info">AdvAgg information tab</a> and select Asynchronous debug info. If creating an issue on d.o be sure to include this information.', array('@info' => url('admin/settings/advagg/info')));
+  $extra_404 = $t('If you are still having issues you can go to the <a href="@info">AdvAgg information tab</a> and select Asynchronous debug info. If creating an issue on d.o be sure to include this information.', array('@info' => url('admin/settings/advagg/info')));
   $extra_404 .= module_exists('stage_file_proxy') ? $t('<a href="http://drupal.org/project/stage_file_proxy">Stage File Proxy</a> needs <a href="http://drupal.org/node/1078218">this patch</a> applied to it in order for advagg to work correctly.') : '';
 
-  // Check response and set async variable accordingly.
-  if (isset($data_cdn)) {
-    if ($data_cdn->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn->headers['X-AdvAgg']) || (!empty($data_cdn->data) && strpos($data_cdn->data, '<!-- advagg_missing_fast404 -->') !== FALSE))) {
-      // Hook menu works through the cdn
-      if ($async == -1) {
-        variable_set('advagg_async_generation', TRUE);
-        $ret['advagg_async_generation'] = array(
-          'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-          'severity'    => REQUIREMENT_OK,
-          'value'       => $t('Is now set to TRUE'),
-        );
-      }
-      if ($async == 0) {
-        $ret['advagg_async_generation'] = array(
-          'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-          'severity'    => REQUIREMENT_WARNING,
-          'value'       => $t('Could be changed to TRUE'),
-        );
-      }
-      if ($async == 1) {
-        $ret['advagg_async_generation'] = array(
-          'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-          'severity'    => REQUIREMENT_OK,
-          'value'       => $t('Already set to TRUE'),
-        );
-      }
-    }
-    elseif ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
-      // variable_set('advagg_async_generation', FALSE);
-      $ret['advagg_async_generation'] = array(
-        'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-        'severity'    => REQUIREMENT_WARNING,
-        'value'       => variable_get('advagg_async_generation', FALSE) ? $t('Set to TRUE.') : $t('Set to FALSE.'),
-        'description' => $t('Check your <a href="@cdn">CDN settings</a>; request is not coming back when routed through the CDN. ', array('@cdn' => url('admin/settings/cdn'))) . $extra_404,
+  // Check CDN responses.
+  $cdn_failed = FALSE;
+  if (isset($parts_css) && empty($parts_css)) {
+    $ret['advagg_async_generation_css_cdn'] = array(
+      'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+      'severity'    => REQUIREMENT_WARNING,
+      'value'       => $t('CSS CDN Issue'),
+      'description' => $t('Your current CDN settings are not rewriting the URL for advagg CSS files to point to your CDN. Most likely you need to adjust your <a href="@cdnother">CDN exceptions</a> to allow CSS files from advagg.', array('@cdnother' => url('admin/settings/cdn/other'))),
+    );
+  }
+  if (isset($parts_js) && empty($parts_js)) {
+    $ret['advagg_async_generation_js_cdn'] = array(
+      'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+      'severity'    => REQUIREMENT_WARNING,
+      'value'       => $t('JS CDN Issue'),
+      'description' => $t('Your current CDN settings are not rewriting the URL for advagg JS files to point to your CDN. Most likely you need to adjust your <a href="@cdnother">CDN exceptions</a> to allow JS files from advagg.', array('@cdnother' => url('admin/settings/cdn/other'))),
+    );
+  }
+  if (isset($data_cdn_css)) {
+    if ($data_cdn_css->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn_css->headers['X-AdvAgg']) || (!empty($data_cdn_css->data) && strpos($data_cdn_css->data, '<!-- advagg_missing_fast404 -->') !== FALSE))) {
+      $ret['advagg_async_generation_css_cdn'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+        'severity'    => REQUIREMENT_OK,
+        'value'       => $t('CSS CDN'),
+        'description' => $t('Requests through the CDN are getting back to advagg for CSS files.'),
       );
     }
     else {
-      variable_set('advagg_async_generation', FALSE);
-      $ret['advagg_async_generation'] = array(
-        'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-        'severity'    => REQUIREMENT_ERROR,
-        'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
+      $cdn_failed = TRUE;
+      $ret['advagg_async_generation_css_cdn'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+        'severity'    => REQUIREMENT_WARNING,
+        'value'       => $t('CSS CDN Issue'),
+        'description' => $t('Check your <a href="@cdn">CDN settings</a>; CSS request is not coming back when routed through the CDN. ', array('@cdn' => url('admin/settings/cdn'))) . $extra_404,
       );
     }
   }
-  elseif ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
+  if (isset($data_cdn_js)) {
+    if ($data_cdn_js->code != 200 && $mode == CDN_MODE_BASIC && (!empty($data_cdn_js->headers['X-AdvAgg']) || (!empty($data_cdn_js->data) && strpos($data_cdn_js->data, '<!-- advagg_missing_fast404 -->') !== FALSE))) {
+      $ret['advagg_async_generation_js_cdn'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+        'severity'    => REQUIREMENT_OK,
+        'value'       => $t('JS CDN'),
+        'description' => $t('Requests through the CDN are getting back to advagg for JS files.'),
+      );
+    }
+    else {
+      $cdn_failed = TRUE;
+      $ret['advagg_async_generation_js_cdn'] = array(
+        'title'       => $t('Adv CSS/JS Agg - CDN Async Mode'),
+        'severity'    => REQUIREMENT_WARNING,
+        'value'       => $t('JS CDN Issue'),
+        'description' => $t('Check your <a href="@cdn">CDN settings</a>; JS request is not coming back when routed through the CDN. ', array('@cdn' => url('admin/settings/cdn'))) . $extra_404,
+      );
+    }
+  }
+
+  // Check normal response and set async variable accordingly.
+  if ($data_local->code != 200 && (!empty($data_local->headers['X-AdvAgg']) || strpos($data_local->data, '<!-- advagg_missing_fast404 -->') !== FALSE)) {
     // Hook menu works.
-    if ($async == -1) {
+    if ($async == -1 && !$cdn_failed) {
       variable_set('advagg_async_generation', TRUE);
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_OK,
-        'value'       => $t('Is now set to TRUE'),
+        'value'       => $t('Is now set to TRUE.'),
       );
     }
     if ($async == 0) {
       $ret['advagg_async_generation'] = array(
         'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
         'severity'    => REQUIREMENT_WARNING,
-        'value'       => $t('Could be changed to TRUE'),
+        'value'       => $t('Could be changed to TRUE.'),
       );
     }
     if ($async == 1) {
@@ -393,18 +432,25 @@ function advagg_check_missing_handler() {
         'value'       => $t('Already set to TRUE'),
       );
     }
+    if ($cdn_failed) {
+      $ret['advagg_async_generation']['description'] = ' ' . $t('Be careful about enabling Asynchronous Mode. Your CDN is not forwarding 404s back to advagg missing file handling functions. There is a chance a user could have a broken experience.');
+    }
   }
   else {
-    variable_set('advagg_async_generation', FALSE);
+    // Set to FALSE if not.
+    if ($async != 0) {
+      variable_set('advagg_async_generation', FALSE);
+    }
+    // Build error message.
     $ret['advagg_async_generation'] = array(
       'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
       'severity'    => REQUIREMENT_ERROR,
       'value'       => $t('Set to FALSE.'),
-        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
+      'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
     );
   }
 
-  // Set socket timeout.
+  // Set socket timeout relative to local round trip.
   $timeout = variable_get('advagg_socket_timeout', -1);
   $new_time = ceil(($time_local['time']+51)/1000);
   if ($async) {
