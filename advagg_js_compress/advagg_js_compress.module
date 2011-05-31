@@ -77,8 +77,6 @@ function advagg_js_compress_menu() {
  */
 function advagg_js_compress_init() {
   global $conf;
-  // Do not use the minified jquery if we are going to compress.
-  $conf['jquery_update_compression_type'] = 'none';
 
   if (variable_get('advagg_js_compress_packer_enable', ADVAGG_JS_COMPRESS_PACKER_ENABLE)) {
     $conf['advagg_file_save_function'] = 'advagg_js_compress_file_saver';
@@ -272,6 +270,27 @@ function advagg_js_compress_jsminplus(&$contents) {
 function advagg_js_compress_test_compression($files_to_test) {
   global $base_path;
   $bad_files = array();
+  // Blacklist jquery.min.js from getting compressed.
+  if (module_exists('jquery_update')) {
+    foreach ($files_to_test as $key => $info) {
+      if (strpos($info['filename'], 'jquery.min.js') !== FALSE) {
+        // Add file to the bad list.
+        $bad_files[] = $info;
+        unset($files_to_test[$key]);
+
+        // Get file data.
+        $filename_md5 = md5($info['filename']);
+        $data = advagg_get_file_data($filename_md5);
+
+        // Set to -2
+        if (!isset($data->data['advagg_js_compress']['tested']['jsminplus']) || $data->data['advagg_js_compress']['tested']['jsminplus'] != -2) {
+          $data['advagg_js_compress']['tested']['jsminplus'] = -2;
+          advagg_set_file_data($filename_md5, $data);
+        }
+      }
+    }
+  }
+
   foreach ($files_to_test as $info) {
     $key = variable_get('advagg_js_compress_url_key', FALSE);
     if (empty($key)) {
@@ -343,13 +362,14 @@ function advagg_js_compress_test_file($values = NULL) {
     $contents = file_get_contents($filename);
     $filesize = filesize($filename);
 
-    // set to -1 so if php bombs out, the file is now marked as bad.
+    // Set to "-1" so if php bombs out, the file will be marked as bad.
     $data['advagg_js_compress']['tested']['jsminplus'] = -1;
     advagg_set_file_data($md5, $data);
 
+    // Compress the data.
     list($before, $after) = advagg_js_compress_jsminplus($contents);
 
-    // Mark as "-2" if compression ratio sucks.
+    // Set to "-2" if compression ratio sucks.
     $ratio = ($before - $after)/$before;
     if ($ratio < variable_get('advagg_js_compress_ratio', ADVAGG_JS_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -2;
@@ -357,6 +377,7 @@ function advagg_js_compress_test_file($values = NULL) {
       echo $md5;
       exit;
     }
+    // Set to "-3" if the compression ratio is way too good.
     if ($ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -3;
       advagg_set_file_data($md5, $data);
@@ -364,7 +385,7 @@ function advagg_js_compress_test_file($values = NULL) {
       exit;
     }
 
-
+    // Everything worked, mark this file as compressable.
     $data['advagg_js_compress']['tested']['jsminplus'] = 1;
     advagg_set_file_data($md5, $data);
   }
