@@ -177,7 +177,13 @@ function advagg_admin_info_form() {
   );
 
   if (module_exists('cdn')) {
+    global $conf;
+    $path_blacklist = variable_get(CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE, CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_DEFAULT);
+    $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = '';
+
     $url_cdn = file_create_url($filepath);
+
+    $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = $path_blacklist;
     // Send request and also time it.
     timer_start(__FUNCTION__ . 'cdn');
     $data_cdn = drupal_http_request($url_cdn);

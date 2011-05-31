@@ -315,6 +315,10 @@ function advagg_check_missing_handler() {
     $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
     if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && !variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE)) {
 
+      global $conf;
+      $path_blacklist = variable_get(CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE, CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_DEFAULT);
+      $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = '';
+
       $url_cdn_css = file_create_url($css_path . $filepath . '.css');
       $parts_css = @parse_url($url_cdn_css);
       // Do not test CDN CSS if the hosts are the same.
@@ -328,6 +332,8 @@ function advagg_check_missing_handler() {
       if (strcmp($parts_js['host'], $_SERVER['HTTP_HOST']) == 0) {
         $parts_js = FALSE;
       }
+
+      $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = $path_blacklist;
 
       if (!empty($parts_css)) {
         // Send request and also time it.
