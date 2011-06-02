@@ -69,6 +69,9 @@ function advagg_missing_regenerate() {
   if ($counter_in_db === FALSE) {
     return t('Not a valid bundle.');
   }
+  // Cast counter as int
+  $counter_in_db = intval($counter_in_db);
+  $counter = intval($counter);
 
   // Set file(s) in cache to FALSE.
   $arg[] = $filename;
