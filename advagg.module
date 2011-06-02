@@ -2116,7 +2116,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
           'Host' => $_SERVER['HTTP_HOST'],
         );
 
-        if (function_exists('stream_socket_client')) {
+        if (function_exists('stream_socket_client') && function_exists('stream_select')) {
           advagg_async_connect_http_request($url, array('headers' => $headers));
         }
         else {
