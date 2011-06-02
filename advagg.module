@@ -386,6 +386,108 @@ function advagg_merge_inline_css($array1, $array2) {
 }
 
 /**
+ * Remove .less files from the array.
+ *
+ * @param $css_func
+ *   Drupal CSS array.
+ */
+function advagg_css_array_fixer(&$css_func) {
+  if (!module_exists('less')) {
+    return;
+  }
+
+  // Remove '.css.less' files from the stack.
+  foreach ($css_func as $k => $v) {
+    foreach ($v as $ke => $va) {
+      foreach ($va as $file => $preprocess) {
+        if (advagg_string_ends_with($file, '.css.less')) {
+          unset($css_func[$k][$ke][$file]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * See if a string ends with a substring.
+ *
+ * @param $haystack
+ *   The main string being compared.
+ * @param $needle
+ *   The secondary string being compared.
+ * @return
+ *   bool
+ */
+function advagg_string_ends_with($haystack, $needle) {
+  // Define substr_compare if it doesn't exist (PHP 4 fix).
+  if (!function_exists('substr_compare')) {
+    /**
+    * Binary safe comparison of two strings from an offset, up to length
+    * characters.
+    *
+    * Compares main_str from position offset with str up to length characters.
+    * @see http://php.net/substr-compare#53084
+    *
+    * @param $main_str
+    *   The main string being compared.
+    * @param $str
+    *   The secondary string being compared.
+    * @param $offset
+    *   The start position for the comparison. If negative, it starts counting
+    *   from the end of the string.
+    * @param $length
+    *   The length of the comparison. The default value is the largest of the
+    *   length of the str compared to the length of main_str less the offset.
+    * @param $case_insensitivity
+    *   If TRUE, comparison is case insensitive.
+    * @return
+    *   Returns < 0 if main_str from position offset is less than str, > 0 if
+    *   it is greater than str, and 0 if they are equal. If offset is equal to
+    *   or greater than the length of main_str or length is set and is less than
+    *   1, substr_compare() prints a warning and returns FALSE.
+    */
+    function substr_compare($main_str, $str, $offset, $length = NULL, $case_insensitivity = FALSE) {
+      $offset = (int) $offset;
+
+      // Throw a warning because the offset is invalid
+      if ($offset >= strlen($main_str)) {
+        trigger_error('The start position cannot exceed initial string length.', E_USER_WARNING);
+        return FALSE;
+      }
+
+      // We are comparing the first n-characters of each string, so let's use the PHP function to do it
+      if ($offset == 0 && is_int($length) && $case_insensitivity === TRUE) {
+        return strncasecmp($main_str, $str, $length);
+      }
+
+      // Get the substring that we are comparing
+      if (is_int($length)) {
+        $main_substr = substr($main_str, $offset, $length);
+        $str_substr = substr($str, 0, $length);
+      } else {
+        $main_substr = substr($main_str, $offset);
+        $str_substr = $str;
+      }
+
+      // Return a case-insensitive comparison of the two strings
+      if ($case_insensitivity === TRUE) {
+        return strcasecmp($main_substr, $str_substr);
+      }
+
+      // Return a case-sensitive comparison of the two strings
+      return strcmp($main_substr, $str_substr);
+    }
+  }
+
+  $haystack_len = strlen($haystack);
+  $needle_len = strlen($needle);
+  if ($needle_len > $haystack_len) {
+    return FALSE;
+  }
+  return substr_compare($haystack, $needle, $haystack_len-$needle_len, $needle_len, TRUE) === 0;
+}
+
+/**
  * Process variables for page.tpl.php
  *
  * @param $variables
@@ -408,6 +510,7 @@ function advagg_processor(&$variables) {
   $css_var = $variables['css'];
   $css_orig = $css_var;
   $css_func = drupal_add_css();
+  advagg_css_array_fixer($css_func);
   $css = advagg_merge_css($css_func, $css_var);
   $css_func_inline = advagg_add_css_inline();
   if (!empty($css_func_inline)) {
