@@ -1629,7 +1629,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           if (!$preprocess || !($public_downloads && $preprocess_css)) {
             // Create URI for file.
             $file_uri = advagg_build_uri($file) . $query_string;
-            $files_included[$media][$file] = TRUE;
+            $files_included[$media][$file] = $preprocess;
             // If a CSS file is not to be preprocessed and it's a module CSS
             // file, it needs to *always* appear at the *top*, regardless of
             // whether preprocessing is on or off.
@@ -1955,7 +1955,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           foreach ($data as $path => $info) {
             if (!$info['preprocess'] || !$public_downloads || !$preprocess_js) {
               $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?'. time()), $info['defer']);
-              $files_included[$path] = TRUE;
+              $files_included[$path] = $info['preprocess'];
             }
             else {
               $preprocess_list[$path] = $info;
@@ -3090,10 +3090,14 @@ function advagg_db_multi_select_in($table, $field, $placeholder, $data, $returns
 /**
  * Return a large array of the CSS & JS files loaded on this page.
  *
+ * @param $js_files_excluded
+ *   array of js files to not include in the output array.
+ * @param $css_files_excluded
+ *   array of css files to not include in the output array.
  * @return
  *   array.
  */
-function advagg_get_js_css_get_array() {
+function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_excluded = array()) {
   global $conf, $_advagg;
 
   // Setup variables.
@@ -3117,6 +3121,16 @@ function advagg_get_js_css_get_array() {
   if (!empty($css_func_inline)) {
     $variables['css'] = advagg_merge_inline_css($variables['css'], $css_func_inline);
   }
+  // Remove excluded CSS files.
+  foreach ($variables['css'] as $media => $types) {
+    foreach ($types as $type => $values) {
+      foreach ($values as $filename => $preprocess) {
+        if (in_array($filename, $css_files_excluded)) {
+          unset($variables['css'][$media][$type][$filename]);
+        }
+      }
+    }
+  }
   $css_array = advagg_process_css($variables['css']);
 
   // Run JS code.
@@ -3126,6 +3140,16 @@ function advagg_get_js_css_get_array() {
     $variables['js']['footer'] = drupal_add_js(NULL, NULL, 'footer');
   }
   advagg_jquery_updater($variables['js']['header']);
+  // Remove excluded JS files.
+  foreach ($variables['js'] as $scope => $values) {
+    foreach ($values as $type => $data) {
+      foreach ($data as $filename => $info) {
+        if (in_array($filename, $js_files_excluded)) {
+          unset($variables['js'][$scope][$type][$filename]);
+        }
+      }
+    }
+  }
   $js_array = advagg_process_js($variables['js']);
 
   // Set render functions back to defaults.
