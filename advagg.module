@@ -518,13 +518,12 @@ function advagg_processor(&$variables) {
   }
   $css_conditional_styles = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
   $css_styles = $variables['styles'];
-  if (!empty($css)) {
-    $processed_css = advagg_process_css($css);
-    if (!empty($processed_css)) {
-      $variables['styles'] = $processed_css;
-    }
-    $variables['styles'] .= "\n". $css_conditional_styles;
+  // Build HTML code.
+  $processed_css = advagg_process_css($css);
+  if (!empty($processed_css)) {
+    $variables['styles'] = $processed_css;
   }
+  $variables['styles'] .= "\n". $css_conditional_styles;
 
   // JS
   $js_code = array();
@@ -539,23 +538,18 @@ function advagg_processor(&$variables) {
     }
   }
   $js_code_orig = $js_code;
-
-  if (!empty($js_code)) {
-    if (!empty($js_code['header'])) {
-      advagg_jquery_updater($js_code['header']);
+  // Build HTML code.
+  advagg_jquery_updater($js_code['header']);
+  $js_code = advagg_process_js($js_code);
+  foreach ($js_code as $key => $value) {
+    if ($key == 'header') {
+      $variables['scripts'] = $value;
     }
-
-    $js_code = advagg_process_js($js_code);
-    foreach ($js_code as $key => $value) {
-      if ($key == 'header') {
-        $variables['scripts'] = $value;
-      }
-      elseif ($key == 'footer' && variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
-        $variables['closure'] .= $value;
-      }
-      else {
-        $variables[$key] .= $value;
-      }
+    elseif ($key == 'footer' && variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
+      $variables['closure'] .= $value;
+    }
+    else {
+      $variables[$key] .= $value;
     }
   }
 
@@ -588,7 +582,7 @@ function advagg_processor(&$variables) {
  *   List of files in the header
  */
 function advagg_jquery_updater(&$js) {
-  if (!module_exists('jquery_update') || !variable_get('jquery_update_replace', TRUE)) {
+  if (!module_exists('jquery_update') || !variable_get('jquery_update_replace', TRUE) || empty($js)) {
     return;
   }
 
@@ -1533,6 +1527,10 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   if (!isset($css)) {
     $css = drupal_add_css();
   }
+  if (empty($css)) {
+    return FALSE;
+  }
+
   // Get useful info.
   list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
 
@@ -1540,12 +1538,18 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   // modify the data in the $javascript array if necessary.
   drupal_alter('advagg_css_pre', $css, $preprocess_css, $public_downloads);
 
+  // Set variables.
   $external_no_preprocess = array();
   $module_no_preprocess = array();
   $output_no_preprocess = array();
   $output_preprocess = array();
   $theme_no_preprocess = array();
   $inline_no_preprocess = array();
+  $files_included = array();
+  $files_aggregates_included = array();
+  $inline_included = array();
+
+  // Process input.
   foreach ($css as $media => $types) {
     // If CSS preprocessing is off, we still need to output the styles.
     // Additionally, go through any remaining styles if CSS preprocessing is on
@@ -1577,6 +1581,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             'prefix' => '',
             'suffix' => '',
           );
+          $files_included[$media][$file] = TRUE;
           // Unset the file to prevent its inclusion.
           unset($types[$type][$file]);
           continue;
@@ -1597,6 +1602,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
                 'prefix' => $file,
                 'suffix' => $suffix,
               );
+              $inline_included[$media][] = $blob;
             }
           }
           else {
@@ -1611,6 +1617,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
               'prefix' => '',
               'suffix' => '',
             );
+            $inline_included[$media][] = $file;
           }
           // Unset to prevent its inclusion.
           unset($types[$type][$file]);
@@ -1620,13 +1627,16 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         // Only include the stylesheet if it exists.
         if (advagg_file_exists($file)) {
           if (!$preprocess || !($public_downloads && $preprocess_css)) {
+            // Create URI for file.
+            $file_uri = advagg_build_uri($file) . $query_string;
+            $files_included[$media][$file] = TRUE;
             // If a CSS file is not to be preprocessed and it's a module CSS
             // file, it needs to *always* appear at the *top*, regardless of
             // whether preprocessing is on or off.
             if (!$preprocess && $type == 'module') {
               $module_no_preprocess[] = array(
                 'media' => $media,
-                'href' => advagg_build_uri($file) . $query_string,
+                'href' => $file_uri,
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1637,7 +1647,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             elseif (!$preprocess && $type == 'theme') {
               $theme_no_preprocess[] = array(
                 'media' => $media,
-                'href' => advagg_build_uri($file) . $query_string,
+                'href' => $file_uri,
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1646,7 +1656,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             else {
               $output_no_preprocess[] = array(
                 'media' => $media,
-                'href' => advagg_build_uri($file),
+                'href' => $file_uri,
                 'prefix' => '',
                 'suffix' => '',
               );
@@ -1657,11 +1667,14 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
     }
 
     if ($public_downloads && $preprocess_css) {
+      $files_aggregates_included[$media] = $files_included[$media];
       $files = array();
       foreach ($types as $type) {
         foreach ($type as $file => $cache) {
           if ($cache) {
             $files[] = $file;
+            $files_included[$media][$file] = TRUE;
+            unset($files_aggregates_included[$file]);
           }
         }
       }
@@ -1678,6 +1691,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
             'prefix' => $prefix,
             'suffix' => $suffix,
           );
+          $files_aggregates_included[$media][$preprocess_file] = $extra;
         }
         else {
           $good = FALSE;
@@ -1695,7 +1709,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
 
   // Default function called: advagg_unlimited_css_builder
   $function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
-  return $function($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess);
+  return $function($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess, $inline_included, $files_included, $files_aggregates_included);
 }
 
 /**
@@ -1713,10 +1727,16 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
  *   array of css files ($media, $href)
  * @param $inline_no_preprocess
  *   array of css data to inline ($media, $data)
+ * @param $inline_included
+ *   array of inline css included. $a[$media][] = $datablob;
+ * @param $files_included
+ *   array of css files included. $a[$media][] = $filename
+ * @param $files_aggregates_included
+ *   array of css files & aggregates included. $a[$media][] = $filename
  * @return
  *   html for loading the css. html for the head.
  */
-function advagg_unlimited_css_builder($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess) {
+function advagg_unlimited_css_builder($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess, $files_included, $files_aggregates_included, $inline_included) {
   global $user;
   $styles = '';
   $files = array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess);
@@ -1775,22 +1795,36 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
  *   html string
  */
 function advagg_unlimited_css_traditional($files, &$styles) {
+  $last_prefix = '';
+  $last_suffix = '';
   foreach ($files as $css_file) {
+    $media = $css_file['media'];
+    $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'] . "\n";
+    $suffix = empty($css_file['suffix']) ? '' : $css_file['suffix'];
+
+    // Group prefixes and suffixes.
     if (isset($css_file['href'])) {
-      $media = $css_file['media'];
       $href = $css_file['href'];
-      $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'] . "\n";
-      $suffix = empty($css_file['suffix']) ? '' : "\n" . $css_file['suffix'];
-      $styles .= $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . $suffix . "\n";
+      if ($prefix != $last_prefix) {
+        $styles .= $last_suffix . "\n" . $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . "\n";
+      }
+      else {
+        $styles .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . "\n";
+      }
     }
     else {
-      $media = $css_file['media'];
       $data = $css_file['data'];
-      $prefix = empty($css_file['prefix']) ? '' : $css_file['prefix'] . "\n";
-      $suffix = empty($css_file['suffix']) ? '' : "\n" . $css_file['suffix'];
-      $styles .= $prefix . '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . $suffix . "\n";
+      if ($prefix != $last_prefix) {
+        $styles .= $last_suffix . "\n" . $prefix . '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . "\n";
+      }
+      else {
+        $styles .= '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . "\n";
+      }
     }
+    $last_prefix = $prefix;
+    $last_suffix = $suffix;
   }
+  $styles .= $last_suffix . "\n";
 }
 
 /**
@@ -1871,12 +1905,19 @@ function advagg_process_js($master_set, $noagg = FALSE) {
       continue;
     }
 
+    // Set variables.
     $setting_no_preprocess = array();
     $inline_no_preprocess = array();
     $external_no_preprocess = array();
     $output_no_preprocess = array('core' => array(), 'module' => array(), 'theme' => array());
     $output_preprocess = array();
     $preprocess_list = array();
+    $js_settings_array = array();
+    $inline_included = array();
+    $files_included = array();
+    $files_aggregates_included = array();
+
+    // Process input.
     foreach ($javascript as $type => $data) {
       if (empty($data)) {
         continue;
@@ -1884,7 +1925,9 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
       switch ($type) {
         case 'setting':
-          $js_settings = advagg_drupal_to_js(call_user_func_array('array_merge_recursive', $data));
+          $data = call_user_func_array('array_merge_recursive', $data);
+          $js_settings_array[] = $data;
+          $js_settings = advagg_drupal_to_js($data);
           $js_settings = preg_replace(array('/"DRUPAL_JS_RAW\:/', '/\:DRUPAL_JS_RAW"/'), array('', ''), $js_settings);
           $setting_no_preprocess[] = 'jQuery.extend(Drupal.settings, ' . $js_settings . ");";
           break;
@@ -1895,12 +1938,14 @@ function advagg_process_js($master_set, $noagg = FALSE) {
             // chance to modify the contents of $info['code'] if necessary.
             drupal_alter('advagg_js_inline', $info['code']);
             $inline_no_preprocess[] = array($info['code'], $info['defer']);
+            $inline_included[] = $info['code'];
           }
           break;
 
         case 'external':
           foreach ($data as $path => $info) {
             $external_no_preprocess[] = array($path, $info['defer']);
+            $files_included[$path] = TRUE;
           }
           break;
 
@@ -1910,6 +1955,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           foreach ($data as $path => $info) {
             if (!$info['preprocess'] || !$public_downloads || !$preprocess_js) {
               $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?'. time()), $info['defer']);
+              $files_included[$path] = TRUE;
             }
             else {
               $preprocess_list[$path] = $info;
@@ -1920,10 +1966,12 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
     // Aggregate any remaining JS files that haven't already been output.
     if ($public_downloads && $preprocess_js && count($preprocess_list) > 0) {
+      $files_aggregates_included = $files_included;
       $files = array();
       foreach ($preprocess_list as $path => $info) {
         if ($info['preprocess']) {
           $files[] = $path;
+          $files_included[$path] = TRUE;
         }
       }
       $preprocess_files = advagg_css_js_file_builder('js', $files);
@@ -1933,6 +1981,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           $prefix = $extra['prefix'];
           $suffix = $extra['suffix'];
           $output_preprocess[] = array(advagg_build_uri($preprocess_file), $prefix, $suffix);
+          $files_aggregates_included[$preprocess_file] = $extra;
         }
         else {
           $good = FALSE;
@@ -1949,7 +1998,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
     // Default function called: advagg_js_builder
     $function = variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
-    $output[$scope] = $function($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope);
+    $output[$scope] = $function($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope, $js_settings_array, $inline_included, $files_included, $files_aggregates_included);
   }
   return $output;
 }
@@ -1968,11 +2017,19 @@ function advagg_process_js($master_set, $noagg = FALSE) {
  * @param $inline_no_preprocess
  *   array(array($code, $defer))
  * @param $scope
- *   header or footer
+ *   header or footer.
+ * @param $js_settings_array
+ *   array of settings used.
+ * @param $inline_included
+ *   array of inline scripts used.
+ * @param $files_included
+ *   array of files used.
+ * @param $files_aggregates_included
+ *   array of files and aggregates used.
  * @return
  *   String of themed JavaScript.
  */
-function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess) {
+function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $js_settings_array, $inline_included, $files_included, $files_aggregates_included) {
   $output = '';
 
   // For inline Javascript to validate as XHTML, all Javascript containing
@@ -2021,6 +2078,10 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
   }
 
   return $output;
+}
+
+function advagg_return_true() {
+return TRUE;
 }
 
 /**
@@ -2127,7 +2188,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
         }
 
         // Return filepath.
-        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
+        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
         continue;
       }
 
@@ -2136,7 +2197,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
         $lock_name = 'advagg_' . $filename;
         if (!lock_acquire($lock_name)) {
           $locks[] = $lock_name;
-          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
+          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
           continue;
         }
       }
@@ -2184,7 +2245,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
     else {
       $files_used = array_merge($files_used, $files);
     }
-    $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix);
+    $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
   }
 
   // Wait for all locks before returning.
@@ -3024,4 +3085,123 @@ function advagg_db_multi_select_in($table, $field, $placeholder, $data, $returns
   $query = "SELECT " . implode(', ', $returns) . " FROM {" . $table . "} WHERE $field IN ($in) $groupby";
   // Run the query
   return db_query($query, $data);
+}
+
+/**
+ * Return a large array of the CSS & JS files loaded on this page.
+ *
+ * @return
+ *   array.
+ */
+function advagg_get_js_css_get_array() {
+  global $conf, $_advagg;
+
+  // Setup variables.
+  $variables = array(
+    'css' => array(),
+    'js'  => array(),
+  );
+  // Setup render functions.
+  $css_function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
+  $js_function = variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
+  $conf['advagg_css_render_function'] = 'advagg_css_array';
+  $conf['advagg_js_render_function'] = 'advagg_js_array';
+
+  // Run CSS code.
+  $css_array = array();
+  $variables['css'] = drupal_add_css();
+  if (module_exists('less')) {
+    less_preprocess_page($variables, NULL);
+  }
+  $css_func_inline = advagg_add_css_inline();
+  if (!empty($css_func_inline)) {
+    $variables['css'] = advagg_merge_inline_css($variables['css'], $css_func_inline);
+  }
+  $css_array = advagg_process_css($variables['css']);
+
+  // Run JS code.
+  $js_array = array();
+  $variables['js']['header'] = drupal_add_js(NULL, NULL, 'header');
+  if (variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
+    $variables['js']['footer'] = drupal_add_js(NULL, NULL, 'footer');
+  }
+  advagg_jquery_updater($variables['js']['header']);
+  $js_array = advagg_process_js($variables['js']);
+
+  // Set render functions back to defaults.
+  $conf['advagg_css_render_function'] = $css_function;
+  $conf['advagg_js_render_function'] = $js_function;
+
+  // Return arrays.
+  return array(
+    'js' => $js_array,
+    'css' => $css_array,
+  );
+}
+
+/**
+ * Logic to figure out what kind of css tags to use.
+ *
+ * @param $external_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $module_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $output_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $output_preprocess
+ *   array of css files ($media, $href, $prefix, $suffix)
+ * @param $theme_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $inline_no_preprocess
+ *   array of css data to inline ($media, $data)
+ * @param $files_included
+ *   array of css files included. $a[$media][] = $filename
+ * @param $files_aggregates_included
+ *   array of css files & aggregates included. $a[$media][] = $filename
+ * @param $inline_included
+ *   array of inline css included. $a[$media][] = $datablob;
+ * @return
+ *   html for loading the css. html for the head.
+ */
+function advagg_css_array($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess, $inline_included, $files_included, $files_aggregates_included) {
+  return array(
+    'inline'            => $inline_included,
+    'files'             => $files_included,
+    'files_aggregates'  => $files_aggregates_included,
+  );
+}
+
+/**
+ * Build and theme JS output for header.
+ *
+ * @param $external_no_preprocess
+ *   array(array($src, $defer))
+ * @param $output_preprocess
+ *   array(array($src, $prefix, $suffix))
+ * @param $output_no_preprocess
+ *   array(array(array($src, $defer)))
+ * @param $setting_no_preprocess
+ *   array(array($code))
+ * @param $inline_no_preprocess
+ *   array(array($code, $defer))
+ * @param $scope
+ *   header or footer.
+ * @param $js_settings_array
+ *   array of settings used.
+ * @param $inline_included
+ *   array of inline scripts used.
+ * @param $files_included
+ *   array of files used.
+ * @param $files_aggregates_included
+ *   array of files and aggregates used.
+ * @return
+ *   String of themed JavaScript.
+ */
+function advagg_js_array($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope, $js_settings_array, $inline_included, $files_included, $files_aggregates_included) {
+  return array(
+    'settings'          => $js_settings_array,
+    'inline'            => $inline_included,
+    'files'             => $files_included,
+    'files_aggregates'  => $files_aggregates_included,
+  );
 }
