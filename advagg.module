@@ -1551,6 +1551,11 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
 
   // Process input.
   foreach ($css as $media => $types) {
+    // Setup some variables
+    $files_included[$media] = array();
+    $files_aggregates_included[$media] = array();
+    $inline_included[$media] = array();
+
     // If CSS preprocessing is off, we still need to output the styles.
     // Additionally, go through any remaining styles if CSS preprocessing is on
     // and output the non-cached ones.
