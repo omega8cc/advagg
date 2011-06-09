@@ -126,6 +126,21 @@ function advagg_js_compress_check_callback() {
 }
 
 /**
+ * Implementation of hook_schema().
+ */
+function advagg_js_compress_schema() {
+  $schema = array();
+
+  // Create cache tables.
+  $schema['cache_advagg_js_compress_inline'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_js_compress_inline']['description'] = t('Cache table for Advanced CSS/JS Aggregations JS Compress module. Used to keep inline versions of compressed JS.');
+  $schema['cache_advagg_js_compress_file'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_advagg_js_compress_file']['description'] = t('Cache table for Advanced CSS/JS Aggregations JS Compress module. Used to keep the compressed JavaScript from the js files.');
+
+  return $schema;
+}
+
+/**
  * Update 6100 - Clear file cache.
  */
 function advagg_js_compress_update_6100() {
@@ -138,20 +153,6 @@ function advagg_js_compress_update_6100() {
 }
 
 /**
- * Implementation of hook_schema().
- */
-function advagg_js_compress_schema() {
-  $schema = array();
-
-  // Create cache tables.
-  $schema['cache_advagg_js_compress_inline'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_advagg_js_compress_inline']['description'] = t('Cache table for Advanced CSS/JS Aggregations JS Compress module. Used to keep inline versions of compressed JS.');
-
-  return $schema;
-}
-
-
-/**
  * Update 6101 - Create the cache_advagg_css_compress_inline cache table.
  */
 function advagg_js_compress_update_6101() {
@@ -160,6 +161,19 @@ function advagg_js_compress_update_6101() {
   // Create cache table.
   $schema = advagg_js_compress_schema();
   db_create_table($ret, 'cache_advagg_js_compress_inline', $schema['cache_advagg_js_compress_inline']);
+
+  return $ret;
+}
+
+/**
+ * Update 6102 - Create the cache_advagg_css_compress_file cache table.
+ */
+function advagg_js_compress_update_6102() {
+  $ret = array();
+
+  // Create cache table.
+  $schema = advagg_js_compress_schema();
+  db_create_table($ret, 'cache_advagg_js_compress_file', $schema['cache_advagg_js_compress_file']);
 
   return $ret;
 }
