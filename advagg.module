@@ -208,6 +208,11 @@ function advagg_init() {
   if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_debug'] = TRUE;
   }
+  // Enable core preprocessing if requested.
+  if (isset($_GET['advagg-core']) && $_GET['advagg-core'] == 1 && user_access('bypass advanced aggregation')) {
+    $conf['preprocess_css'] = TRUE;
+    $conf['preprocess_js'] = TRUE;
+  }
 
   // Disable ctools_ajax_page_preprocess() if this functionality is available.
   if (variable_get('advagg_enabled', ADVAGG_ENABLED) && function_exists('ctools_ajax_run_page_preprocess')) {
