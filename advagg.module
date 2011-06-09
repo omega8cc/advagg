@@ -871,6 +871,14 @@ function advagg_build_filename($filetype, $bundle_md5, $counter) {
  *   Is this a root bundle.
  */
 function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
+  if (function_exists('lock_acquire')) {
+    $lock_name = 'advagg_insert_bundle_db' . $bundle_md5;
+    if (!lock_acquire($lock_name)) {
+      lock_wait($lock_name);
+      return;
+    }
+  }
+
   foreach ($files as $order => $filename) {
     $filename_md5 = md5($filename);
 
@@ -883,6 +891,10 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
 
     // Create the entries in the advagg_bundles table.
     db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
+  }
+
+  if (isset($lock_name)) {
+    lock_release($lock_name);
   }
 }
 
