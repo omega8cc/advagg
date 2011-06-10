@@ -56,6 +56,7 @@ function advagg_js_compress_uninstall() {
 
   // Remove our cache table.
   cache_clear_all('*', 'cache_advagg_js_compress_inline', TRUE);
+  cache_clear_all('*', 'cache_advagg_js_compress_file', TRUE);
   drupal_uninstall_schema('advagg_js_compress');
 }
 
@@ -174,6 +175,19 @@ function advagg_js_compress_update_6102() {
   // Create cache table.
   $schema = advagg_js_compress_schema();
   db_create_table($ret, 'cache_advagg_js_compress_file', $schema['cache_advagg_js_compress_file']);
+
+  return $ret;
+}
+
+/**
+ * Update 6103 - Clear the cache_advagg_css_compress_file cache table.
+ */
+function advagg_js_compress_update_6103() {
+  $ret = array();
+
+  // Clear cache_advagg_js_compress_file cache.
+  cache_clear_all('*', 'cache_advagg_js_compress_file', TRUE);
+  $ret[] = array('success' => TRUE, 'query' => 'The cache_advagg_js_compress_file table has been cleared.');
 
   return $ret;
 }

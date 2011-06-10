@@ -535,3 +535,11 @@ function advagg_js_compress_jspacker(&$contents) {
 function advagg_js_compress_flush_caches() {
   return array('cache_advagg_js_compress_inline');
 }
+
+/**
+ * Implementation of hook_advagg_master_reset().
+ */
+function advagg_js_compress_advagg_master_reset() {
+  cache_clear_all('*', 'cache_advagg_js_compress_inline', TRUE);
+  cache_clear_all('*', 'cache_advagg_js_compress_file', TRUE);
+}
