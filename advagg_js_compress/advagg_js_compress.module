@@ -420,7 +420,7 @@ function advagg_js_compress_test_file($values = NULL) {
     if (variable_get('advagg_js_compress_file_cache', ADVAGG_JS_COMPRESS_FILE_CACHE)) {
       $key = $filename;
       $table = 'cache_advagg_js_compress_file';
-      cache_set($key, $data, $table);
+      cache_set($key, $contents, $table);
     }
   }
 
