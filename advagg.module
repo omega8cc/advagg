@@ -1460,11 +1460,22 @@ function advagg_set_file_data($filename_md5, $data) {
  *   data to store.
  */
 function advagg_build_uri($path) {
+  $original_path = $path;
   // CDN Support.
   if (module_exists('cdn')) {
     $status = variable_get(CDN_STATUS_VARIABLE, CDN_DISABLED);
-    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING))) && !variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE)) {
-      return file_create_url($path);
+    if (($status == CDN_ENABLED || ($status == CDN_TESTING && user_access(CDN_PERM_ACCESS_TESTING)))) {
+      // Alter URL when the file_create_url() patch is not there.
+      if (variable_get(CDN_THEME_LAYER_FALLBACK_VARIABLE, FALSE)) {
+        cdn_file_url_alter($path);
+      }
+      // Use the patched version of file_create_url().
+      else {
+        file_create_url($path);
+      }
+      if ($original_path != $path) {
+        return $path;
+      }
     }
   }
   return base_path() . $path;
@@ -2886,7 +2897,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
  * @param $request
  *   (optional) A string containing the request headers to send to the server.
   * @param $timeout
- *   (optional) An interger holding the stream timeout value.
+ *   (optional) An integer holding the stream timeout value.
  * @return bool
  *   TRUE if function worked as planed.
  */
@@ -3039,7 +3050,7 @@ function advagg_ctools_process_js_files(&$js_files, $scope, $scripts = NULL) {
         // If JS preprocessing is off, we still need to output the scripts.
         // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
         foreach ($data as $path => $info) {
-          // If the script is being replaced, take that replacment into account.
+          // If the script is being replaced, take that replacement into account.
           $final_path = isset($replacements[$type][$path]) ? $replacements[$type][$path] : $path;
           $js_files[base_path() . $final_path] = TRUE;
         }

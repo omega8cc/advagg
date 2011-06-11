@@ -181,7 +181,7 @@ function advagg_admin_info_form() {
     $path_blacklist = variable_get(CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE, CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_DEFAULT);
     $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = '';
 
-    $url_cdn = file_create_url($filepath);
+    $url_cdn = advagg_build_uri($filepath);
 
     $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = $path_blacklist;
     // Send request and also time it.

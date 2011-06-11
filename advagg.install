@@ -350,14 +350,14 @@ function advagg_check_missing_handler() {
       $path_blacklist = variable_get(CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE, CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_DEFAULT);
       $conf[CDN_EXCEPTION_DRUPAL_PATH_BLACKLIST_VARIABLE] = '';
 
-      $url_cdn_css = file_create_url($css_path . $filepath . '.css');
+      $url_cdn_css = advagg_build_uri($css_path . $filepath . '.css');
       $parts_css = @parse_url($url_cdn_css);
       // Do not test CDN CSS if the hosts are the same.
       if (strcmp($parts_css['host'], $_SERVER['HTTP_HOST']) == 0) {
         $parts_css = FALSE;
       }
 
-      $url_cdn_js = file_create_url($js_path . $filepath . '.js');
+      $url_cdn_js = advagg_build_uri($js_path . $filepath . '.js');
       $parts_js = @parse_url($url_cdn_js);
       // Do not test CDN JS if the hosts are the same.
       if (strcmp($parts_js['host'], $_SERVER['HTTP_HOST']) == 0) {
