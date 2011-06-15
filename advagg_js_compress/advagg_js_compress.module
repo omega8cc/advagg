@@ -165,7 +165,16 @@ function advagg_js_compress_advagg_js_inline_alter(&$contents) {
   }
 
   if ($compressor == 0) {
-    advagg_js_compress_jsminplus($contents);
+    $original_contents = $contents;
+
+    list($before, $after) = advagg_js_compress_jsminplus($contents);
+    $ratio = ($before - $after)/$before;
+    // Make sure the returned string is not empty or has a VERY high
+    // compression ratio.
+    if (empty($contents) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+      $contents = $original_contents;
+    }
+
   }
   if ($compressor == 1) {
     $contents = jsmin($contents);
