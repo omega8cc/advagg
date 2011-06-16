@@ -22,6 +22,13 @@ function advagg_bundler_admin_page() {
 function advagg_bundler_admin_settings_form() {
   $form = array();
 
+  $form['advagg_bundler_active'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Bundler is Active'),
+    '#default_value'  => variable_get('advagg_bundler_active', ADVAGG_BUNDLER_ACTIVE),
+ '#description'    => t('If not checked, the bundler will passively monitor your site, but it will not split up aggregates.'),
+  );
+
   $options = array(
     0 => 0,
     1 => 1,
@@ -35,7 +42,6 @@ function advagg_bundler_admin_settings_form() {
     9 => 9,
     10 => 10,
   );
-
   $form['advagg_bundler_max_css'] = array(
     '#type'           => 'select',
     '#title'          => t('Max Number Of CSS Bundles Per Page'),
