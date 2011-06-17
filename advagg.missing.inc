@@ -95,7 +95,7 @@ function advagg_missing_regenerate() {
   if ($counter > $counter_in_db || $counter < 0) {
     $new_filename = advagg_build_filename($type, $md5, $counter_in_db);
     $filepath = $file_type_path .'/'. $new_filename;
-    advagg_missing_send_file($filepath, advagg_build_uri($filepath));
+    advagg_missing_send_file($filepath, advagg_build_uri($filepath), $type);
     exit;
   }
 
@@ -115,7 +115,7 @@ function advagg_missing_regenerate() {
   // Serve direct or redirect to file.
   $_GET['redirect_counter']++;
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
-  advagg_missing_send_file($filepath, $uri);
+  advagg_missing_send_file($filepath, $uri, $type);
   exit;
 }
 
@@ -127,7 +127,7 @@ function advagg_missing_regenerate() {
  * @param $uri
  *   css or js
  */
-function advagg_missing_send_file($filepath, $uri) {
+function advagg_missing_send_file($filepath, $uri, $type) {
   if (!headers_sent()) {
     // Code from file_download.
     if (file_exists($filepath)) {
