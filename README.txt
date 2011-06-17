@@ -258,3 +258,18 @@ Be sure to disable the "Generate .htaccess files in the advagg_* dirs" setting
 on the admin/settings/advagg page after placing these rules in the webroots
 htaccess file. This is located at the same directory level as Drupal's
 index.php.
+
+NGINX CONFIGURATION
+-------------------
+http://drupal.org/node/1116618
+
+    ###
+    ### advagg_css and advagg_js support
+    ###
+    location ~* advagg_(?:css|js)/ {
+        access_log off;
+        expires 365d;
+        add_header Pragma "";
+        add_header Cache-Control "public";
+        try_files $uri @drupal;
+    }
