@@ -78,21 +78,24 @@ function advagg_missing_regenerate() {
   cache_set(implode('/', $arg), FALSE, 'cache_advagg', TRUE);
   advagg_missing_remove_cache($md5);
 
+  // Build filepath.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  if ($type == 'js') {
+    $file_type_path = $js_path;
+  }
+  if ($type == 'css') {
+    $file_type_path = $css_path;
+  }
+  $new_filename = advagg_build_filename($type, $md5, $counter);
+  $filepath = $file_type_path .'/'. $new_filename;
+
   // Only process if we got an older counter.
   // If we have an out of range counter see if a simlar file exists and serve
   // that up.
   if ($counter > $counter_in_db || $counter < 0) {
-    list($css_path, $js_path) = advagg_get_root_files_dir();
-    if ($type == 'js') {
-      $file_type_path = $js_path;
-    }
-    if ($type == 'css') {
-      $file_type_path = $css_path;
-    }
-
     $new_filename = advagg_build_filename($type, $md5, $counter_in_db);
     $filepath = $file_type_path .'/'. $new_filename;
-    header('Location: ' . advagg_build_uri($filepath), TRUE, 302);
+    advagg_missing_send_file($filepath, advagg_build_uri($filepath));
     exit;
   }
 
@@ -109,14 +112,38 @@ function advagg_missing_regenerate() {
     return t('Rebuild Failed.');
   }
 
-  // Redirect to file.
+  // Serve direct or redirect to file.
   $_GET['redirect_counter']++;
   $uri = $base_path . $_GET['q'] . '?redirect_counter=' . $_GET['redirect_counter'];
+  advagg_missing_send_file($filepath, $uri);
+  exit;
+}
+
+/**
+ * Send the file or send a 307 redirect.
+ *
+ * @param $filepath
+ *   filename
+ * @param $uri
+ *   css or js
+ */
+function advagg_missing_send_file($filepath, $uri) {
   if (!headers_sent()) {
+    // Code from file_download.
+    if (file_exists($filepath)) {
+      $headers = module_invoke_all('file_download', $filepath, $type);
+      if ($key = array_search(-1, $headers)) {
+        unset($headers[$key]);
+      }
+      if (count($headers)) {
+        file_transfer($filepath, $headers);
+      }
+    }
+
+    // file_transfer didn't run, redirect via header.
     header('Location: ' . $uri, TRUE, 307);
     usleep(250000); // Sleep for 250ms
   }
-  exit;
 }
 
 /**

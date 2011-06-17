@@ -3262,3 +3262,26 @@ function advagg_js_array($external_no_preprocess, $output_preprocess, $output_no
     'files_aggregates'  => $files_aggregates_included,
   );
 }
+
+/**
+ * Implementation of hook_file_download().
+ *
+ * Return the correct headers for advagg bundles.
+ */
+function advagg_file_download($file, $type = '') {
+  if (strpos($file, '/advagg_') !== 0) {
+    $return = array(
+      'Content-Length: ' . filesize($file),
+      'Cache-Control: ' . 'max-age=31556926, public',
+    );
+    if (!empty($type)) {
+      if ($type == 'css') {
+        $return[] = 'Content-Type: text/css';
+      }
+      if ($type == 'js') {
+        $return[] = 'Content-Type: text/javascript';
+      }
+    }
+    return $return;
+  }
+}
