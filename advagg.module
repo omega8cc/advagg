@@ -469,7 +469,8 @@ function advagg_string_ends_with($haystack, $needle) {
       if (is_int($length)) {
         $main_substr = substr($main_str, $offset, $length);
         $str_substr = substr($str, 0, $length);
-      } else {
+      }
+      else {
         $main_substr = substr($main_str, $offset);
         $str_substr = $str;
       }
@@ -1471,7 +1472,7 @@ function advagg_build_uri($path) {
       }
       // Use the patched version of file_create_url().
       else {
-       $path = file_create_url($path);
+        $path = file_create_url($path);
       }
       if (strcmp($original_path, $path) != 0) {
         return $path;
@@ -2732,7 +2733,7 @@ function _advagg_drupal_load_stylesheet($matches) {
  * Perform an HTTP request; does not wait for reply & you will never get it
  * back.
  *
- * @see drupal_http_request
+ * @see drupal_http_request()
  *
  * This is a flexible and powerful HTTP client implementation. Correctly
  * handles GET, POST, PUT or any other HTTP requests.
@@ -2887,7 +2888,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
  * Perform an HTTP request; does not wait for reply & you never will get it
  * back.
  *
- * @see drupal_http_request
+ * @see drupal_http_request()
  *
  * This is a flexible and powerful HTTP client implementation. Correctly
  * handles GET, POST, PUT or any other HTTP requests.

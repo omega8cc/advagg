@@ -313,7 +313,7 @@ function advagg_check_missing_handler() {
       'title'       => $t('Adv CSS/JS Agg - Async Mode'),
       'severity'    => REQUIREMENT_WARNING,
       'value'       => $t('Flush your caches'),
-      'description' => $t('You need to flush your menu cache. This can be done near the bottom of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br> !info', array(
+      'description' => $t('You need to flush your menu cache. This can be done near the bottom of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br /> !info', array(
         '@performance' => url('admin/settings/performance'),
         '!info' => $item,
       )),
@@ -327,7 +327,7 @@ function advagg_check_missing_handler() {
       'title'       => $t('Adv CSS/JS Agg - Async Mode'),
       'severity'    => REQUIREMENT_WARNING,
       'value'       => $t('Flush your caches'),
-      'description' => $t('You need to flush your menu cache. This can be done near the bottom of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br> !info', array(
+      'description' => $t('You need to flush your menu cache. This can be done near the bottom of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br /> !info', array(
         '@performance' => url('admin/settings/performance'),
         '!info' => $item,
       )),
