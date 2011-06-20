@@ -1729,6 +1729,11 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
       $good = TRUE;
 
       foreach ($preprocess_files as $preprocess_file => $extra) {
+        // Empty aggregate, skip
+        if (empty($preprocess_file)) {
+          continue;
+        }
+
         if ($extra !== FALSE && is_array($extra)) {
           $prefix = $extra['prefix'];
           $suffix = $extra['suffix'];
@@ -2024,6 +2029,11 @@ function advagg_process_js($master_set, $noagg = FALSE) {
       $preprocess_files = advagg_css_js_file_builder('js', $files);
       $good = TRUE;
       foreach ($preprocess_files as $preprocess_file => $extra) {
+        // Empty aggregate, skip
+        if (empty($preprocess_file)) {
+          continue;
+        }
+
         if ($extra !== FALSE && is_array($extra)) {
           $prefix = $extra['prefix'];
           $suffix = $extra['suffix'];
