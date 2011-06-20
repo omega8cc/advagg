@@ -92,6 +92,7 @@ function advagg_admin_info_form() {
     'advagg_files_table'            => array(),
     'advagg_js_header_footer_alter' => array(),
     'advagg_master_reset'           => array(),
+    'advagg_disable_processor'      => array(),
   );
   foreach ($hooks as $hook => $values) {
     $hooks[$hook] = module_implements($hook);
@@ -294,56 +295,56 @@ function advagg_admin_settings_form() {
     '#description'  => t('Scan all files referenced in aggregated files. If any of them have changed, increment the counters containing that file and rebuild the bundle.'),
   );
   $form['flush']['advagg_flush'] = array(
-    '#type' => 'submit',
-    '#value' => t('Flush AdvAgg Cache'),
+    '#type'   => 'submit',
+    '#value'  => t('Flush AdvAgg Cache'),
     '#submit' => array('advagg_admin_flush_cache_button'),
   );
   $form['rebuild'] = array(
     '#type'         => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
     '#title'        => t('Cache Rebuild'),
     '#description'  => t('Recreate all aggregated files. Useful if JS or CSS compression was just enabled. %count Files', array('%count' => $bundle_count)),
   );
   $form['rebuild']['advagg_rebuild'] = array(
-    '#type' => 'submit',
-    '#value' => t('Rebuild AdvAgg Cache'),
+    '#type'   => 'submit',
+    '#value'  => t('Rebuild AdvAgg Cache'),
     '#submit' => array('advagg_admin_batch_rebuild'),
   );
   $form['forced_rebuild'] = array(
     '#type'         => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
     '#title'        => t('Forced Cache Rebuild'),
     '#description'  => t('Recreate all aggregated files by incrementing internal counter for every bundle. %count Files', array('%count' => $bundle_count)),
   );
   $form['forced_rebuild']['advagg_forced_build'] = array(
-    '#type' => 'submit',
-    '#value' => t('Force all counters to be increment by one'),
+    '#type'   => 'submit',
+    '#value'  => t('Force all counters to be increment by one'),
     '#submit' => array('advagg_admin_batch_rebuild'),
   );
   $form['master_reset'] = array(
     '#type'         => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
     '#title'        => t('Master Reset'),
-    '#description'  => t('Clean Slate - Truncate all advagg tables and delete all advagg files.'),
+    '#description'  => t('Clean Slate - Truncate all advagg tables and delete all advagg files. Useful for testing perposes. Running this on a production site is not a good idea.'),
   );
   $form['master_reset']['advagg_reset'] = array(
-    '#type' => 'submit',
-    '#value' => t('Master Reset'),
-    '#submit' => array('advagg_admin_master_reset'),
+    '#type'         => 'submit',
+    '#value'        => t('Master Reset'),
+    '#submit'       => array('advagg_admin_master_reset'),
   );
   $form['htaccess'] = array(
     '#type'         => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
+    '#collapsible'  => TRUE,
+    '#collapsed'    => TRUE,
     '#title'        => t('Rebuild htaccess files'),
     '#description'  => t('This will recreate the htaccess files located in the advagg_* directories.'),
   );
   $form['htaccess']['advagg_recreate_htaccess'] = array(
-    '#type' => 'submit',
-    '#value' => t('Recreate htaccess files'),
+    '#type'   => 'submit',
+    '#value'  => t('Recreate htaccess files'),
     '#submit' => array('advagg_admin_recreate_htaccess'),
   );
 

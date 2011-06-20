@@ -494,6 +494,16 @@ function advagg_string_ends_with($haystack, $needle) {
 }
 
 /**
+ * Implementation of hook_advagg_disable_processor().
+ */
+function advagg_advagg_disable_processor() {
+  // Disable advagg on the configuration page; in case something bad happened.
+  if (isset($_GET['q']) && ($_GET['q'] == 'admin/settings/advagg' || $_GET['q'] == 'admin/settings/advagg/config')) {
+    return TRUE;
+  }
+}
+
+/**
  * Process variables for page.tpl.php
  *
  * @param $variables
@@ -502,8 +512,11 @@ function advagg_string_ends_with($haystack, $needle) {
 function advagg_processor(&$variables) {
   global $_advagg;
 
+  // Invoke hook_advagg_disable_processor
+  $disabled = module_invoke_all('advagg_disable_processor');
+
   // If disabled, skip
-  if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+  if (!variable_get('advagg_enabled', ADVAGG_ENABLED) || in_array(TRUE, $disabled, TRUE)) {
     if (module_exists('jquery_update')) {
       return jquery_update_preprocess_page($variables);
     }
