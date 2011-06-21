@@ -2841,11 +2841,11 @@ function advagg_async_connect_http_request($url, array $options = array()) {
   }
 
   if (empty($options['context'])) {
-    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_ASYNC_CONNECT|STREAM_CLIENT_CONNECT);
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_CONNECT);
   }
   else {
     // Create a stream with context. Allows verification of a SSL certificate.
-    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_ASYNC_CONNECT|STREAM_CLIENT_CONNECT, $options['context']);
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_CONNECT, $options['context']);
   }
 
   // Make sure the socket opened properly.
@@ -2925,7 +2925,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
  * @return bool
  *   TRUE if function worked as planed.
  */
-function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 1) {
+function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 30) {
   static $requests = array();
   static $registered = FALSE;
 
