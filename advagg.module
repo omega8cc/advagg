@@ -2221,7 +2221,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
     if (!$built || $force) {
       // Generate on request?
       if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION) && !$force) {
-        // Request file.
+        // Build request.
         $ip = variable_get('advagg_server_addr', FALSE);
         if ($ip == -1) {
           $ip = $_SERVER['HTTP_HOST'];
@@ -2234,6 +2234,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
           'Host' => $_SERVER['HTTP_HOST'],
         );
 
+        // Request file.
         if (function_exists('stream_socket_client') && function_exists('stream_select')) {
           advagg_async_connect_http_request($url, array('headers' => $headers));
         }
@@ -2253,7 +2254,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
       if (function_exists('lock_acquire')) {
         $lock_name = 'advagg_' . $filename;
         if (!lock_acquire($lock_name)) {
-          $locks[] = $lock_name;
+          $locks[] = array($lock_name => $filepath);
           $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
           continue;
         }
@@ -2307,8 +2308,11 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
 
   // Wait for all locks before returning.
   if (!empty($locks) && function_exists('lock_wait')) {
-    foreach ($locks as $lock_name) {
+    foreach ($locks as $lock_name => $filepath) {
       lock_wait($lock_name);
+      if (!file_exists($filepath)) {
+        $output[$filepath] = FALSE;
+      }
     }
   }
 
