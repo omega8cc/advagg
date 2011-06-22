@@ -916,12 +916,10 @@ function advagg_build_filename($filetype, $bundle_md5, $counter) {
  *   Is this a root bundle.
  */
 function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
-  if (function_exists('lock_acquire')) {
-    $lock_name = 'advagg_insert_bundle_db' . $bundle_md5;
-    if (!lock_acquire($lock_name)) {
-      lock_wait($lock_name);
-      return;
-    }
+  $lock_name = 'advagg_insert_bundle_db' . $bundle_md5;
+  if (!lock_acquire($lock_name)) {
+    lock_wait($lock_name);
+    return;
   }
 
   foreach ($files as $order => $filename) {
@@ -1307,10 +1305,8 @@ function advagg_flush_caches() {
 
   global $_advagg;
   // Only one advagg cache flusher can run at a time.
-  if (function_exists('lock_acquire')) {
-    if (!lock_acquire('advagg_flush_caches')) {
-      return;
-    }
+  if (!lock_acquire('advagg_flush_caches')) {
+    return;
   }
 
   // Only run code below if the advagg db tables exist.
@@ -1373,9 +1369,7 @@ function advagg_flush_caches() {
   file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
   file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
 
-  if (function_exists('lock_release')) {
-    lock_release('advagg_flush_caches');
-  }
+  lock_release('advagg_flush_caches');
   return array('cache_advagg_bundle_reuse');
 }
 
@@ -2312,24 +2306,22 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
       }
 
       // Only generate once.
-      if (function_exists('lock_acquire')) {
-        $lock_name = 'advagg_' . $filename;
-        if (!lock_acquire($lock_name)) {
-          if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) == 0 ) {
-            $locks[] = array($lock_name => $filepath);
-            $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
-          }
-          else {
-            // Aggregate isn't built yet, send back the files that where going
-            // to be in it.
-            foreach ($files as $file) {
-              $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
-            }
-            $cacheable = FALSE;
-            advagg_disable_page_cache();
-          }
-          continue;
+      $lock_name = 'advagg_' . $filename;
+      if (!lock_acquire($lock_name)) {
+        if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) == 0 ) {
+          $locks[] = array($lock_name => $filepath);
+          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
         }
+        else {
+          // Aggregate isn't built yet, send back the files that where going
+          // to be in it.
+          foreach ($files as $file) {
+            $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
+          }
+          $cacheable = FALSE;
+          advagg_disable_page_cache();
+        }
+        continue;
       }
 
       if ($type == 'css') {
@@ -2347,9 +2339,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
 
       // If data is empty then do not include this bundle in the final output.
       if (empty($data) && !$force) {
-        if (function_exists('lock_release')) {
-          lock_release($lock_name);
-        }
+        lock_release($lock_name);
         continue;
       }
 
@@ -2361,9 +2351,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
       $good = $function($data, $filepath, $force, $type);
 
       // Release lock.
-      if (function_exists('lock_release')) {
-        lock_release($lock_name);
-      }
+      lock_release($lock_name);
 
       // If file save was not good then downgrade to non aggregated mode.
       if (!$good) {
@@ -2379,7 +2367,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
   }
 
   // Wait for all locks before returning.
-  if (!empty($locks) && function_exists('lock_wait')) {
+  if (!empty($locks)) {
     foreach ($locks as $lock_name => $filepath) {
       lock_wait($lock_name);
       if (!advagg_bundle_built($filepath)) {
