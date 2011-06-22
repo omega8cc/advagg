@@ -93,6 +93,7 @@ function advagg_admin_info_form() {
     'advagg_js_header_footer_alter' => array(),
     'advagg_master_reset'           => array(),
     'advagg_disable_processor'      => array(),
+    'advagg_disable_page_cache'     => array(),
   );
   foreach ($hooks as $hook => $values) {
     $hooks[$hook] = module_implements($hook);
@@ -267,6 +268,23 @@ function advagg_admin_settings_form() {
       '#description'    => check_plain(t('If left blank it will use Drupals default files directory.') . ' ' . $extra),
     );
   }
+  $options = array(
+      0 => t('Wait for locks'),
+      1 => t('Do not wait for locks'),
+      2 => t('Only serve aggregated files if they are already built (only works if async is enabled)'),
+  );
+  $form['advagg_aggregate_mode'] = array(
+    '#type'           => 'radios',
+    '#title'          => t('Aggregation Inclusion Mode'),
+    '#default_value'  => variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE),
+    '#options'        => $options,
+    '#description'    => t('Should the page wait for the aggregate to be built before including the file, or should it send out the page with aggregates not included.'),
+  );
+  $form['advagg_page_cache_mode'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Disable page caching if all aggregates are not included on the page.'),
+    '#default_value'  => variable_get('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE),
+  );
   $form['advagg_checksum_mode'] = array(
     '#type'           => 'radios',
     '#title'          => t('File Checksum Mode'),

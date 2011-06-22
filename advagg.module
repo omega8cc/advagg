@@ -102,6 +102,32 @@ define('ADVAGG_CLOSURE', TRUE);
 define('ADVAGG_STRICT_JS_BUNDLES', TRUE);
 
 /**
+ * Default mode for aggregate creation.
+ *
+ * 0 - Wait for locks.
+ * 1 - Do not wait for locks.
+ * 2 - Only serve aggregated files if they are already built.
+ */
+define('ADVAGG_AGGREGATE_MODE', 2);
+
+/**
+ * Default mode of advagg in regrads to the page cache.
+ *
+ * FALSE  - Cache all pages.
+ * TRUE   - Don't cache page if aggregate could be included on that page & it is
+ *          not.
+ */
+define('ADVAGG_PAGE_CACHE_MODE', TRUE);
+
+/**
+ * Default mode of advagg_bundle_built() in regrads to how file_exists is used.
+ *
+ * FALSE  - use file_exists.
+ * TRUE   - use cache_get instead of file_exists if possible.
+ */
+define('ADVAGG_BUNDLE_BUILT_MODE', FALSE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
@@ -1197,6 +1223,12 @@ function advagg_checksum($filename) {
  *   Boolean indicating if the bundle already exists.
  */
 function advagg_bundle_built($filepath) {
+  // Don't use the cache if not selected.
+  if (!variable_get('advagg_bundle_built_mode', ADVAGG_BUNDLE_BUILT_MODE)) {
+    advagg_clearstatcache(TRUE, $filepath);
+    return file_exists($filepath);
+  }
+
   $data = advagg_get_bundle_from_filename(basename($filepath));
   if (is_array($data)) {
     list($type, $md5, $counter) = $data;
@@ -2137,8 +2169,25 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
   return $output;
 }
 
+/**
+ * Always return TRUE, used for array_map in advagg_css_js_file_builder().
+ */
 function advagg_return_true() {
-return TRUE;
+  return TRUE;
+}
+
+/**
+ * Disable the page cache if the aggregate is not in the bundle.
+ */
+function advagg_disable_page_cache() {
+  global $conf;
+  if (variable_get('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE)) {
+    $conf['cache'] = CACHE_DISABLED;
+
+    // Invoke hook_advagg_disable_page_cache(). Allows 3rd party page cache
+    // plugins like boost or varnish to not cache this page.
+    module_invoke_all('advagg_disable_page_cache');
+  }
 }
 
 /**
@@ -2245,8 +2294,20 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
           ini_set('default_socket_timeout', $socket_timeout);
         }
 
-        // Return filepath.
-        $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+        // Return filepath if we are going to wait for the bundle to be
+        // generated or if the bundle already exists.
+        if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) < 2 || advagg_bundle_built($filepath)) {
+          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+        }
+        else {
+          // Aggregate isn't built yet, send back the files that where going to
+          // be in it.
+          foreach ($files as $file) {
+            $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
+          }
+          $cacheable = FALSE;
+          advagg_disable_page_cache();
+        }
         continue;
       }
 
@@ -2254,8 +2315,19 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
       if (function_exists('lock_acquire')) {
         $lock_name = 'advagg_' . $filename;
         if (!lock_acquire($lock_name)) {
-          $locks[] = array($lock_name => $filepath);
-          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+          if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) == 0 ) {
+            $locks[] = array($lock_name => $filepath);
+            $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+          }
+          else {
+            // Aggregate isn't built yet, send back the files that where going
+            // to be in it.
+            foreach ($files as $file) {
+              $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
+            }
+            $cacheable = FALSE;
+            advagg_disable_page_cache();
+          }
           continue;
         }
       }
@@ -2310,7 +2382,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
   if (!empty($locks) && function_exists('lock_wait')) {
     foreach ($locks as $lock_name => $filepath) {
       lock_wait($lock_name);
-      if (!file_exists($filepath)) {
+      if (!advagg_bundle_built($filepath)) {
         $output[$filepath] = FALSE;
       }
     }
