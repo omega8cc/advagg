@@ -941,9 +941,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
     db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
   }
 
-  if (isset($lock_name)) {
-    lock_release($lock_name);
-  }
+  lock_release($lock_name);
 }
 
 /**

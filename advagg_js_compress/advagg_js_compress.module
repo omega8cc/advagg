@@ -313,6 +313,11 @@ function advagg_js_compress_test_compression($files_to_test) {
 
         // Get file data.
         $filename_md5 = md5($info['filename']);
+        $lock_name = 'advagg_set_file_data_' . $filename_md5;
+        if (!lock_acquire($lock_name, 10)) {
+          lock_wait($lock_name);
+          continue;
+        }
         $data = advagg_get_file_data($filename_md5);
 
         // Set to -2
@@ -320,6 +325,7 @@ function advagg_js_compress_test_compression($files_to_test) {
           $data['advagg_js_compress']['tested']['jsminplus'] = -2;
           advagg_set_file_data($filename_md5, $data);
         }
+        lock_release($lock_name);
       }
     }
   }
@@ -398,6 +404,14 @@ function advagg_js_compress_test_file($values = NULL) {
     $contents = file_get_contents($filename);
     $filesize = filesize($filename);
 
+    $lock_name = 'advagg_set_file_data_' . $md5;
+    if (!lock_acquire($lock_name, 45)) {
+      lock_wait($lock_name);
+      echo $md5;
+      exit;
+    }
+    $data = advagg_get_file_data($filename_md5);
+
     // Set to "-1" so if php bombs out, the file will be marked as bad.
     $data['advagg_js_compress']['tested']['jsminplus'] = -1;
     advagg_set_file_data($md5, $data);
@@ -410,6 +424,7 @@ function advagg_js_compress_test_file($values = NULL) {
     if ($ratio < variable_get('advagg_js_compress_ratio', ADVAGG_JS_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -2;
       advagg_set_file_data($md5, $data);
+      lock_release($lock_name);
       echo $md5;
       exit;
     }
@@ -417,6 +432,7 @@ function advagg_js_compress_test_file($values = NULL) {
     if ($ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -3;
       advagg_set_file_data($md5, $data);
+      lock_release($lock_name);
       echo $md5;
       exit;
     }
@@ -433,6 +449,7 @@ function advagg_js_compress_test_file($values = NULL) {
     }
   }
 
+  lock_release($lock_name);
   echo $md5;
   exit;
 }
