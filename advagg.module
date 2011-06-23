@@ -529,7 +529,12 @@ function advagg_string_ends_with($haystack, $needle) {
  */
 function advagg_advagg_disable_processor() {
   // Disable advagg on the configuration page; in case something bad happened.
-  if (isset($_GET['q']) && ($_GET['q'] == 'admin/settings/advagg' || $_GET['q'] == 'admin/settings/advagg/config')) {
+  if (isset($_GET['q']) &&
+       (   $_GET['q'] == 'admin/settings/advagg'
+        || $_GET['q'] == 'admin/settings/advagg/config'
+        || $_GET['q'] == 'batch'
+       )
+     ) {
     return TRUE;
   }
 }
