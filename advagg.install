@@ -534,6 +534,7 @@ function advagg_install_test_async_stream() {
   if (!function_exists('stream_socket_client') || !function_exists('stream_select')) {
     return FALSE;
   }
+  $advagg_async_socket_connect = variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT);
 
   // Build test request.
   $ip = variable_get('advagg_server_addr', FALSE);
@@ -554,7 +555,7 @@ function advagg_install_test_async_stream() {
 
   // Send Request off.
   $good = advagg_async_send_http_request();
-  if ($good) {
+  if ($good && !$advagg_async_socket_connect) {
     variable_set('advagg_async_socket_connect', TRUE);
     return TRUE;
   }
