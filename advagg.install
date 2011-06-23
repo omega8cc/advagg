@@ -534,9 +534,6 @@ function advagg_install_test_async_stream() {
   if (!function_exists('stream_socket_client') || !function_exists('stream_select')) {
     return FALSE;
   }
-  if (variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT)) {
-    return;
-  }
 
   // Build test request.
   $ip = variable_get('advagg_server_addr', FALSE);
