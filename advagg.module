@@ -128,6 +128,11 @@ define('ADVAGG_PAGE_CACHE_MODE', TRUE);
 define('ADVAGG_BUNDLE_BUILT_MODE', FALSE);
 
 /**
+ * Default value to see if we can use the STREAM_CLIENT_ASYNC_CONNECT flag.
+ */
+define('ADVAGG_ASYNC_SOCKET_CONNECT', FALSE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
@@ -2904,12 +2909,16 @@ function advagg_async_connect_http_request($url, array $options = array()) {
       return $result;
   }
 
+  $flags = STREAM_CLIENT_CONNECT;
+  if (variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT)) {
+    $flags = STREAM_CLIENT_ASYNC_CONNECT|STREAM_CLIENT_CONNECT;
+  }
   if (empty($options['context'])) {
-    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_CONNECT);
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], $flags);
   }
   else {
     // Create a stream with context. Allows verification of a SSL certificate.
-    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_CONNECT, $options['context']);
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], $flags, $options['context']);
   }
 
   // Make sure the socket opened properly.
@@ -3023,7 +3032,7 @@ function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 30
     $except = array();
 
     // Do some voodoo and open all streams at once.
-    $n = stream_select($read, $write, $except, $timeout);
+    $n = @stream_select($read, $write, $except, $timeout);
 
     // We have some streams to write to.
     if (!empty($n)) {
@@ -3044,7 +3053,12 @@ function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 30
   }
   // Free memory.
   $requests = array();
-  return TRUE;
+  if ($n !== FALSE && empty($streams)) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
