@@ -271,6 +271,8 @@ function advagg_requirements($phase) {
  * Check to see if the CSS/JS generator is working.
  */
 function advagg_check_missing_handler() {
+  advagg_install_test_async_stream();
+
   global $base_path;
   $ret = array();
   $async = variable_get('advagg_async_generation', -1);
@@ -523,6 +525,46 @@ function advagg_check_missing_handler() {
   return $ret;
 }
 
+/**
+ * Test if STREAM_CLIENT_ASYNC_CONNECT can be used.
+ */
+function advagg_install_test_async_stream() {
+  global $conf, $base_path;
+
+  if (!function_exists('stream_socket_client') || !function_exists('stream_select')) {
+    return FALSE;
+  }
+  if (variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT)) {
+    return;
+  }
+
+  // Build test request.
+  $ip = variable_get('advagg_server_addr', FALSE);
+  if ($ip == -1) {
+    $ip = $_SERVER['HTTP_HOST'];
+  }
+  elseif (empty($ip)) {
+    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
+  }
+  $url = 'http://' . $ip . $base_path;
+  $headers = array(
+    'Host' => $_SERVER['HTTP_HOST'],
+  );
+
+  // Request file.
+  $conf['advagg_async_socket_connect'] = TRUE;
+  advagg_async_connect_http_request($url, array('headers' => $headers));
+
+  // Send Request off.
+  $good = advagg_async_send_http_request();
+  if ($good) {
+    variable_set('advagg_async_socket_connect', TRUE);
+    return TRUE;
+  }
+  else {
+    $conf['advagg_async_socket_connect'] = FALSE;
+  }
+}
 
 /**
  * Implementation of hook_schema().
