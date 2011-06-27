@@ -94,6 +94,7 @@ function advagg_admin_info_form() {
     'advagg_master_reset'           => array(),
     'advagg_disable_processor'      => array(),
     'advagg_disable_page_cache'     => array(),
+    'advagg_bundler_analysis_alter' => array(),
   );
   foreach ($hooks as $hook => $values) {
     $hooks[$hook] = module_implements($hook);
