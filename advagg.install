@@ -601,6 +601,12 @@ function advagg_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'filesize' => array(
+        'description' => 'The file size in bytes.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'counter' => array(
         'description' => 'This is incremented every time a file changes.',
         'type' => 'int',
@@ -611,6 +617,7 @@ function advagg_schema() {
     'indexes' => array(
       'checksum' => array('checksum'),
       'filetype' => array('filetype'),
+      'filesize' => array('filesize'),
     ),
     'primary key' => array('filename_md5'),
   );
@@ -862,3 +869,42 @@ function advagg_update_6108() {
 
   return $ret;
 }
+
+/**
+ * Update 6109 - Add filesize field to advagg_files table.
+ */
+function advagg_update_6109() {
+  $ret = array();
+
+  // Add in timestamp column.
+  db_add_field($ret, 'advagg_files', 'filesize', array(
+        'description' => 'The filesize of the file in bytes.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ));
+
+  // Add in an index.
+  db_add_index($ret, 'advagg_files', 'filesize', array('filesize'));
+
+  // Populate the filesize column.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  $results = db_query("SELECT filename, filename_md5 FROM {advagg_files} AS advagg_files");
+  while ($row = db_fetch_array($results)) {
+    $updated = FALSE;
+    if (@is_readable($row['filename'])) {
+      $size = filesize($row['filename']);
+      if (!empty($size)) {
+        db_query("UPDATE {advagg_files} SET filesize = %d WHERE filename_md5 = '%s'", $size, $row['filename_md5']);
+        $updated = TRUE;
+        $ret[] = array('success' => TRUE, 'query' => 'Filesize added for: ' . $row['filename'] . '.');
+      }
+    }
+    if (!$updated) {
+      $ret[] = array('success' => FALSE, 'query' => 'Could not get the filezie for for: ' . $row['filename'] . '.');
+    }
+  }
+
+  return $ret;
+}
+

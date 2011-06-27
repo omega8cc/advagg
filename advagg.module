@@ -939,7 +939,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
     $checksum = db_result(db_query("SELECT checksum FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
     if (empty($checksum)) {
       $checksum = advagg_checksum($filename);
-      db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype) VALUES ('%s', '%s', '%s', '%s')", $filename, $filename_md5, $checksum, $filetype);
+      db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype, filesize) VALUES ('%s', '%s', '%s', '%s', %d)", $filename, $filename_md5, $checksum, $filetype, @filesize($filename));
     }
 
     // Create the entries in the advagg_bundles table.
