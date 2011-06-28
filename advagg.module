@@ -111,7 +111,7 @@ define('ADVAGG_STRICT_JS_BUNDLES', TRUE);
 define('ADVAGG_AGGREGATE_MODE', 2);
 
 /**
- * Default mode of advagg in regrads to the page cache.
+ * Default mode of advagg in regards to the page cache.
  *
  * FALSE  - Cache all pages.
  * TRUE   - Don't cache page if aggregate could be included on that page & it is
@@ -120,7 +120,7 @@ define('ADVAGG_AGGREGATE_MODE', 2);
 define('ADVAGG_PAGE_CACHE_MODE', TRUE);
 
 /**
- * Default mode of advagg_bundle_built() in regrads to how file_exists is used.
+ * Default mode of advagg_bundle_built() in regards to how file_exists is used.
  *
  * FALSE  - use file_exists.
  * TRUE   - use cache_get instead of file_exists if possible.
@@ -131,6 +131,11 @@ define('ADVAGG_BUNDLE_BUILT_MODE', FALSE);
  * Default value to see if we can use the STREAM_CLIENT_ASYNC_CONNECT flag.
  */
 define('ADVAGG_ASYNC_SOCKET_CONNECT', FALSE);
+
+/**
+ * Default value to see if we removed old files/bundles from the database.
+ */
+define('ADVAGG_PRUNE_ON_CRON', TRUE);
 
 /**
  * Implementation of hook_perm().
@@ -222,6 +227,64 @@ function advagg_admin_menu_output_alter(&$content) {
     $content['icon']['icon']['flush-cache']['advagg'] = $content['icon']['icon']['flush-cache']['requisites'];
     $content['icon']['icon']['flush-cache']['advagg']['#title'] = t('Adv CSS/JS Agg');
     $content['icon']['icon']['flush-cache']['advagg']['#href'] = 'admin_menu/flush-cache/advagg';
+  }
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function advagg_cron() {
+  if (!variable_get('advagg_prune_on_cron', ADVAGG_PRUNE_ON_CRON)) {
+    return;
+  }
+
+  // Set the oldest file/bundle to keep at 2 weeks.
+  $max_time = module_exists('advagg_bundler') ? variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED) : 1209600;
+  $max_file_time = time() - $max_time;
+  $max_bundle_time = time() - ($max_time*3);
+  $bundles_removed = 0;
+  $files_removed = array();
+
+  // Prune old files
+  $results = db_query("SELECT filename, filename_md5 FROM {advagg_files}");
+  while ($row = db_fetch_array($results)) {
+    // If the file exists, do nothing
+    if (file_exists($row['filename'])) {
+      continue;
+    }
+
+    // Remove bundles referencing missing files, if they are older than 2 weeks.
+    $bundles = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s' AND timestamp > %d", $row['filename_md5'], $max_file_time);
+    while ($bundle_md5 = db_result($bundles)) {
+      $bundles_removed++;
+      db_query("DELETE FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5);
+    }
+    $count = db_result(db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE filename_md5 = '%s'", $row['filename_md5']));
+
+    // If no more bundles reference the missing file then remove the file.
+    if (empty($count)) {
+      db_query("DELETE FROM {advagg_files} WHERE filename_md5 = '%s'", $row['filename_md5']);
+      $files_removed[] = $row['filename'];
+    }
+  }
+
+  // Prune old bundles
+  $bundles_removed += db_result(db_query("
+    SELECT COUNT(*)
+    FROM (
+      SELECT *
+      FROM {advagg_bundles}
+      WHERE timestamp < %d
+      GROUP BY bundle_md5
+    ) AS advagg_count", $max_bundle_time));
+  $results = db_query("DELETE FROM {advagg_bundles} WHERE timestamp < %d", $max_bundle_time);
+
+  // Report to watchdog if anything was done.
+  if (!empty($bundles_removed) || !empty($files_removed)) {
+    watchdog('advagg', 'Cron ran and the following files where removed from the database: %files <br /> %count old bundles where also removed from the database.', array(
+      '%files' => implode(', ', $files_removed),
+      '%count' => $bundles_removed,
+    ));
   }
 }
 
