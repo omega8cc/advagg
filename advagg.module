@@ -1917,7 +1917,7 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
 
     if ($is_ie) {
       advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
-      advagg_unlimited_css_traditional($output_preprocess, $styles);
+      advagg_unlimited_css_import($output_preprocess, $styles);
       advagg_unlimited_css_import($theme_no_preprocess, $styles);
       advagg_unlimited_css_traditional($inline_no_preprocess, $styles);
     }
@@ -1927,7 +1927,7 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
   }
   else {
     advagg_unlimited_css_import(array_merge($external_no_preprocess, $module_no_preprocess, $output_no_preprocess), $styles);
-    advagg_unlimited_css_traditional($output_preprocess, $styles);
+    advagg_unlimited_css_import($output_preprocess, $styles);
     advagg_unlimited_css_import($theme_no_preprocess, $styles);
     advagg_unlimited_css_traditional($inline_no_preprocess, $styles);
   }
