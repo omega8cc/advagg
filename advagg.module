@@ -1459,7 +1459,7 @@ function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
   list($filetype, $files) = advagg_get_files_in_bundle($bundle_md5);
 
   $conf['advagg_async_generation'] = FALSE;
-  $good = advagg_css_js_file_builder($filetype, $files, $counter, $force, $bundle_md5);
+  $good = advagg_css_js_file_builder($filetype, $files, '', $counter, $force, $bundle_md5);
   if (!$good) {
     watchdog('advagg', 'This bundle could not be generated correctly. Bundle MD5: %md5', array('%md5' => $bundle_md5));
   }
@@ -1822,7 +1822,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           }
         }
       }
-      $preprocess_files = advagg_css_js_file_builder('css', $files);
+      $preprocess_files = advagg_css_js_file_builder('css', $files, $query_string);
       $good = TRUE;
 
       foreach ($preprocess_files as $preprocess_file => $extra) {
@@ -2123,7 +2123,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           $files_included[$path] = TRUE;
         }
       }
-      $preprocess_files = advagg_css_js_file_builder('js', $files);
+      $preprocess_files = advagg_css_js_file_builder('js', $files, $query_string);
       $good = TRUE;
       foreach ($preprocess_files as $preprocess_file => $extra) {
         // Empty aggregate, skip
@@ -2265,6 +2265,8 @@ function advagg_disable_page_cache() {
  *   js or css
  * @param $files
  *   An array of JS files to aggregate and compress into one file.
+ * @param $query_string
+ *   (optional) Query string to add on to the file if bundle isn't ready.
  * @param $counter
  *   (optional) Counter value.
  * @param $force
@@ -2274,7 +2276,7 @@ function advagg_disable_page_cache() {
  * @return
  *   array with the filepath as the key and prefix and suffix in another array.
  */
-function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FALSE, $md5 = '') {
+function advagg_css_js_file_builder($type, $files, $query_string = '', $counter = FALSE, $force = FALSE, $md5 = '') {
   global $_advagg, $base_path;
   $data = '';
 
@@ -2361,7 +2363,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
           // Aggregate isn't built yet, send back the files that where going to
           // be in it.
           foreach ($files as $file) {
-            $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
+            $output[$file . $query_string] = array('prefix' => '', 'suffix' => '', 'files' => array($file . $query_string => TRUE));
           }
           $cacheable = FALSE;
           advagg_disable_page_cache();
@@ -2380,7 +2382,7 @@ function advagg_css_js_file_builder($type, $files, $counter = FALSE, $force = FA
           // Aggregate isn't built yet, send back the files that where going
           // to be in it.
           foreach ($files as $file) {
-            $output[$file] = array('prefix' => '', 'suffix' => '', 'files' => array($file => TRUE));
+            $output[$file . $query_string] = array('prefix' => '', 'suffix' => '', 'files' => array($file . $query_string => TRUE));
           }
           $cacheable = FALSE;
           advagg_disable_page_cache();
