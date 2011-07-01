@@ -344,14 +344,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     $query['values'] = $info;
     $query['key'] = $key;
     $query_string = http_build_query($query, '', '&');
-    $ip = variable_get('advagg_server_addr', FALSE);
-    if ($ip == -1) {
-      $ip = $_SERVER['HTTP_HOST'];
-    }
-    elseif (empty($ip)) {
-      $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
-    }
-    $url = 'http://' . $ip . $base_path . 'advagg/js_compress_test_file';
+    $url = _advagg_build_url('advagg/js_compress_test_file');
     $headers = array(
       'Host' => $_SERVER['HTTP_HOST'],
       'Content-Type' => 'application/x-www-form-urlencoded',

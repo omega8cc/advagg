@@ -285,15 +285,7 @@ function advagg_check_missing_handler() {
 
   // Setup request
   list($css_path, $js_path) = advagg_get_root_files_dir();
-    $ip = variable_get('advagg_server_addr', FALSE);
-    if ($ip == -1) {
-      $ip = $_SERVER['HTTP_HOST'];
-    }
-    elseif (empty($ip)) {
-      $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
-    }
-  $filepath = '/missing' . mt_rand() . time();
-  $url = 'http://' . $ip . $base_path . $css_path . $filepath . '.css';
+  $url = _advagg_build_url($css_path . $filepath . '.css');
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
   );
@@ -529,14 +521,7 @@ function advagg_install_test_async_stream() {
   $advagg_async_socket_connect = variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT);
 
   // Build test request.
-  $ip = variable_get('advagg_server_addr', FALSE);
-  if ($ip == -1) {
-    $ip = $_SERVER['HTTP_HOST'];
-  }
-  elseif (empty($ip)) {
-    $ip = empty($_SERVER['SERVER_ADDR']) ? '127.0.0.1' : $_SERVER['SERVER_ADDR'];
-  }
-  $url = 'http://' . $ip . $base_path;
+  $url = _advagg_build_url();
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
   );
