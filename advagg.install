@@ -874,6 +874,9 @@ function advagg_update_6108() {
 function advagg_update_6109() {
   $ret = array();
 
+  // Make sure the advagg_get_root_files_dir function is available.
+  drupal_load('module', 'advagg');
+
   // Add in timestamp column.
   db_add_field($ret, 'advagg_files', 'filesize', array(
         'description' => 'The filesize of the file in bytes.',
