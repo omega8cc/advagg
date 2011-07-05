@@ -16,10 +16,13 @@ function advagg_enable() {
   $jspath = file_create_path('advagg_js');
   file_check_directory($jspath, FILE_CREATE_DIRECTORY);
 
-  // Rescan files
+  // Include the module file.
+  register_shutdown_function('drupal_load', 'module', 'advagg');
+
+  // Rescan files.
   register_shutdown_function('advagg_flush_caches');
 
-  // Check for fast404
+  // Check for fast404.
   register_shutdown_function('advagg_check_missing_handler');
 
   if (module_exists('javascript_aggregator')) {
