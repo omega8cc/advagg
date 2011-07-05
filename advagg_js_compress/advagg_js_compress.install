@@ -41,17 +41,15 @@ function advagg_js_compress_install() {
  * Implementation of hook_uninstall().
  */
 function advagg_js_compress_uninstall() {
-  // Flush advagg caches.
-  $cache_tables = advagg_flush_caches();
-  foreach ($cache_tables as $table) {
-    cache_clear_all('*', $table, TRUE);
-  }
-
   // Remove variables.
   variable_del('advagg_js_compress_packer_enable');
+  variable_del('advagg_js_compress_inline_cache');
+  variable_del('advagg_js_compress_file_cache');
   variable_del('advagg_js_compress_agg_files');
+  variable_del('advagg_js_max_compress_ratio');
   variable_del('advagg_js_compress_callback');
   variable_del('advagg_js_compress_inline');
+  variable_del('advagg_js_compress_ratio');
   variable_del('advagg_js_compressor');
 
   // Remove our cache table.

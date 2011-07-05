@@ -32,9 +32,10 @@ function advagg_bundler_disable() {
  */
 function advagg_bundler_uninstall() {
   // Remove variables.
+  variable_del('advagg_bundler_outdated');
   variable_del('advagg_bundler_max_css');
   variable_del('advagg_bundler_max_js');
-
+  variable_del('advagg_bundler_active');
 }
 
 /**
