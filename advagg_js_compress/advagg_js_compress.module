@@ -249,7 +249,7 @@ function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
           $cached = TRUE;
         }
       }
-      if (!$cached) {
+      if (!$cached && !empty($data)) {
         list($before, $after) = advagg_js_compress_jsminplus($data);
         $ratio = ($before - $after)/$before;
         // Make sure the returned string is not empty or has a VERY high
