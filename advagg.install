@@ -275,6 +275,7 @@ function advagg_requirements($phase) {
  * Check to see if the CSS/JS generator is working.
  */
 function advagg_check_missing_handler() {
+  drupal_load('module', 'advagg');
   advagg_install_test_async_stream();
 
   global $base_path;
