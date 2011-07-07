@@ -138,6 +138,11 @@ define('ADVAGG_ASYNC_SOCKET_CONNECT', FALSE);
 define('ADVAGG_PRUNE_ON_CRON', TRUE);
 
 /**
+ * Default value to see if we cache at the advagg_processor level.
+ */
+define('ADVAGG_USE_FULL_CACHE', TRUE);
+
+/**
  * Implementation of hook_perm().
  */
 function advagg_perm() {
@@ -636,12 +641,28 @@ function advagg_processor(&$variables) {
   }
   $css_conditional_styles = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
   $css_styles = $variables['styles'];
-  // Build HTML code.
-  $processed_css = advagg_process_css($css);
-  if (!empty($processed_css)) {
-    $variables['styles'] = $processed_css;
+
+  // Try cache.
+  if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+    $cid = 'advagg_processor:css:' . md5(serialize(array($css, $css_conditional_styles))) . ':' . variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
+    $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
   }
-  $variables['styles'] .= "\n". $css_conditional_styles;
+  if (!empty($cache->data)) {
+    $variables['styles'] = $cache->data;
+  }
+  else {
+    // Build HTML code.
+    $processed_css = advagg_process_css($css);
+    if (!empty($processed_css)) {
+      $variables['styles'] = $processed_css;
+    }
+    $variables['styles'] .= "\n". $css_conditional_styles;
+
+    // Cache output.
+    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+      cache_set($cid, $variables['styles'], 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+    }
+  }
 
   // JS
   $js_code = array();
@@ -656,9 +677,27 @@ function advagg_processor(&$variables) {
     }
   }
   $js_code_orig = $js_code;
-  // Build HTML code.
-  advagg_jquery_updater($js_code['header']);
-  $js_code = advagg_process_js($js_code);
+
+  // Try cache.
+  if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+    $cid = 'advagg_processor:js:' . md5(serialize($js_code)) . ':' . variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
+    $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
+  }
+  if (!empty($cache->data)) {
+    $js_code = $cache->data;
+  }
+  else {
+    // Build HTML code.
+    advagg_jquery_updater($js_code['header']);
+    $js_code = advagg_process_js($js_code);
+
+    // Cache array.
+    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+      cache_set($cid, $js_code, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+    }
+  }
+
+  // Place JS in the correct places.
   foreach ($js_code as $key => $value) {
     if ($key == 'header') {
       $variables['scripts'] = $value;
@@ -865,27 +904,28 @@ function advagg_cached_bundle_get($cached_data_key, $debug_name) {
     $data = $data->data;
     $bundle_contents = array();
     $good = TRUE;
-    // Verify cached data is good.
-    foreach ($data as $filename => $extra) {
-      if (is_numeric($filename)) {
-        continue;
-      }
-      // Get md5 from aggregated filename.
-      $b_md5 = explode('/', $filename);
-      $b_md5 = explode('_', array_pop($b_md5));
-      $b_md5 = $b_md5[1];
-
-      // Lookup bundle and make sure it is valid.
-      if (!empty($b_md5)) {
-        list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
-        $bundle_contents[$filename] = $b_files;
-        if (empty($b_files)) {
-          $good = FALSE;
-        }
-      }
-    }
     // Debugging.
     if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+      // Verify cached data is good.
+      foreach ($data as $filename => $extra) {
+        if (is_numeric($filename)) {
+          continue;
+        }
+        // Get md5 from aggregated filename.
+        $b_md5 = explode('/', $filename);
+        $b_md5 = explode('_', array_pop($b_md5));
+        $b_md5 = $b_md5[1];
+
+        // Lookup bundle and make sure it is valid.
+        if (!empty($b_md5)) {
+          list($b_filetype, $b_files) = advagg_get_files_in_bundle($b_md5);
+          $bundle_contents[$filename] = $b_files;
+          if (empty($b_files)) {
+            $good = FALSE;
+          }
+        }
+      }
+
       $_advagg['debug'][$debug_name][] = array(
         'key' => $cached_data_key,
         'files' => $files,
@@ -2246,6 +2286,7 @@ function advagg_return_true() {
  */
 function advagg_disable_page_cache() {
   global $conf;
+  $conf['advagg_use_full_cache'] = FALSE;
   if (variable_get('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE)) {
     $conf['cache'] = CACHE_DISABLED;
 

@@ -64,7 +64,7 @@ function advagg_bundler_admin_settings_form() {
     '#title'         => t('Raw Grouping Info'),
   );
   module_load_include('inc', 'advagg', 'advagg.admin');
-  $analysis = advagg_bundler_analysis();
+  $analysis = advagg_bundler_analysis('', TRUE);
   asort($analysis);
   $analysis = array_reverse($analysis);
   $data = array();

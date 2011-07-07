@@ -163,45 +163,58 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
  *
  * @param $filename
  *   filename
+ * @param $force
+ *   bypass the cache and get a fresh version of the analysis.
  * @return
  *   string to be used for the grouping key.
  */
-function advagg_bundler_analysis($filename = '') {
+function advagg_bundler_analysis($filename = '', $force = FALSE) {
   // Cache query in a static.
   static $analysis = array();
   if (empty($analysis)) {
-    // "Magic Query"; only needs to run once.
-    // Return a count of how many root bundles all files are used in. Count is
-    // padded with eight zeros so the count can be key sorted as a string
-    // without worrying about it getting put in the wrong order.
-    // Return the bundle_md5's value; we need something more unique than count
-    // when grouping together.
-    // Return the filename. Used for lookup.
-    // We join the advagg bundles and files together making sure to only use
-    // root bundles that have been used in the last 2 weeks. This prevents an
-    // old site structure from influencing new bundles.
-    // Grouping by the filename gives us the count and makes it so we don't
-    // return a lot of rows;
-    $result = db_query("
-      SELECT
-        LPAD(COUNT(*), 8, '00000000') AS count,
-        bundle_md5,
-        filename
-      FROM {advagg_bundles} AS ab
-      INNER JOIN {advagg_files} AS af USING ( filename_md5 )
-      WHERE ab.root = 1
-      AND timestamp > %d
-      GROUP BY ( af.filename )
-    ", time() - variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED));
+    // See if we have a cached version of this.
+    $count = db_result(db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE root=1"));
+    $cache = cache_get('advagg_bundler_analysis:' . $count);
+    if (empty($cache->data) || $force) {
+      // "Magic Query"; only needs to run once.
+      // Return a count of how many root bundles all files are used in. Count is
+      // padded with eight zeros so the count can be key sorted as a string
+      // without worrying about it getting put in the wrong order.
+      // Return the bundle_md5's value; we need something more unique than count
+      // when grouping together.
+      // Return the filename. Used for lookup.
+      // We join the advagg bundles and files together making sure to only use
+      // root bundles that have been used in the last 2 weeks. This prevents an
+      // old site structure from influencing new bundles.
+      // Grouping by the filename gives us the count and makes it so we don't
+      // return a lot of rows;
+      $result = db_query("
+        SELECT
+          LPAD(COUNT(*), 8, '00000000') AS count,
+          bundle_md5,
+          filename
+        FROM {advagg_bundles} AS ab
+        INNER JOIN {advagg_files} AS af USING ( filename_md5 )
+        WHERE ab.root = 1
+        AND timestamp > %d
+        GROUP BY ( af.filename )
+      ", time() - variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED));
 
-    // Save query into a static array with the filename as the key.
-    while ($row = db_fetch_array($result)) {
-      $analysis[$row['filename']] = $row['count'] . ' ' . $row['bundle_md5'];
+      // Save query into a static array with the filename as the key.
+      while ($row = db_fetch_array($result)) {
+        $analysis[$row['filename']] = $row['count'] . ' ' . $row['bundle_md5'];
+      }
+
+      // Invoke hook_advagg_bundler_analysis_alter() to give installed modules a
+      // chance to alter the analysis array.
+      drupal_alter('advagg_bundler_analysis', $analysis);
+
+      // Save results to the cache.
+      cache_set('advagg_bundler_analysis:' . $count, $analysis, 'cache', CACHE_TEMPORARY);
     }
-
-    // Invoke hook_advagg_bundler_analysis_alter() to give installed modules a
-    // chance to alter the analysis array.
-    drupal_alter('advagg_bundler_analysis', $analysis);
+    else {
+      $analysis = $cache->data;
+    }
   }
 
   // If no filename is given pass back then entire query results.
