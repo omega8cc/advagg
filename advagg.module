@@ -302,15 +302,18 @@ function advagg_init() {
   // Disable advagg if requested.
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_enabled'] = FALSE;
+    $conf['advagg_use_full_cache'] = FALSE;
   }
   // Enable debugging if requested.
   if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_debug'] = TRUE;
+    $conf['advagg_use_full_cache'] = FALSE;
   }
   // Enable core preprocessing if requested.
   if (isset($_GET['advagg-core']) && $_GET['advagg-core'] == 1 && user_access('bypass advanced aggregation')) {
     $conf['preprocess_css'] = TRUE;
     $conf['preprocess_js'] = TRUE;
+    $conf['advagg_use_full_cache'] = FALSE;
   }
 
   // Disable ctools_ajax_page_preprocess() if this functionality is available.
@@ -614,7 +617,7 @@ function advagg_advagg_disable_processor() {
  *   The existing theme data structure.
  */
 function advagg_processor(&$variables) {
-  global $_advagg;
+  global $_advagg, $conf;
 
   // Invoke hook_advagg_disable_processor
   $disabled = module_invoke_all('advagg_disable_processor');
@@ -627,6 +630,10 @@ function advagg_processor(&$variables) {
     else {
       return;
     }
+  }
+
+  if (isset($_GET['advagg']) && user_access('bypass advanced aggregation')) {
+    $conf['advagg_use_full_cache'] = FALSE;
   }
 
   // CSS
@@ -644,7 +651,7 @@ function advagg_processor(&$variables) {
 
   // Try cache.
   if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
-    $cid = 'advagg_processor:css:' . md5(serialize(array($css, $css_conditional_styles))) . ':' . variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
+    $cid = 'advagg_processor:css:' . md5(serialize(array($css, $css_conditional_styles))) . ':' . variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION) . ':' . substr(variable_get('css_js_query_string', '0'), 0, 1);
     $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
   }
   if (!empty($cache->data)) {
@@ -680,7 +687,7 @@ function advagg_processor(&$variables) {
 
   // Try cache.
   if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
-    $cid = 'advagg_processor:js:' . md5(serialize($js_code)) . ':' . variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
+    $cid = 'advagg_processor:js:' . md5(serialize($js_code)) . ':' . variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION) . ':' . substr(variable_get('css_js_query_string', '0'), 0, 1);
     $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
   }
   if (!empty($cache->data)) {
@@ -1650,9 +1657,11 @@ function advagg_build_uri($path) {
  *   array of values to be imported via list() function.
  */
 function advagg_process_css_js_prep($noagg = FALSE) {
+  global $conf;
   $preprocess = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
   if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
     $preprocess = FALSE;
+    $conf['advagg_use_full_cache'] = FALSE;
   }
 
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
