@@ -698,6 +698,9 @@ function advagg_update_6100() {
 function advagg_update_6101() {
   $ret = array();
 
+  // Make sure the advagg_set_file_data function is available.
+  drupal_load('module', 'advagg');
+
   // Create cache table.
   $schema['cache_advagg_files_data'] = drupal_get_schema_unprocessed('system', 'cache');
   $schema['cache_advagg_files_data']['description'] = t('Cache table for Advanced CSS/JS Aggregation. Used to keep data about files.');
