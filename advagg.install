@@ -281,7 +281,7 @@ function advagg_check_missing_handler() {
   global $base_path;
   $ret = array();
   $async = variable_get('advagg_async_generation', -1);
-  $filepath = '/test';
+  $filepath = '/css_missing' . mt_rand() . time() . '_0';
 
   // Ensure translations don't break at install time
   $t = get_t();
@@ -302,6 +302,7 @@ function advagg_check_missing_handler() {
   $url = _advagg_build_url($css_path . $filepath . '.css');
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
+    'Connection' => 'close',
   );
 
   // Check that the menu router handler is working. If it's not working the rest
@@ -538,6 +539,7 @@ function advagg_install_test_async_stream() {
   $url = _advagg_build_url();
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
+    'Connection' => 'close',
   );
 
   // Request file.

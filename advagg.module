@@ -2397,6 +2397,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
         $url = _advagg_build_url($filepath . '?generator=1');
         $headers = array(
           'Host' => $_SERVER['HTTP_HOST'],
+          'Connection' => 'close',
         );
 
         // Request file.

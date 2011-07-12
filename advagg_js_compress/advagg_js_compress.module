@@ -348,6 +348,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     $headers = array(
       'Host' => $_SERVER['HTTP_HOST'],
       'Content-Type' => 'application/x-www-form-urlencoded',
+      'Connection' => 'close',
     );
 
     $results = drupal_http_request($url, $headers, 'POST', $query_string);

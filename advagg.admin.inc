@@ -158,6 +158,7 @@ function advagg_admin_info_form() {
   $url = _advagg_build_url($filepath);
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
+    'Connection' => 'close',
   );
 
   timer_start(__FUNCTION__ . 'local');
