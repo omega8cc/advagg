@@ -246,6 +246,7 @@ You also need to place these rules at the very end of your htaccess file, after
     # Unset unnecessary headers.
     Header unset Last-Modified
     Header unset Pragma
+    Header unset Accept-Ranges
 
     # Make these files publicly cacheable.
     Header append Cache-Control "public"

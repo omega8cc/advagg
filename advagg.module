@@ -2702,6 +2702,7 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
   $data .= "    # Unset unnecessary headers.\n";
   $data .= "    Header unset Last-Modified\n";
   $data .= "    Header unset Pragma\n";
+  $data .= "    Header unset Accept-Ranges\n";
   $data .= "\n";
   $data .= "    # Make these files publicly cacheable.\n";
   $data .= "    Header append Cache-Control \"public\"\n";
