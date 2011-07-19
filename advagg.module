@@ -259,7 +259,7 @@ function advagg_cron() {
     }
 
     // Remove bundles referencing missing files, if they are older than 2 weeks.
-    $bundles = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s' AND timestamp > %d", $row['filename_md5'], $max_file_time);
+    $bundles = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s' AND timestamp < %d", $row['filename_md5'], $max_file_time);
     while ($bundle_md5 = db_result($bundles)) {
       $bundles_removed++;
       db_query("DELETE FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5);
