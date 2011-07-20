@@ -48,7 +48,8 @@ function advagg_missing_regenerate() {
   // Get filename from request.
   $arg = arg();
   $filename = array_pop($arg);
-  $filename = array_shift(explode('?', $filename));
+  $filename = explode('?', $filename);
+  $filename = array_shift($filename);
 
   $data = advagg_get_bundle_from_filename($filename);
   if (is_array($data)) {
