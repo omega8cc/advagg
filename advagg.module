@@ -896,6 +896,13 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
       'files' => $files,
       'bundle_md5' => $bundle_md5,
     );
+
+    // Refresh timestamp if older then 12 hours.
+    $row = db_fetch_array(db_query("SELECT timestamp FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+    if (time() - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
+      db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
+    }
+
   }
   return $output;
 }
@@ -1059,7 +1066,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
     }
 
     // Create the entries in the advagg_bundles table.
-    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root) VALUES ('%s', '%s', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
+    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root, timestamp) VALUES ('%s', '%s', '%d', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
   }
 
   lock_release($lock_name);
