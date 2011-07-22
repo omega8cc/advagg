@@ -325,7 +325,6 @@ function advagg_init() {
   // Create a closure function that does not add JavaScript.
   if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
     if (!function_exists('phptemplate_closure')) {
-      $_advagg['closure'] = TRUE;
 
       /**
       * Execute hook_footer() which is run at the end of the page right before
@@ -337,6 +336,8 @@ function advagg_init() {
       *   A string containing the results of the hook_footer() calls.
       */
       function phptemplate_closure($main = 0) {
+        global $_advagg;
+        $_advagg['closure'] = TRUE;
         $footer = implode("\n", module_invoke_all('footer', $main));
         // If advagg is disabled, then include footer JS here.
         if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
