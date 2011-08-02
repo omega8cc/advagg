@@ -278,7 +278,6 @@ function advagg_requirements($phase) {
         )),
       );
     }
-
     $requirements += advagg_check_missing_handler();
   }
   return $requirements;
@@ -504,13 +503,31 @@ function advagg_check_missing_handler() {
     if ($async != 0) {
       variable_set('advagg_async_generation', FALSE);
     }
+    // Files htaccess check. Make sure RewriteEngine is not off.
+    $directory = file_directory_path();
+    if (is_file($directory . '/.htaccess')) {
+      $file = file_get_contents($directory . '/.htaccess');
+      if (stripos($file, "RewriteEngine off") !== FALSE) {
+        $ret['advagg_htaccess'] = array(
+          'title'       => $t('Adv CSS/JS Agg - Files Dir htaccess'),
+          'severity'    => REQUIREMENT_ERROR,
+          'value'       => $t('The htaccess file in %dir is non standard.', array('%dir' => $directory)),
+          'description' => $t('You need to modify your htaccess file in your files directory. See <a href="@url">this link</a> for more info.', array(
+            '@url'  => 'http://drupal.org/node/1171244#comment-4770544',
+          )),
+        );
+      }
+    }
+
     // Build error message.
-    $ret['advagg_async_generation'] = array(
-      'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
-      'severity'    => REQUIREMENT_ERROR,
-      'value'       => $t('Set to FALSE.'),
-      'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
-    );
+    if (empty($ret['advagg_htaccess'])) {
+      $ret['advagg_async_generation'] = array(
+        'title'       => $t('Adv CSS/JS Agg - Asynchronous Mode'),
+        'severity'    => REQUIREMENT_ERROR,
+        'value'       => $t('Set to FALSE.'),
+        'description' => $t('Check to see if you have fast 404s, if so create an exception for this module. The <a href="@readme">readme file</a> explains what needs to be changed. You can try flushing the menu cache as well. ', array('@readme' => url($readme))) . $extra_404,
+      );
+    }
   }
 
   // Set socket timeout relative to local round trip.

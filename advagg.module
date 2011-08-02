@@ -1638,6 +1638,12 @@ function advagg_set_file_data($filename_md5, $data) {
  *   data to store.
  */
 function advagg_build_uri($path) {
+  // If the current path is an absolute path, return immediately.
+  $fragments = parse_url($path);
+  if (isset($fragments['host'])) {
+    return $path;
+  }
+
   $original_path = $path;
   // CDN Support.
   if (module_exists('cdn')) {
