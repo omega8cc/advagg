@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Cleanup
 {
@@ -125,7 +125,7 @@ Class CSSCompression_Cleanup
 	 * Removes '\' from possible splitter characters in URLs
 	 *
 	 * @param (string) css: Full css sheet
-	 */ 
+	 */
 	public function removeInjections( $css ) {
 		// Remove escaped characters
 		foreach ( $this->rescape as $regex ) {
@@ -143,7 +143,10 @@ Class CSSCompression_Cleanup
 		$pos = 0;
 		while ( preg_match( $this->rtoken, $css, $match, PREG_OFFSET_CAPTURE, $pos ) ) {
 			$value = $match[ 2 ][ 0 ];
-			if ( preg_match( $this->rspace, $value ) ) {
+			$id = substr( $css, $match[ 0 ][ 1 ] - 4, 4 ) == '[id=' ? true : false;
+			$class = substr( $css, $match[ 0 ][ 1 ] - 7, 7 ) == '[class=' ? true : false;
+
+			if ( preg_match( $this->rspace, $value ) || ( ! $id && ! $class ) ) {
 				$quote = preg_match( $this->rquote, $value ) ? "\"" : "'";
 				$value = "$quote$value$quote";
 				$css = substr_replace( $css, $value, $match[ 0 ][ 1 ], strlen( $match[ 0 ][ 0 ] ) );
@@ -162,7 +165,7 @@ Class CSSCompression_Cleanup
 	 * Removes multiple definitions that were created during compression
 	 *
 	 * @param (string) val: CSS Selector Properties
-	 */ 
+	 */
 	private function removeMultipleDefinitions( $val = '' ) {
 		$storage = array();
 		$arr = preg_split( $this->rsemicolon, $val );
@@ -189,7 +192,7 @@ Class CSSCompression_Cleanup
 	 * Removes last semicolons on the final property of a set
 	 *
 	 * @param (string) value: rule set
-	 */ 
+	 */
 	private function removeUnnecessarySemicolon( $value ) {
 		return preg_replace( $this->rsemi, '', $value );
 	}
