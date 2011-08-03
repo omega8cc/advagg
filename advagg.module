@@ -142,6 +142,37 @@ define('ADVAGG_PRUNE_ON_CRON', TRUE);
  */
 define('ADVAGG_USE_FULL_CACHE', TRUE);
 
+// Create a closure function that does not add JavaScript.
+if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
+  if (!function_exists('phptemplate_closure')) {
+
+    /**
+    * Execute hook_footer() which is run at the end of the page right before
+    * the close of the body tag.
+    *
+    * @param $main (optional)
+    *   Whether the current page is the front page of the site.
+    * @return
+    *   A string containing the results of the hook_footer() calls.
+    */
+    function phptemplate_closure($main = 0) {
+      global $_advagg;
+      $_advagg['closure'] = TRUE;
+      $footer = implode("\n", module_invoke_all('footer', $main));
+      // If advagg is disabled, then include footer JS here.
+      if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+        $footer .= drupal_get_js('footer');
+      }
+      return $footer;
+    }
+
+  }
+  else {
+    global $_advagg;
+    $_advagg['closure'] = FALSE;
+  }
+}
+
 /**
  * Implementation of hook_perm().
  */
@@ -320,36 +351,6 @@ function advagg_init() {
   if (variable_get('advagg_enabled', ADVAGG_ENABLED) && function_exists('ctools_ajax_run_page_preprocess')) {
     ctools_ajax_run_page_preprocess(FALSE);
     $_advagg['ctools_patched'] = TRUE;
-  }
-
-  // Create a closure function that does not add JavaScript.
-  if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
-    if (!function_exists('phptemplate_closure')) {
-
-      /**
-      * Execute hook_footer() which is run at the end of the page right before
-      * the close of the body tag.
-      *
-      * @param $main (optional)
-      *   Whether the current page is the front page of the site.
-      * @return
-      *   A string containing the results of the hook_footer() calls.
-      */
-      function phptemplate_closure($main = 0) {
-        global $_advagg;
-        $_advagg['closure'] = TRUE;
-        $footer = implode("\n", module_invoke_all('footer', $main));
-        // If advagg is disabled, then include footer JS here.
-        if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
-          $footer .= drupal_get_js('footer');
-        }
-        return $footer;
-      }
-
-    }
-    else {
-      $_advagg['closure'] = FALSE;
-    }
   }
 }
 
