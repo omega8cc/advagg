@@ -634,7 +634,14 @@ function advagg_processor(&$variables) {
     }
   }
 
+  // Do not use the cache if advagg is set in the URL.
   if (isset($_GET['advagg']) && user_access('bypass advanced aggregation')) {
+    $conf['advagg_use_full_cache'] = FALSE;
+  }
+  // Do not use the cache if the disable cookie is set.
+  $cookie_name = 'AdvAggDisabled';
+  $key = md5(drupal_get_private_key());
+  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
     $conf['advagg_use_full_cache'] = FALSE;
   }
 
@@ -1686,7 +1693,17 @@ function advagg_build_uri($path) {
 function advagg_process_css_js_prep($noagg = FALSE) {
   global $conf;
   $preprocess = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
+
+  // URL bypass.
   if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
+    $preprocess = FALSE;
+    $conf['advagg_use_full_cache'] = FALSE;
+  }
+
+  // Cookie bypass.
+  $cookie_name = 'AdvAggDisabled';
+  $key = md5(drupal_get_private_key());
+  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
     $preprocess = FALSE;
     $conf['advagg_use_full_cache'] = FALSE;
   }

@@ -10,7 +10,12 @@
  */
 function advagg_admin_page() {
   $output = '';
-  return $output . drupal_get_form('advagg_admin_settings_form');
+  $file_path = drupal_get_path('module', 'advagg');
+  drupal_add_js(array('advagg' => array('key' => md5(drupal_get_private_key()))), 'setting');
+  drupal_add_js($file_path . '/advagg.admin.js');
+
+  $output .= drupal_get_form('advagg_admin_settings_form');
+  return $output;
 }
 
 /**
@@ -340,7 +345,7 @@ function advagg_admin_settings_form() {
     '#collapsible'  => TRUE,
     '#collapsed'    => TRUE,
     '#title'        => t('Master Reset'),
-    '#description'  => t('Clean Slate - Truncate all advagg tables and delete all advagg files. Useful for testing perposes. Running this on a production site is not a good idea.'),
+    '#description'  => t('Clean Slate - Truncate all advagg tables and delete all advagg files. Useful for testing purposes. Running this on a production site is not a good idea.'),
   );
   $form['master_reset']['advagg_reset'] = array(
     '#type'         => 'submit',
@@ -358,6 +363,18 @@ function advagg_admin_settings_form() {
     '#type'   => 'submit',
     '#value'  => t('Recreate htaccess files'),
     '#submit' => array('advagg_admin_recreate_htaccess'),
+  );
+  $form['bypass'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => t('Aggregation Bypass Cookie'),
+    '#description'  => t('This will set or remove a cookie that disables aggregation for the remainder of the browser session.'),
+  );
+  $form['bypass']['submit'] = array(
+    '#type'         => 'submit',
+    #'#button_type'  => 'button',
+    '#value'        => t('Toggle the "aggregation bypass cookie" for this browser'),
+    '#attributes'   => array('onclick' => 'javascript:return advagg_toggle_cookie()'),
+    '#submit'       => array('advagg_admin_toggle_bypass_cookie'),
   );
 
   $form['#submit'][] = 'advagg_admin_settings_form_submit';
@@ -635,6 +652,28 @@ function advagg_admin_recreate_htaccess() {
   advagg_htaccess_check_generate($js_path, TRUE);
 
   drupal_set_message(t('Advanced CSS/JS Aggregation htaccess files rebuilt.'));
+}
+
+/**
+ * Set or remove the AdvAggDisabled cookie.
+ */
+function advagg_admin_toggle_bypass_cookie() {
+  global $base_path;
+  $cookie_name = 'AdvAggDisabled';
+  $key = md5(drupal_get_private_key());
+
+  // If the cookie does exist then remove it.
+  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
+    setcookie($cookie_name, '', -1, $base_path, '.' . $_SERVER['HTTP_HOST']);
+    unset($_COOKIE[$cookie_name]);
+    drupal_set_message(t('AdvAgg Bypass Cookie Removed.'));
+  }
+  // If the cookie does not exist then set it.
+  else {
+    setcookie($cookie_name, $key, 0, $base_path, '.' . $_SERVER['HTTP_HOST']);
+    $_COOKIE[$cookie_name] = $key;
+    drupal_set_message(t('AdvAgg Bypass Cookie Set.'));
+  }
 }
 
 function advagg_form_print_r($data) {
