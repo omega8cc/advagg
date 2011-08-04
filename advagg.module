@@ -509,7 +509,7 @@ function advagg_css_array_fixer(&$css_func) {
   foreach ($css_func as $k => $v) {
     foreach ($v as $ke => $va) {
       foreach ($va as $file => $preprocess) {
-        if (advagg_string_ends_with($file, '.css.less')) {
+        if (substr($file, 9) === '.css.less') {
           unset($css_func[$k][$ke][$file]);
         }
       }
