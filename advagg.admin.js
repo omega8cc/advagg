@@ -14,14 +14,14 @@ function advagg_toggle_cookie() {
       + 'expires=-1;'
       + ' path=' + Drupal.settings.basePath + ';'
       + ' domain=.' + document.location.hostname + ';';
-    alert('AdvAgg Bypass Cookie Removed');
+    alert(Drupal.t('AdvAgg Bypass Cookie Removed'));
   }
   // If the cookie does not exsit then set it.
   else {
     document.cookie = cookie_name + '=' + Drupal.settings.advagg.key + ';'
       + ' path=' + Drupal.settings.basePath + ';'
       + ' domain=.' + document.location.hostname + ';';
-    alert('AdvAgg Bypass Cookie Set');
+    alert(Drupal.t('AdvAgg Bypass Cookie Set'));
   }
 
   // Must return false, if returning true then form gets submitted.
