@@ -1059,7 +1059,11 @@ function advagg_build_filename($filetype, $bundle_md5, $counter) {
 function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
   $lock_name = 'advagg_insert_bundle_db' . $bundle_md5;
   if (!lock_acquire($lock_name)) {
-    lock_wait($lock_name);
+    // If using async, wait before returning to give the other request time
+    // to complete.
+    if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) < 2) {
+      lock_wait($lock_name);
+    }
     return;
   }
 
