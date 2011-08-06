@@ -88,14 +88,18 @@ function advagg_admin_info_form() {
   // Get hooks in use.
   $hooks = array(
     'advagg_css_alter'              => array(),
+    'advagg_css_inline_alter'       => array(),
     'advagg_css_pre_alter'          => array(),
     'advagg_css_extra_alter'        => array(),
+
     'advagg_js_alter'               => array(),
+    'advagg_js_inline_alter'        => array(),
     'advagg_js_pre_alter'           => array(),
     'advagg_js_extra_alter'         => array(),
+    'advagg_js_header_footer_alter' => array(),
+
     'advagg_filenames_alter'        => array(),
     'advagg_files_table'            => array(),
-    'advagg_js_header_footer_alter' => array(),
     'advagg_master_reset'           => array(),
     'advagg_disable_processor'      => array(),
     'advagg_disable_page_cache'     => array(),
@@ -254,7 +258,7 @@ function advagg_admin_settings_form() {
     '#type'           => 'checkbox',
     '#title'          => t('Regenerate flushed bundles in the cache flush request'),
     '#default_value'  => variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH),
-    '#description'    => t('Enable if your server will not timeout on a request.'),
+    '#description'    => t('You can enable if your server will not timeout on a request. This will call advagg_rebuild_bundle() as a <a href="http://php.net/register-shutdown-function">shutdown function</a> for every bundle that has been marked as expired; thus rebuilding that bundle in the same request as the flush.'),
   );
   $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
   if (!$public_downloads) {

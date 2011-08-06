@@ -1583,7 +1583,7 @@ function advagg_delete_file_if_stale($filename) {
   $file_last_mod = variable_get('advagg_stale_file_threshold', ADVAGG_STALE_FILE_THRESHOLD);
   $file_last_used = variable_get('advagg_stale_file_last_used_threshold', ADVAGG_STALE_FILE_LAST_USED_THRESHOLD);
 
-  // Default stale file threshold is 30 days.
+  // Default mtime stale file threshold is 6 days.
   advagg_clearstatcache(TRUE, $filename);
   if ($now - filemtime($filename) <= $file_last_mod) {
     return;
@@ -1597,12 +1597,12 @@ function advagg_delete_file_if_stale($filename) {
     $file_last_agz = @fileatime($filename . '.gz');
     $file_last_a = max($file_last_a, $file_last_agz);
     if ($now - $data->data > $file_last_used && $now - $file_last_a > $file_last_used) {
-      // Delete file if it hasn't been used in the last 15 days.
+      // Delete file if it hasn't been used in the last 3 days.
       file_delete($filename);
       file_delete($filename . '.gz');
     }
     else {
-      // Touch file so we don't check again for another 30 days
+      // Touch file so we don't check again for another 6 days.
       touch($filename);
     }
   }

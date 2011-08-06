@@ -12,6 +12,7 @@ CONTENTS OF THIS FILE
  * Technical Details & Hooks
  * Single htaccess rules
 
+
 FAST 404
 --------
 
@@ -40,6 +41,7 @@ an IP address when making the http request.
 If you are still having problems, open an issue on the advagg issue queue:
 http://drupal.org/project/issues/advagg
 
+
 FEATURES & BENEFITS
 -------------------
 
@@ -47,12 +49,12 @@ Advanced CSS/JS Aggregation Core Module:
  * Imagecache style CSS/JS Aggregation. If the file doesn't exist it will be
    generated on demand.
  * Stampede protection for CSS and JS aggregation. Uses locking so multiple
-   requests for the same thing will result in only one thread doing the work
-   while the others wait around for it to be completed.
+   requests for the same thing will result in only one thread doing the work.
  * Zero file I/O if the Aggregated file already exists. Results in better page
    generation performance.
+ * Fully cached CSS/JS assets making this module faster than drupal core.
  * Smarter aggregate deletion. CSS/JS aggregates only get removed from the cache
-   if they have not been accessed in the last 30 days.
+   if they have not been used/accessed in the last 3 days.
  * Smarter cache flushing. Scans all CSS/JS files that have been added to any
    aggregate; if that file has changed then rebuild all aggregates that contain
    the updated file and give the newly aggregated file a new name. The new name
@@ -67,6 +69,8 @@ Advanced CSS/JS Aggregation Core Module:
    turn off file aggregation if the user has the "bypass advanced aggregation"
    permission. ?advagg=-1 will completely bypass all of Advanced CSS/JS
    Aggregations modules and submodules.
+ * Button on the admin page for dropping a cookie that will turn off file
+   aggregation. Useful for theme development.
  * Url query string to turn on advagg debugging for that request.
    ?advagg-debug=1 will output a large debug string to the watchdog if the user
    has the "bypass advanced aggregation" permission.
@@ -87,6 +91,7 @@ Advanced CSS/JS Aggregation Submodules:
  CSS:
  * CSSTidy library support. Can compress the generated CSS files with the
    CSSTidy library.
+ * CSS Compressor 3.0 support. https://github.com/codenothing/css-compressor
  JS:
  * JSMin+ library support. Can compress the generated JS files with the jsmin+
    library.
@@ -99,12 +104,18 @@ Advanced CSS/JS Aggregation Submodules:
  * Bundler. Will split up an aggregate into sub aggregates for better load
    times throughout your site.
 
+3rd Party modules:
+ CSS:
+ * Parallel CSS - AdvAgg Plugin. Have url()'s in css files reference different
+   CDN domains.
+
+
 CONFIGURATION
 -------------
 
 Settings page is located at:
 admin/settings/advagg
- * Enable Advanced Aggregation. You can disable the module here. Same affect as
+ * Enable Advanced Aggregation. You can disable the module here. Same effect as
    placing ?advagg=-1 in the URL.
  * Use AdvAgg in closure. If enabled javascript files in the closure region will
    be aggregated by advagg.
@@ -118,12 +129,20 @@ admin/settings/advagg
  * Generate .htaccess files in the advagg_* dirs. If your using the rules
    located at the bottom of this document in your webroots htaccess file then
    you can disable this checkbox.
+ * Regenerate flushed bundles in the cache flush request. You can enable if your
+   server will not timeout on a request. This will call advagg_rebuild_bundle()
+   as a shutdown function for every bundle that has been marked as expired;
+   thus rebuilding that bundle in the same request as the flush.
  * Use a different directory for storing advagg files. Only available if your
    using a private file system. Allows you to save the generated aggregated
    files in a different directory. This gets around the private file system
    restrictions. If boost is installed, you can safely use the cache directory.
- * File Checksum Mode. Keep at mtime; only use md5 if file modification time is
-   unreliable on your setup.
+ * Aggregation Inclusion Mode. Should the page wait for the aggregate to be
+   built before including the file, or should it send out the page with
+   aggregates not included.
+ * Disable page caching if all aggregates are not included on the page.
+ * File Checksum Mode. mtime is the file modification time. md5 is a hash of the
+   files contents.
  * IP Address to send all asynchronous requests to. If you wish to have one
    server generate all CSS/JS aggregated files then this allows for that to
    happen.
@@ -136,6 +155,9 @@ admin/settings/advagg
    counter for every bundle. One should never have to use this option.
  * Master Reset. Clean slate; same affect as uninstalling the module.
  * Rebuild htaccess files. Recreate the generated htaccess files.
+ * Aggregation Bypass Cookie. This will set or remove a cookie that disables
+   aggregation for the remainder of the browser session. It acts almost the same
+   as adding ?advagg=0 to every URL.
 
 Additional information is available at:
 admin/settings/advagg/info
@@ -148,6 +170,9 @@ admin/settings/advagg/info
    advagg.
  * Missing files. Lets you know the files that are trying to be added but are
    not there.
+ * Asynchronous debug info. Outputs the the full object returned from
+   drupal_http_request() which is helpful when debugging async issues.
+
 
 TECHNICAL DETAILS & HOOKS
 -------------------------
@@ -186,6 +211,12 @@ Hooks:
    request for a bundle name can result in multiple bundles being returned.
  * hook_advagg_files_table. Allows for modules to mark a file as expired.
  * advagg_master_reset. Allows other modules to take part in a master reset.
+ * advagg_disable_processor. Allows one to turn off advagg from a hook. See the
+   advagg_advagg_disable_processor() function for example usage.
+ * advagg_disable_page_cache. Allows 3rd party page cache plugins like boost or
+   varnish to not cache this page.
+ * advagg_bundler_analysis_alter. Give installed modules a chance to alter the
+   bundler's analysis array.
 
 JS/CSS Theme Override:
 
