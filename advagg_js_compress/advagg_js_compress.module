@@ -404,7 +404,7 @@ function advagg_js_compress_test_file($values = NULL) {
       echo $md5;
       exit;
     }
-    $data = advagg_get_file_data($filename_md5);
+    $data = advagg_get_file_data($md5);
 
     // Set to "-1" so if php bombs out, the file will be marked as bad.
     $data['advagg_js_compress']['tested']['jsminplus'] = -1;
