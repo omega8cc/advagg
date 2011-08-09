@@ -443,7 +443,9 @@ function advagg_js_compress_test_file($values = NULL) {
     }
   }
 
-  lock_release($lock_name);
+  if (isset($lock_name)) {
+    lock_release($lock_name);
+  }
   echo $md5;
   exit;
 }
