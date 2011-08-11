@@ -39,7 +39,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
   // Set filepaths/versions
   $jquery_version = variable_get('advagg_js_cdn_jquery_version', '1.2.6');
   $jquery_filepath = 'misc/jquery.js';
-  if (module_exists('jquery_update')) {
+  if (module_exists('jquery_update') && variable_get('jquery_update_replace', TRUE)) {
     $jquery_update_filepath = drupal_get_path('module', 'jquery_update');
     $jquery_update_version = variable_get('advagg_js_cdn_jquery_update_version', '1.3.2');
   }

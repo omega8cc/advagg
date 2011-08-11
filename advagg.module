@@ -2129,6 +2129,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
 
   // Get useful info.
   list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
+  $advagg_json_encode_function = variable_get('advagg_json_encode_function', 'advagg_drupal_to_js');
 
   $output = array();
   foreach ($master_set as $scope => $javascript) {
@@ -2173,7 +2174,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
         case 'setting':
           $data = call_user_func_array('array_merge_recursive', $data);
           $js_settings_array[] = $data;
-          $js_settings = advagg_drupal_to_js($data);
+          $js_settings = $advagg_json_encode_function($data);
           $js_settings = preg_replace(array('/"DRUPAL_JS_RAW\:/', '/\:DRUPAL_JS_RAW"/'), array('', ''), $js_settings);
           $setting_no_preprocess[] = 'jQuery.extend(Drupal.settings, ' . $js_settings . ");";
           break;
