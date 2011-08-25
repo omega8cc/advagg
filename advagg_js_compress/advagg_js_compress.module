@@ -358,7 +358,7 @@ function advagg_js_compress_test_compression($files_to_test) {
     $data = advagg_get_file_data($filename_md5);
 
     // Mark as a bad file.
-    if ($data['advagg_js_compress']['tested']['jsminplus'] != 1) {
+    if (empty($data['advagg_js_compress']['tested']['jsminplus']) || $data['advagg_js_compress']['tested']['jsminplus'] != 1) {
       $bad_files[] = $info;
     }
   }
