@@ -669,6 +669,9 @@ function advagg_processor(&$variables) {
     $cid = 'advagg_processor:css:' . md5(serialize(array($css, $css_conditional_styles))) . ':' . $schema . ':' . variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION) . ':' . substr(variable_get('css_js_query_string', '0'), 0, 1);
     $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
   }
+  elseif (isset($cid)) {
+    unset($cid);
+  }
   if (!empty($cache->data)) {
     $variables['styles'] = $cache->data;
   }
@@ -681,8 +684,9 @@ function advagg_processor(&$variables) {
     $variables['styles'] .= "\n". $css_conditional_styles;
 
     // Cache output.
-    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && lock_acquire($cid)) {
       cache_set($cid, $variables['styles'], 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      lock_release($cid);
     }
   }
 
@@ -705,6 +709,9 @@ function advagg_processor(&$variables) {
     $cid = 'advagg_processor:js:' . md5(serialize($js_code)) . ':' . $schema . ':' . variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION) . ':' . substr(variable_get('css_js_query_string', '0'), 0, 1);
     $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
   }
+  elseif (isset($cid)) {
+    unset($cid);
+  }
   if (!empty($cache->data)) {
     $js_code = $cache->data;
   }
@@ -714,8 +721,9 @@ function advagg_processor(&$variables) {
     $js_code = advagg_process_js($js_code);
 
     // Cache array.
-    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && lock_acquire($cid)) {
       cache_set($cid, $js_code, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
+      lock_release($cid);
     }
   }
 

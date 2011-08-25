@@ -488,6 +488,11 @@ function advagg_admin_settings_form_submit($form, &$form_state) {
     $conf['advagg_checksum_mode'] = $form_state['values']['advagg_checksum_mode'];
     advagg_admin_flush_cache_button();
   }
+
+  // If advagg is enabled/disabled, smart flush the cache.
+  if ($conf['advagg_enabled'] != $form_state['values']['advagg_enabled']) {
+    advagg_admin_flush_cache_button();
+  }
 }
 
 /**
