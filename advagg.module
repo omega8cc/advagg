@@ -681,7 +681,7 @@ function advagg_processor(&$variables) {
     if (!empty($processed_css)) {
       $variables['styles'] = $processed_css;
     }
-    $variables['styles'] .= "\n". $css_conditional_styles;
+    $variables['styles'] .= $css_conditional_styles;
 
     // Cache output.
     if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && lock_acquire($cid)) {
@@ -2078,7 +2078,7 @@ function advagg_unlimited_css_traditional($files, &$styles) {
     $last_prefix = $prefix;
     $last_suffix = $suffix;
   }
-  $styles .= $last_suffix . "\n";
+  $styles .= empty($last_suffix) ? '' : $last_suffix . "\n";
 }
 
 /**
