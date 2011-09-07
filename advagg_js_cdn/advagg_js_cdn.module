@@ -53,9 +53,14 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
     }
     $jquery_ui_filepath = advagg_get_jquery_ui_filename();
   }
-  if (module_exists('swftools') && function_exists('swftools_get_player_path')) {
-    $swfobject_filepath = swftools_get_player_path() . '/swfobject2/swfobject.js';
+  if (module_exists('swftools')) {
     $swfobject_version = variable_get('advagg_js_cdn_swfobject_version', '2.2');
+    if (function_exists('swftools_get_player_path')) {
+      $swfobject_filepath = swftools_get_player_path() . '/swfobject2/swfobject.js';
+    }
+    elseif (function_exists('swftools_get_library')) {
+      $swfobject_filepath = swftools_get_library('swfobject') . '/swfobject.js';
+    }
   }
 
   // http or https.
@@ -99,8 +104,8 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
 
       // swfobject.js
       if ($cdn_swfobject) {
-        if (   isset($swf_object_filepath)
-            && $path == $swf_object_filepath
+        if (   isset($swfobject_filepath)
+            && $path == $swfobject_filepath
               ) {
           $info['preprocess'] = FALSE;
           $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/swfobject/' . $swfobject_version .'/swfobject.js'] = $info;
