@@ -68,7 +68,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     $cached_data_key = 'bundler_' . $bundle_md5;
 
     // Try cache first; cache table is cache_advagg_bundle_reuse.
-    $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_bundler_filnames_alter');
+    $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_bundler_filenames_alter');
     if (!empty($cached_data)) {
       $output = array_merge($output, $cached_data);
       continue;
