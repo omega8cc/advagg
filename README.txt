@@ -65,6 +65,10 @@ Advanced CSS/JS Aggregation Core Module:
  * One can add JS to any region & have it aggregated.
    drupal_add_js($data, 'module', 'left') is now possible; JS is appended to the
    the end of that region.
+ * One can add external JS/CSS resources.
+    drupal_add_js('http://example.org/example.js', 'external');
+    drupal_add_css('http://example.org/example.css', 'external');
+   is now possible.
  * Url query string to turn off aggregation for that request. ?advagg=0 will
    turn off file aggregation if the user has the "bypass advanced aggregation"
    permission. ?advagg=-1 will completely bypass all of Advanced CSS/JS
