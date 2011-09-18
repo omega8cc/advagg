@@ -1820,21 +1820,6 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           unset($types[$type][$file]);
           continue;
         }
-        // If a CSS file is not to be preprocessed and it's an external
-        // CSS file, it needs to *always* appear at the *very top*,
-        // regardless of whether preprocessing is on or off.
-        if ($type == 'external') {
-          $external_no_preprocess[] = array(
-            'media' => $media,
-            'href' => $file,
-            'prefix' => '',
-            'suffix' => '',
-          );
-          $files_included[$media][$file] = TRUE;
-          // Unset the file to prevent its inclusion.
-          unset($types[$type][$file]);
-          continue;
-        }
         // If a CSS file is not to be preprocessed and it's an inline CSS blob
         // it needs to *always* appear at the *very bottom*.
         if ($type == 'inline') {
@@ -1854,21 +1839,50 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
               $inline_included[$media][] = $blob;
             }
           }
-          else {
-            $file = advagg_drupal_load_stylesheet_content($file, $preprocess);
-            // Invoke hook_advagg_css_inline_alter() to give installed modules a
-            // chance to modify the contents of $file if necessary.
-            drupal_alter('advagg_css_inline', $file);
-
-            $inline_no_preprocess[] = array(
-              'media' => $media,
-              'data' => $file,
-              'prefix' => '',
-              'suffix' => '',
-            );
-            $inline_included[$media][] = $file;
-          }
           // Unset to prevent its inclusion.
+          unset($types[$type][$file]);
+          continue;
+        }
+
+        $prefix = '';
+        $suffix = '';
+        // Invoke hook_advagg_css_extra_alter() to
+        // give installed modules a chance to modify the prefix or suffix for a
+        // given filename.
+        $values = array($file, NULL, $prefix, $suffix);
+        drupal_alter('advagg_css_extra', $values);
+        list($file, $null, $prefix, $suffix) = $values;
+
+        if ($type == 'inline') {
+          $file = advagg_drupal_load_stylesheet_content($file, $preprocess);
+          // Invoke hook_advagg_css_inline_alter() to give installed modules a
+          // chance to modify the contents of $file if necessary.
+          drupal_alter('advagg_css_inline', $file);
+
+          $inline_no_preprocess[] = array(
+            'media' => $media,
+            'data' => $file,
+            'prefix' => $prefix,
+            'suffix' => $suffix,
+          );
+          $inline_included[$media][] = $file;
+          // Unset to prevent its inclusion.
+          unset($types[$type][$file]);
+          continue;
+        }
+
+        // If a CSS file is not to be preprocessed and it's an external
+        // CSS file, it needs to *always* appear at the *very top*,
+        // regardless of whether preprocessing is on or off.
+        if ($type == 'external') {
+          $external_no_preprocess[] = array(
+            'media' => $media,
+            'href' => $file,
+            'prefix' => $prefix ,
+            'suffix' => $suffix,
+          );
+          $files_included[$media][$file] = TRUE;
+          // Unset the file to prevent its inclusion.
           unset($types[$type][$file]);
           continue;
         }
@@ -1876,6 +1890,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
         // Only include the stylesheet if it exists.
         if (advagg_file_exists($file)) {
           if (!$preprocess || !($public_downloads && $preprocess_css)) {
+
+
             // Create URI for file.
             $file_uri = advagg_build_uri($file) . $query_string;
             $files_included[$media][$file] = $preprocess;
@@ -1886,8 +1902,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
               $module_no_preprocess[] = array(
                 'media' => $media,
                 'href' => $file_uri,
-                'prefix' => '',
-                'suffix' => '',
+                'prefix' => $prefix ,
+                'suffix' => $suffix,
               );
             }
             // If a CSS file is not to be preprocessed and it's a theme CSS
@@ -1897,8 +1913,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
               $theme_no_preprocess[] = array(
                 'media' => $media,
                 'href' => $file_uri,
-                'prefix' => '',
-                'suffix' => '',
+                'prefix' => $prefix ,
+                'suffix' => $suffix,
               );
             }
 
@@ -1906,8 +1922,8 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
               $output_no_preprocess[] = array(
                 'media' => $media,
                 'href' => $file_uri,
-                'prefix' => '',
-                'suffix' => '',
+                'prefix' => $prefix ,
+                'suffix' => $suffix,
               );
             }
           }
