@@ -1658,6 +1658,8 @@ function advagg_set_file_data($filename_md5, $data) {
  *   data to store.
  */
 function advagg_build_uri($path) {
+  static $hook_file_url_alter = array();
+
   // If the current path is an absolute path, return immediately.
   $fragments = parse_url($path);
   if (isset($fragments['host'])) {
@@ -1677,11 +1679,26 @@ function advagg_build_uri($path) {
       else {
         $path = file_create_url($path);
       }
+      // Return here if the path was changed above.
       if (strcmp($original_path, $path) != 0) {
         return $path;
       }
     }
   }
+
+  // Other modules besides CDN might want to use hook_file_url_alter.
+  if (empty($hook_file_url_alter)) {
+    $hook_file_url_alter = module_implements('file_url_alter');
+  }
+  if (!empty($hook_file_url_alter)) {
+    $path = file_create_url($path);
+    // Return here if the path was changed above.
+    if (strcmp($original_path, $path) != 0) {
+      return $path;
+    }
+  }
+
+  // If nothing was altered then use the drupal default.
   return base_path() . $path;
 }
 
