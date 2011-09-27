@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_Aural
 {
@@ -33,7 +33,7 @@ Class CSSCompression_Combine_Aural
 	 * Combines Aural properties (currently being depreciated in W3C Standards)
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		$storage = $this->storage( $val );
 		$pos = 0;
@@ -105,5 +105,3 @@ Class CSSCompression_Combine_Aural
 		}
 	}
 };
-
-?>

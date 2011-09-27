@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Numeric
 {
@@ -48,7 +48,7 @@ Class CSSCompression_Numeric
 	 * Remove's unecessary decimal, ie 13.0px => 13px
 	 *
 	 * @param (string) str: Unit string
-	 */ 
+	 */
 	private function decimal( $str ) {
 		if ( preg_match( $this->rdecimal, $str, $match ) ) {
 			$str = ( $match[ 1 ] == '-' ? '-' : '' ) . floatval( $match[ 2 ] ) . $match[ 3 ];
@@ -61,7 +61,7 @@ Class CSSCompression_Numeric
 	 * Removes suffix from 0 unit, ie 0px; => 0;
 	 *
 	 * @param (string) str: Unit string
-	 */ 
+	 */
 	private function units( $str ) {
 		if ( preg_match( $this->runit, $str, $match ) ) {
 			$str = '0';
@@ -99,5 +99,3 @@ Class CSSCompression_Numeric
 		}
 	}
 };
-
-?>

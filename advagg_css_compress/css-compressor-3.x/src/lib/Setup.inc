@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Setup
 {
@@ -72,7 +72,7 @@ Class CSSCompression_Setup
 	 * Setup selector and details arrays for compression methods
 	 *
 	 * @param (string) css: Trimed stylesheet
-	 */ 
+	 */
 	public function setup( $css ) {
 		// Seperate the element from the elements details
 		$css = explode( "\n", preg_replace( $this->rsetup['patterns'], $this->rsetup['replacements'], $css ) );
@@ -288,5 +288,3 @@ Class CSSCompression_Setup
 		}
 	}
 };
-
-?>

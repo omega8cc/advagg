@@ -28,5 +28,3 @@ Class CSSCompression_Exception extends Exception
 		return "CSSCompression Exception: [" . $this->code . "] " . $this->message . "\n";
 	}
 };
-
-?>

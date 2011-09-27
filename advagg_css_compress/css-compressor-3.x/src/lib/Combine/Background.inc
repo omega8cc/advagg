@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_Background
 {
@@ -55,7 +55,7 @@ Class CSSCompression_Combine_Background
 	 * Combines multiple background props into single definition
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		$storage = array();
 
@@ -103,5 +103,3 @@ Class CSSCompression_Combine_Background
 		}
 	}
 };
-
-?>

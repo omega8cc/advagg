@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Format
 {
@@ -47,7 +47,7 @@ Class CSSCompression_Format
 	 * @param (int) readability: Readability level of compressed output
 	 * @param (array) selectors: Array of selectors
 	 * @param (array) details: Array of declarations
-	 */ 
+	 */
 	public function readability( $readability = CSSCompression::READ_NONE, $selectors = array(), $details = array() ) {
 		if ( isset( $this->readability[ $readability ] ) ) {
 			$fn = $this->readability[ $readability ];
@@ -63,7 +63,7 @@ Class CSSCompression_Format
 	 *
 	 * @param (array) selectors: Array of selectors
 	 * @param (array) details: Array of declarations
-	 */ 
+	 */
 	private function maximum( $selectors, $details ) {
 		$css = '';
 		foreach ( $selectors as $k => $v ) {
@@ -107,7 +107,7 @@ Class CSSCompression_Format
 	 *
 	 * @param (array) selectors: Array of selectors
 	 * @param (array) details: Array of declarations
-	 */ 
+	 */
 	private function medium( $selectors, $details ) {
 		$css = '';
 		foreach ( $selectors as $k => $v ) {
@@ -129,7 +129,7 @@ Class CSSCompression_Format
 	 *
 	 * @param (array) selectors: Array of selectors
 	 * @param (array) details: Array of declarations
-	 */ 
+	 */
 	private function minimum( $selectors, $details ) {
 		$css = '';
 		foreach ( $selectors as $k => $v ) {
@@ -145,13 +145,13 @@ Class CSSCompression_Format
 
 		return $css;
 	}
-	
+
 	/**
 	 * Returns an unreadable, but fully compressed script
 	 *
 	 * @param (array) selectors: Array of selectors
 	 * @param (array) details: Array of declarations
-	 */ 
+	 */
 	private function none( $selectors, $details ) {
 		$css = '';
 		foreach ( $selectors as $k => $v ) {
@@ -183,5 +183,3 @@ Class CSSCompression_Format
 		}
 	}
 };
-
-?>

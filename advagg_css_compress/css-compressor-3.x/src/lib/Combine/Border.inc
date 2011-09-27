@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_Border
 {
@@ -94,5 +94,3 @@ Class CSSCompression_Combine_Border
 		}
 	}
 };
-
-?>

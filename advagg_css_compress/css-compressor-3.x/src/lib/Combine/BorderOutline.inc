@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_BorderOutline
 {
@@ -33,7 +33,7 @@ Class CSSCompression_Combine_BorderOutline
 	 * Combines color/style/width of border/outline properties
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		$storage = $this->storage( $val );
 		$pos = 0;
@@ -89,7 +89,7 @@ Class CSSCompression_Combine_BorderOutline
 
 		return $storage;
 	}
-	
+
 	/**
 	 * Access to private methods for testing
 	 *
@@ -105,5 +105,3 @@ Class CSSCompression_Combine_BorderOutline
 		}
 	}
 };
-
-?>

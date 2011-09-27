@@ -232,5 +232,3 @@ Class CSSCompression_Control
 		}
 	}
 };
-
-?>

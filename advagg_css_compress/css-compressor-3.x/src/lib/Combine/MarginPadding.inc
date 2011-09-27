@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_MarginPadding
 {
@@ -34,11 +34,11 @@ Class CSSCompression_Combine_MarginPadding
 	}
 
 	/**
-	 * Combines multiple directional properties of 
+	 * Combines multiple directional properties of
 	 * margin/padding into single definition.
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		$val = $this->expand( $val );
 		$storage = $this->storage( $val );
@@ -186,5 +186,3 @@ Class CSSCompression_Combine_MarginPadding
 		}
 	}
 };
-
-?>

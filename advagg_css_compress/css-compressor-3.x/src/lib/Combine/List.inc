@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_List
 {
@@ -43,7 +43,7 @@ Class CSSCompression_Combine_List
 	 * Combines multiple list style props into single definition
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		// If replacement string found, run it on all declarations
 		if ( ( $replace = $this->replace( $val ) ) !== false ) {
@@ -100,5 +100,3 @@ Class CSSCompression_Combine_List
 		}
 	}
 };
-
-?>

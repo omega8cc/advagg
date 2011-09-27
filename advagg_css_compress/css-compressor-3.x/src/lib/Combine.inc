@@ -187,5 +187,3 @@ Class CSSCompression_Combine
 		}
 	}
 };
-
-?>

@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Selectors
 {
@@ -98,7 +98,7 @@ Class CSSCompression_Selectors
 	 * and injects tokens wrappers for attribute values
 	 *
 	 * @param (string) selector: CSS Selector
-	 */ 
+	 */
 	private function parse( $selector ) {
 		$clean = '';
 		$substr = '';
@@ -216,7 +216,7 @@ Class CSSCompression_Selectors
 	 * Adds space after pseudo selector for ie6 like a:first-child{ => a:first-child {
 	 *
 	 * @param (string) selector: CSS Selector
-	 */ 
+	 */
 	private function pseudoSpace( $selector ) {
 		return preg_replace( $this->rpseudo, ":first-$1 $2", $selector );
 	}
@@ -241,5 +241,3 @@ Class CSSCompression_Selectors
 		}
 	}
 };
-
-?>

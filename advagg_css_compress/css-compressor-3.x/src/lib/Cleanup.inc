@@ -217,5 +217,3 @@ Class CSSCompression_Cleanup
 		}
 	}
 };
-
-?>

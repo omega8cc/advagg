@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Trim
 {
@@ -188,7 +188,7 @@ Class CSSCompression_Trim
 	 * Runs initial formatting to setup for compression
 	 *
 	 * @param (string) css: CSS Contents
-	 */ 
+	 */
 	private function strip( $css ) {
 		// Run replacements
 		return trim( preg_replace( $this->trimmings['patterns'], $this->trimmings['replacements'], $css ) );
@@ -209,5 +209,3 @@ Class CSSCompression_Trim
 		}
 	}
 };
-
-?>

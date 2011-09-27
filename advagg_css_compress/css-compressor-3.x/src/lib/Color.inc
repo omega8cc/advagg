@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Color
 {
@@ -55,7 +55,7 @@ Class CSSCompression_Color
 	 * Central handler for all color conversions.
 	 *
 	 * @param (string) val: Color to be parsed
-	 */ 
+	 */
 	public function color( $val ) {
 		// Converts rgb values to hex codes
 		if ( $this->options['color-rgb2hex'] ) {
@@ -195,5 +195,3 @@ Class CSSCompression_Color
 		}
 	}
 };
-
-?>

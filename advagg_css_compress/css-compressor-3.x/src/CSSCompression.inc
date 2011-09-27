@@ -461,5 +461,3 @@ Class CSSCompression
 		return $this->Control->access( $class, $method, $args );
 	}
 };
-
-?>

@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Individuals
 {
@@ -59,7 +59,7 @@ Class CSSCompression_Individuals
 	 *
 	 * @param (string) prop: CSS Property
 	 * @param (string) val: Value of CSS Property
-	 */ 
+	 */
 	public function individuals( $prop, $val ) {
 		// Properties should always be lowercase
 		$prop = strtolower( $prop );
@@ -99,7 +99,7 @@ Class CSSCompression_Individuals
 		if ( $prop == 'font' ) {
 			$val = $this->font( $val );
 		}
-		
+
 		// Special clip value compressions
 		if ( $prop == 'clip' ) {
 			$val = $this->clip( $val );
@@ -120,7 +120,7 @@ Class CSSCompression_Individuals
 	 *
 	 * @param (string) prop: Property Declaration
 	 * @param (string) val: Declaration Value
-	 */ 
+	 */
 	private function borderRadius( $prop, $val ) {
 		if ( preg_match( $this->rslash, $val ) ) {
 			$parts = preg_split( $this->rslash, $val, 2 );
@@ -155,7 +155,7 @@ Class CSSCompression_Individuals
 	 * Finds directional compression on methods like margin/padding
 	 *
 	 * @param (string) val: Value of CSS Property
-	 */ 
+	 */
 	private function directionals( $val ) {
 		// Split up each definiton
 		$direction = preg_split( $this->rspace, $val );
@@ -202,7 +202,7 @@ Class CSSCompression_Individuals
 	 * Converts font-weight names to numbers
 	 *
 	 * @param (string) val: font-weight prop value
-	 */ 
+	 */
 	private function fontweight( $val ) {
 		if ( preg_match( $this->rspace, $val ) ) {
 			$parts = preg_split( $this->rspace, $val );
@@ -265,7 +265,7 @@ Class CSSCompression_Individuals
 	 *
 	 * @param (string) prop: Current Property
 	 * @param (string) val: property value
-	 */ 
+	 */
 	private function none( $prop, $val ) {
 		if ( preg_match( $this->rnoneprop, $prop ) && $val == 'none' ) {
 			$val = '0';
@@ -279,7 +279,7 @@ Class CSSCompression_Individuals
 	 *
 	 * @param (string) prop: Current Property
 	 * @param (string) val: property value
-	 */ 
+	 */
 	private function filter( $prop, $val ) {
 		if ( preg_match( "/filter/", $prop ) ) {
 			$val = preg_replace( $this->rfilter, "alpha(opacity=$1)", $val );
@@ -303,5 +303,3 @@ Class CSSCompression_Individuals
 		}
 	}
 };
-
-?>

@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Compress
 {
@@ -72,7 +72,7 @@ Class CSSCompression_Compress
 	 * Centralized function to run css compression.
 	 *
 	 * @param (string) css: Stylesheet to compresss
-	 */ 
+	 */
 	public function compress( $css ) {
 		$setup = $this->setup( $css );
 		$setup = $this->rulesets( $setup );
@@ -151,7 +151,7 @@ Class CSSCompression_Compress
 	 *
 	 * @param (array) selectors: Selector rules
 	 * @param (array) details: Rule sets
-	 */ 
+	 */
 	private function finalCount( $selectors, $details ) {
 		// Selectors and props
 		$this->stats['after']['selectors'] = count( $selectors );
@@ -208,5 +208,3 @@ Class CSSCompression_Compress
 		}
 	}
 };
-
-?>

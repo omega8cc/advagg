@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_BorderRadius
 {
@@ -84,8 +84,8 @@ Class CSSCompression_Combine_BorderRadius
 				break;
 			}
 			// All 4 are the same
-			else if ( $config['top-left'] == $config['top-right'] && 
-				$config['top-right'] == $config['bottom-right'] && 
+			else if ( $config['top-left'] == $config['top-right'] &&
+				$config['top-right'] == $config['bottom-right'] &&
 				$config['bottom-right'] == $config['bottom-left'] ) {
 					$config['replace'] .= $config['top-left'];
 			}
@@ -99,7 +99,7 @@ Class CSSCompression_Combine_BorderRadius
 			}
 			// none are the same, but can still use shorthand notation
 			else {
-				$config['replace'] .= $config['top-left'] . ' ' . $config['top-right'] . ' ' 
+				$config['replace'] .= $config['top-left'] . ' ' . $config['top-right'] . ' '
 					. $config['bottom-right'] . ' ' . $config['bottom-left'];
 			}
 		}
@@ -113,7 +113,7 @@ Class CSSCompression_Combine_BorderRadius
 			$pos = $match[ 0 ][ 1 ] + strlen( $replace ) - $colon - 1;
 			$replace = '';
 		}
-		
+
 		// Return converted val
 		return $val;
 	}
@@ -235,8 +235,8 @@ Class CSSCompression_Combine_BorderRadius
 		}
 
 		// Only combine if all 4 definitions are found (5 including replace)
-		if ( count( $storage['horizontal'] ) != 5 || 
-			$this->Combine->checkUncombinables( $storage['horizontal'] ) || 
+		if ( count( $storage['horizontal'] ) != 5 ||
+			$this->Combine->checkUncombinables( $storage['horizontal'] ) ||
 			$this->Combine->checkUncombinables( $storage['vertical'] ) ) {
 				return false;
 		}
@@ -259,5 +259,3 @@ Class CSSCompression_Combine_BorderRadius
 		}
 	}
 };
-
-?>

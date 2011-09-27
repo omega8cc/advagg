@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Option
 {
@@ -64,7 +64,7 @@ Class CSSCompression_Option
 	 * Reset's the default options
 	 *
 	 * @params none;
-	 */ 
+	 */
 	public function reset(){
 		// Reset and return the new options
 		return $this->options = CSSCompression::$defaults;
@@ -75,7 +75,7 @@ Class CSSCompression_Option
 	 * the options array.
 	 *
 	 * @param (mixed) options: Array of preferences to merge into options
-	 */ 
+	 */
 	public function merge( $options = array() ) {
 		$modes = CSSCompression::modes();
 		if ( $options && is_array( $options ) && count( $options ) ) {
@@ -129,5 +129,3 @@ Class CSSCompression_Option
 		}
 	}
 };
-
-?>

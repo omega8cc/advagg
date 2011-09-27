@@ -3,7 +3,7 @@
  * CSS Compressor [VERSION]
  * [DATE]
  * Corey Hart @ http://www.codenothing.com
- */ 
+ */
 
 Class CSSCompression_Combine_Font
 {
@@ -52,7 +52,7 @@ Class CSSCompression_Combine_Font
 	 * Combines multiple font-definitions into single definition
 	 *
 	 * @param (string) val: Rule Set
-	 */ 
+	 */
 	public function combine( $val ) {
 		$storage = $this->storage( $val );
 
@@ -121,5 +121,3 @@ Class CSSCompression_Combine_Font
 		}
 	}
 };
-
-?>
