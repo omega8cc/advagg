@@ -2578,9 +2578,6 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
     foreach ($locks as $lock_name => $filepath) {
       lock_wait($lock_name);
       if (!advagg_bundle_built($filepath)) {
-        if (!is_string($filepath) || !is_array($output)) {
-          watchdog('debug', serialize($filepath) . '<br />' . serialize($output));
-        }
         $output[$filepath] = FALSE;
       }
     }
