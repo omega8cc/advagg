@@ -285,9 +285,24 @@ function advagg_js_compress_jsminplus(&$contents) {
   require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.inc');
   // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
   $before = strlen($contents);
-  $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
-  $contents = JSMinPlus::minify($contents);
-  $after = strlen($contents);
+  $original_contents = $contents;
+  try {
+    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
+    ob_start();
+    $contents = JSMinPlus::minify($contents);
+    $error = trim(ob_get_contents());
+    if (!empty($error)) {
+      throw new Exception($error);
+    }
+    $after = strlen($contents);
+  }
+  catch (Exception $e) {
+    // Log the exception thrown by JSMin+ and roll back to uncompressed content.
+    watchdog('advagg', $e->getMessage() . '<pre>' . $original_contents . '</pre>', NULL, WATCHDOG_WARNING);
+    $contents = $original_contents;
+    $after = $before;
+  }
+  ob_end_clean();
   return array($before, $after);
 }
 
