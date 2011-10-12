@@ -2476,9 +2476,10 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
 
     if (!$built || $force) {
       // Generate on request?
-      if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION) && !$force) {
+      if (variable_get('advagg_async_generation', ADVAGG_ASYNC_GENERATION) && !$force && empty($_GET['generator'])) {
         // Build request.
-        $url = _advagg_build_url($filepath . '?generator=1');
+        $redirect_counter = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
+        $url = _advagg_build_url($filepath . '?generator=1&redirect_counter=' . $redirect_counter);
         $headers = array(
           'Host' => $_SERVER['HTTP_HOST'],
           'Connection' => 'close',
