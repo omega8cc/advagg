@@ -51,7 +51,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
     if (empty($jquery_ui_version)) {
       $jquery_ui_version = jquery_ui_get_version();
     }
-    $jquery_ui_filepath = advagg_get_jquery_ui_filename();
+    $jquery_ui_filepath = advagg_js_cdn_get_jquery_ui_filename();
   }
   if (module_exists('swftools')) {
     $swfobject_version = variable_get('advagg_js_cdn_swfobject_version', '2.2');
@@ -122,12 +122,21 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
  * @param string $file
  *   filename.
  */
-function advagg_get_jquery_ui_filename($file = 'jquery-ui') {
+function advagg_js_cdn_get_jquery_ui_filename($file = 'jquery-ui') {
   $jquery_ui_path_const = 'JQUERY_UI_PATH';
   if (!defined($jquery_ui_path_const)) {
-    return FALSE;
+    if (!function_exists('jquery_ui_get_path')) {
+      return FALSE;
+    }
+    $jquery_ui_path = jquery_ui_get_path();
+    if ($jquery_ui_path === FALSE) {
+      return FALSE;
+    }
   }
-  $jquery_ui_path = constant($jquery_ui_path_const) . '/ui';
+  else {
+    $jquery_ui_path = constant($jquery_ui_path_const);
+  }
+  $jquery_ui_path .= '/ui';
   $compression = variable_get('jquery_update_compression_type', 'mini');
 
   switch ($compression) {
