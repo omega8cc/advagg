@@ -699,6 +699,10 @@ function advagg_schema() {
       'root'        => array('root'),
       'timestamp'   => array('timestamp'),
       'counter'     => array('counter'),
+      'root_timestamp' => array(
+        'root',
+        'timestamp',
+      ),
     ),
     'primary key'   => array('bundle_md5', 'filename_md5'),
 
@@ -945,3 +949,11 @@ function advagg_update_6109() {
   return $ret;
 }
 
+/**
+ * Update 6110 - Add index to advagg_bundles table.
+ */
+function advagg_update_6110() {
+  $ret = array();
+  db_add_index($ret, 'advagg_bundles', 'root_timestamp', array('root', 'timestamp'));
+  return $ret;
+}

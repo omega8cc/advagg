@@ -190,14 +190,23 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
       // return a lot of rows;
       $result = db_query("
         SELECT
-          LPAD(COUNT(*), 8, '00000000') AS count,
+          count,
           bundle_md5,
           filename
-        FROM {advagg_bundles} AS ab
+        FROM (
+          SELECT
+            LPAD(COUNT(*), 8, '00000000') AS count,
+            bundle_md5,
+            filename_md5
+          FROM
+            {advagg_bundles}
+          WHERE
+            root = 1
+            AND
+            timestamp > %d
+          GROUP BY
+            filename_md5) AS ab
         INNER JOIN {advagg_files} AS af USING ( filename_md5 )
-        WHERE ab.root = 1
-        AND timestamp > %d
-        GROUP BY ( af.filename )
       ", time() - variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED));
 
       // Save query into a static array with the filename as the key.
