@@ -446,7 +446,6 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
   unset($form_state['values']['advagg_reset']);
 }
 
-
 /**
  * Validate form values. Used to unset variables before they get saved.
  */

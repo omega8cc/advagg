@@ -1132,6 +1132,9 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
  *   Boolean indicating if the file save was successful.
  */
 function advagg_file_saver($data, $dest, $force, $type) {
+  // Make sure the tmp folder is ready for use
+  file_check_directory(file_directory_temp(), FILE_CREATE_DIRECTORY);
+
   // Create the JS file.
   $file_save_data = 'file_save_data';
   $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
