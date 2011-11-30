@@ -136,6 +136,34 @@ function advagg_missing_send_file($filepath, $uri, $type) {
       if ($key = array_search(-1, $headers)) {
         unset($headers[$key]);
       }
+
+      // Remove all previously set Cache-Control headers, because we're going to
+      // override it. Since multiple Cache-Control headers might have been set,
+      // simply setting a new, overriding header isn't enough: that would only
+      // override the *last* Cache-Control header. Yay for PHP!
+      foreach ($headers as $key => $header) {
+        if (strpos($header, 'Cache-Control:') === 0) {
+          unset($headers[$key]);
+        }
+        elseif (strpos($header, 'ETag:') === 0) {
+          unset($headers[$key]);
+        }
+      }
+      if (function_exists('header_remove')) {
+        header_remove('Cache-Control');
+        header_remove('ETag');
+      }
+      else {
+        drupal_set_header("Cache-Control:");
+        drupal_set_header("Cache-Control:");
+        drupal_set_header("ETag:");
+        drupal_set_header("ETag:");
+      }
+      // Set a far future Cache-Control header (480 weeks), which prevents
+      // intermediate caches from transforming the data and allows any
+      // intermediate cache to cache it, since it's marked as a public resource.
+      $headers[] = "Cache-Control: max-age=290304000, no-transform, public";
+
       if (count($headers)) {
         file_transfer($filepath, $headers);
       }

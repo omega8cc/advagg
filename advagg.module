@@ -1133,7 +1133,8 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
  */
 function advagg_file_saver($data, $dest, $force, $type) {
   // Make sure the tmp folder is ready for use
-  file_check_directory(file_directory_temp(), FILE_CREATE_DIRECTORY);
+  $tmp = file_directory_temp();
+  file_check_directory($tmp, FILE_CREATE_DIRECTORY);
 
   // Create the JS file.
   $file_save_data = 'file_save_data';
@@ -2801,25 +2802,36 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
     $data .= "\n";
   }
   $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_.+\.$ext(\.gz)?\">\n";
-  $data .= "  <IfModule mod_expires.c>\n";
-  $data .= "    # Enable expirations.\n";
-  $data .= "    ExpiresActive On\n";
+  $data .= "  # No mod_headers\n";
+  $data .= "  <IfModule !mod_headers.c>\n";
+  $data .= "    # No mod_expires\n";
+  $data .= "    <IfModule !mod_expires.c>\n";
+  $data .= "      # Use ETags.\n";
+  $data .= "      FileETag MTime Size\n";
+  $data .= "    </IfModule>\n";
   $data .= "\n";
-  $data .= "    # Cache all aggregated $ext files for 1 year after access (A).\n";
-  $data .= "    ExpiresDefault A31556926\n";
+  $data .= "    # Use Expires Directive.\n";
+  $data .= "    <IfModule mod_expires.c>\n";
+  $data .= "      # Do not use ETags.\n";
+  $data .= "      FileETag None\n";
+  $data .= "      # Enable expirations.\n";
+  $data .= "      ExpiresActive On\n";
+  $data .= "      # Cache all aggregated $ext files for 480 weeks after access (A).\n";
+  $data .= "      ExpiresDefault A290304000\n";
+  $data .= "    </IfModule>\n";
   $data .= "  </IfModule>\n";
+  $data .= "\n";
   $data .= "  <IfModule mod_headers.c>\n";
-  $data .= "    # Unset unnecessary headers.\n";
-  $data .= "    Header unset Last-Modified\n";
-  $data .= "    Header unset Pragma\n";
-  $data .= "    Header unset Accept-Ranges\n";
-  $data .= "\n";
-  $data .= "    # Make these files publicly cacheable.\n";
-  $data .= "    Header append Cache-Control \"public\"\n";
+  $data .= "    # Set a far future Cache-Control header to 480 weeks.\n";
+  $data .= "    Header set Cache-Control \"max-age=290304000, no-transform, public\"\n";
+  $data .= "    # Set a far future Expires header.\n";
+  $data .= "    Header set Expires \"Tue, 20 Jan 2037 04:20:42 GMT\"\n";
+  $data .= "    # Pretend the file was last modified a long time ago in the past.\n";
+  $data .= "    Header set Last-Modified \"Wed, 20 Jan 1988 04:20:42 GMT\"\n";
+  $data .= "    # Do not use etags for cache validation.\n";
+  $data .= "    Header unset ETag\n";
   $data .= "  </IfModule>\n";
-  $data .= "  FileETag MTime Size\n";
   $data .= "</FilesMatch>\n";
-  $data .= "\n";
 
   if (!advagg_file_save_data($data, $htaccess_file, FILE_EXISTS_REPLACE)) {
     return FALSE;
@@ -3600,19 +3612,36 @@ function advagg_js_array($external_no_preprocess, $output_preprocess, $output_no
  * Return the correct headers for advagg bundles.
  */
 function advagg_file_download($file, $type = '') {
-  if (strpos($file, '/advagg_') !== FALSE && !empty($type)) {
-    $return = array(
-      'Content-Length: ' . filesize($file),
-      'Cache-Control: ' . 'max-age=31556926, public',
-    );
-    if ($type == 'css') {
-      $return[] = 'Content-Type: text/css';
-    }
-    if ($type == 'js') {
-      $return[] = 'Content-Type: text/javascript';
-    }
-    return $return;
+  // Do nothing if not an AdvAgg File.
+  if (strpos($file, '/advagg_') === FALSE || empty($type)) {
+    return;
   }
+
+  // Set the headers.
+  $return = array();
+  $return[] = 'Content-Length: ' . filesize($file);
+  // Set a far future Cache-Control header (480 weeks), which prevents
+  // intermediate caches from transforming the data and allows any
+  // intermediate cache to cache it, since it's marked as a public resource.
+  $return[] = "Cache-Control: max-age=290304000, no-transform, public";
+  // Set a far future Expires header. The maximum UNIX timestamp is somewhere
+  // in 2038. Set it to a date in 2037, just to be safe.
+  $return[] = 'Expires: Tue, 20 Jan 2037 04:20:42 GMT';
+  // Pretend the file was last modified a long time ago in the past, this will
+  // prevent browsers that don't support Cache-Control nor Expires headers to
+  // still request a new version too soon (these browsers calculate a
+  // heuristic to determine when to request a new version, based on the last
+  // time the resource has been modified).
+  // Also see http://code.google.com/speed/page-speed/docs/caching.html.
+  $return[] = 'Last-Modified: Wed, 20 Jan 1988 04:20:42 GMT';
+
+  if ($type == 'css') {
+    $return[] = 'Content-Type: text/css';
+  }
+  if ($type == 'js') {
+    $return[] = 'Content-Type: text/javascript';
+  }
+  return $return;
 }
 
 /**
