@@ -316,10 +316,11 @@ http://drupal.org/node/1116618
     ###
     ### advagg_css and advagg_js support
     ###
-    location ~* advagg_(?:css|js)/ {
-        access_log off;
-        expires 365d;
-        add_header Pragma "";
-        add_header Cache-Control "public";
-        try_files $uri @drupal;
+    location ~* files/advagg_(?:css|js)/ {
+      access_log off;
+      expires    max;
+      add_header ETag "";
+      add_header Cache-Control "max-age=290304000, no-transform, public";
+      add_header Last-Modified "Wed, 20 Jan 1988 04:20:42 GMT";
+      try_files  $uri @drupal;
     }
