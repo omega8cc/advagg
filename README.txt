@@ -3,14 +3,17 @@
 ADVANCED CSS/JS AGGREGATION MODULE
 ----------------------------------
 
+
 CONTENTS OF THIS FILE
 ---------------------
 
  * Fast 404
  * Features & benefits
  * Configuration
+ * Notes
  * Technical Details & Hooks
  * Single htaccess rules
+ * nginx Configuration
 
 
 FAST 404
@@ -178,6 +181,30 @@ admin/settings/advagg/info
    drupal_http_request() which is helpful when debugging async issues.
 
 
+NOTES
+-----
+
+When using the bundler sub module, tools like Google Page Speed and YSlow will
+complain that not all CSS/JS files are in one aggregate. This has to do with
+how drupal_add_js/drupal_add_css works. You can get a better score on these
+tools by placing all files into one aggregate, but the issue with doing that
+is, different pages load different css/js files, thus on page 2 of the users
+visit, you will get worse performance because the browser has to re-download a
+whole new css & js aggregate rather then the smaller aggregate that only
+changed. The bundler attempts to work around this issue by creating various
+bundles, each one being chosen fairly smartly so that instead of downloading a
+200kb js file you only have to download a 20kb file on the 2nd page.
+
+The bundler sub module is all about balancing trade offs. You can make a site
+that had really good perf stats according to the tools but you would then have
+to re-download just about everything on a different page of your site, because
+not all your pages are the same. If you don't care about this and want a good
+score from pagespeed, disable the bundler sub-module. That will give you a
+better score, but then you have to download a new (large) aggregate on
+different parts of your website and already downloaded file reuse will be
+lower.
+
+
 TECHNICAL DETAILS & HOOKS
 -------------------------
 
@@ -234,6 +261,7 @@ JS/CSS File Save Override:
 Public Functions:
  * advagg_add_css_inline. Adds the ability to add in inline CSS to the page with
    a prefix and suffix being set as well.
+
 
 SINGLE HTACCESS RULES
 ---------------------
@@ -309,8 +337,10 @@ on the admin/settings/advagg page after placing these rules in the webroots
 htaccess file. This is located at the same directory level as Drupal's
 index.php.
 
+
 NGINX CONFIGURATION
 -------------------
+
 http://drupal.org/node/1116618
 
     ###
