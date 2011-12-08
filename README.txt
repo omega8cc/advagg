@@ -184,6 +184,7 @@ admin/settings/advagg/info
 NOTES
 -----
 
+--Bundler Sub Module--
 When using the bundler sub module, tools like Google Page Speed and YSlow will
 complain that not all CSS/JS files are in one aggregate. This has to do with
 how drupal_add_js/drupal_add_css works. You can get a better score on these
@@ -193,16 +194,21 @@ visit, you will get worse performance because the browser has to re-download a
 whole new css & js aggregate rather then the smaller aggregate that only
 changed. The bundler attempts to work around this issue by creating various
 bundles, each one being chosen fairly smartly so that instead of downloading a
-200kb js file you only have to download a 20kb file on the 2nd page.
+200KB js file you only have to download a 20KB file on the 2nd page.
 
 The bundler sub module is all about balancing trade offs. You can make a site
-that had really good perf stats according to the tools but you would then have
-to re-download just about everything on a different page of your site, because
-not all your pages are the same. If you don't care about this and want a good
-score from pagespeed, disable the bundler sub-module. That will give you a
-better score, but then you have to download a new (large) aggregate on
-different parts of your website and already downloaded file reuse will be
+that had really good performance stats according to the tools but you would
+then have to re-download just about everything on a different page of your
+site, because not all your pages are the same. If you don't care about this and
+want a good score from pagespeed, disable the bundler sub-module. That will
+give you a better score, but then you have to download a new (large) aggregate
+on different parts of your website and already downloaded file reuse will be
 lower.
+
+--Cron--
+The cron job for AdvAgg is there as a garbage collector. It only needs to run
+once a week; running it every hour isn't going to be bad, it isn't necessary
+though.
 
 
 TECHNICAL DETAILS & HOOKS
