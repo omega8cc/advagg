@@ -623,6 +623,19 @@ function advagg_advagg_disable_processor() {
 }
 
 /**
+ * Return the server schema (http or https).
+ *
+ * @return string
+ *   http OR https.
+ */
+function advagg_get_server_schema() {
+  return (    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
+              || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+              || (isset($_SERVER['HTTP_HTTPS']) && $_SERVER['HTTP_HTTPS'] == 'on')
+                ) ? 'https' : 'http';
+}
+
+/**
  * Process variables for page.tpl.php
  *
  * @param $variables
@@ -656,10 +669,7 @@ function advagg_processor(&$variables) {
   }
 
   // http or https.
-  $schema = (    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
-              || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-              || (isset($_SERVER['HTTP_HTTPS']) && $_SERVER['HTTP_HTTPS'] == 'on')
-                ) ? 'https' : 'http';
+  $schema = advagg_get_server_schema();
 
   // CSS
   $css_var = $variables['css'];

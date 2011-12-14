@@ -64,10 +64,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
   }
 
   // http or https.
-  $schema = (  (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-            || (isset($_SERVER['HTTP_HTTPS']) && $_SERVER['HTTP_HTTPS'] == 'on')
-              ) ? 'https' : 'http';
+  $schema = advagg_get_server_schema();
   foreach ($javascript as $type => $data) {
     // Skip inline and setting js.
     if (!$data || $type == 'setting' || $type == 'inline') {

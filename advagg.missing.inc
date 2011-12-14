@@ -165,11 +165,11 @@ function advagg_missing_send_file($filepath, $uri, $type) {
       $headers[] = "Cache-Control: max-age=290304000, no-transform, public";
 
       if (count($headers)) {
-        file_transfer($filepath, $headers);
+        advagg_missing_file_transfer($filepath, $headers);
       }
     }
 
-    // file_transfer didn't run, redirect via header.
+    // advagg_missing_file_transfer didn't run/send data, redirect via header.
     header('Location: ' . $uri, TRUE, 307);
     usleep(250000); // Sleep for 250ms
   }
@@ -273,4 +273,79 @@ function advagg_missing_strlen($string) {
   else {
     return strlen($string);
   }
+}
+
+/**
+ * Transfer file using http to client. Pipes a file through Drupal to the
+ * client.
+ *
+ * @param $source File to transfer.
+ * @param $headers An array of http headers to send along with file.
+ */
+function advagg_missing_file_transfer($source, $headers) {
+  $source = advagg_missing_file_create_path($source);
+  $fd = fopen($source, 'rb');
+  // Return if we can't open the file. Will try a 307 in browser to send file.
+  if (!$fd) {
+    return;
+  }
+
+  // Clear the buffer.
+  if (ob_get_level()) {
+    ob_end_clean();
+  }
+
+  // Add in headers.
+  foreach ($headers as $header) {
+    // To prevent HTTP header injection, we delete new lines that are
+    // not followed by a space or a tab.
+    // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
+    $header = preg_replace('/\r?\n(?!\t| )/', '', $header);
+    drupal_set_header($header);
+  }
+
+  // Transfer file in 8096 byte chunks.
+  while (!feof($fd)) {
+    print fread($fd, 8096);
+  }
+  fclose($fd);
+  exit();
+}
+
+/**
+ * Make sure the destination is a complete path and resides in the file system
+ * directory, if it is not prepend the file system directory.
+ *
+ * @param $dest A string containing the path to verify. If this value is
+ *   omitted, Drupal's 'files' directory will be used.
+ * @return A string containing the path to file, with file system directory
+ *   appended if necessary, or FALSE if the path is invalid (i.e. outside the
+ *   configured 'files' or temp directories).
+ */
+function advagg_missing_file_create_path($dest = 0) {
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+
+  $valid_paths = array();
+  $valid_paths[] = file_directory_path();
+  $valid_paths[] = $css_path;
+  $valid_paths[] = $js_path;
+  foreach ($valid_paths as $file_path) {
+    if (!$dest) {
+      return $file_path;
+    }
+    // file_check_location() checks whether the destination is inside the Drupal files directory.
+    if (file_check_location($dest, $file_path)) {
+      return $dest;
+    }
+    // check if the destination is instead inside the Drupal temporary files directory.
+    else if (file_check_location($dest, file_directory_temp())) {
+      return $dest;
+    }
+    // Not found, try again with prefixed directory path.
+    else if (file_check_location($file_path .'/'. $dest, $file_path)) {
+      return $file_path .'/'. $dest;
+    }
+  }
+  // File not found.
+  return FALSE;
 }
