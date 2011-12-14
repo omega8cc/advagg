@@ -142,6 +142,16 @@ define('ADVAGG_PRUNE_ON_CRON', TRUE);
  */
 define('ADVAGG_USE_FULL_CACHE', TRUE);
 
+/**
+ * Default value to see if preprocess JavaScript files.
+ */
+define('ADVAGG_PREPROCESS_JS', TRUE);
+
+/**
+ * Default value to see if preprocess CSS files.
+ */
+define('ADVAGG_PREPROCESS_CSS', TRUE);
+
 // Create a closure function that does not add JavaScript.
 if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
   if (!function_exists('phptemplate_closure')) {
@@ -1742,10 +1752,12 @@ function advagg_build_uri($path) {
  *
  * @param $noagg
  *   (optional) Bool indicating that aggregation should be disabled if TRUE.
+ * @param $type
+ *   (optional) String. js or css.
  * @return
  *   array of values to be imported via list() function.
  */
-function advagg_process_css_js_prep($noagg = FALSE) {
+function advagg_process_css_js_prep($noagg = FALSE, $type = NULL) {
   global $conf;
   $preprocess = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
 
@@ -1768,6 +1780,15 @@ function advagg_process_css_js_prep($noagg = FALSE) {
     $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
     if (!empty($custom_path)) {
       $public_downloads = TRUE;
+    }
+  }
+
+  if ($preprocess) {
+    if ($type == 'js' && !variable_get('advagg_preprocess_js', ADVAGG_PREPROCESS_JS)) {
+      $preprocess = FALSE;
+    }
+    if ($type == 'css' && !variable_get('advagg_preprocess_css', ADVAGG_PREPROCESS_CSS)) {
+      $preprocess = FALSE;
     }
   }
 
@@ -1819,7 +1840,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   }
 
   // Get useful info.
-  list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
+  list($preprocess_css, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg, 'css');
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.
@@ -2195,7 +2216,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
   }
 
   // Get useful info.
-  list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg);
+  list($preprocess_js, $public_downloads, $query_string) = advagg_process_css_js_prep($noagg, 'js');
   $advagg_json_encode_function = variable_get('advagg_json_encode_function', 'advagg_drupal_to_js');
 
   $output = array();
