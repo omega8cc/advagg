@@ -195,7 +195,7 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
           filename
         FROM (
           SELECT
-            LPAD(COUNT(*), 8, '00000000') AS count,
+            LPAD(CAST(COUNT(*) AS varchar), 8, '00000000') AS count,
             bundle_md5,
             filename_md5
           FROM
