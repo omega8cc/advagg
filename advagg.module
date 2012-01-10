@@ -152,6 +152,11 @@ define('ADVAGG_PREPROCESS_JS', TRUE);
  */
 define('ADVAGG_PREPROCESS_CSS', TRUE);
 
+/**
+ * Default value to see if preprocess CSS files.
+ */
+define('ADVAGG_ONLY_CSS_FROM_VARIABLES', FALSE);
+
 // Create a closure function that does not add JavaScript.
 if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
   if (!function_exists('phptemplate_closure')) {
@@ -468,10 +473,12 @@ function advagg_get_root_files_dir($reset = FALSE) {
  *   combined array
  */
 function advagg_merge_css($array1, $array2) {
-  foreach ($array2 as $media => $types) {
-    foreach ($types as $type => $files) {
-      foreach ($files as $file => $preprocess) {
-        $array1[$media][$type][$file] = $preprocess;
+  if (!empty($array2)) {
+    foreach ($array2 as $media => $types) {
+      foreach ($types as $type => $files) {
+        foreach ($files as $file => $preprocess) {
+          $array1[$media][$type][$file] = $preprocess;
+        }
       }
     }
   }
@@ -671,9 +678,14 @@ function advagg_processor(&$variables) {
   // CSS
   $css_var = $variables['css'];
   $css_orig = $css_var;
-  $css_func = drupal_add_css();
-  advagg_css_array_fixer($css_func);
-  $css = advagg_merge_css($css_func, $css_var);
+  if (!variable_get('advagg_only_css_from_variables', ADVAGG_ONLY_CSS_FROM_VARIABLES)) {
+    $css_func = drupal_add_css();
+    advagg_css_array_fixer($css_func);
+  }
+  else {
+    $css_func = array();
+  }
+  $css = advagg_merge_css($css_var, $css_func);
   $css_func_inline = advagg_add_css_inline();
   if (!empty($css_func_inline)) {
     $css = advagg_merge_inline_css($css, $css_func_inline);
