@@ -2027,36 +2027,39 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
           }
         }
       }
-      $preprocess_files = advagg_css_js_file_builder('css', $files, $query_string);
-      $good = TRUE;
+      if (!empty($files)) {
+        $preprocess_files = advagg_css_js_file_builder('css', $files, $query_string);
+        if (!empty($preprocess_files)) {
+          $good = TRUE;
+          foreach ($preprocess_files as $preprocess_file => $extra) {
+            // Empty aggregate, skip
+            if (empty($preprocess_file)) {
+              continue;
+            }
 
-      foreach ($preprocess_files as $preprocess_file => $extra) {
-        // Empty aggregate, skip
-        if (empty($preprocess_file)) {
-          continue;
+            if ($extra !== FALSE && is_array($extra)) {
+              $prefix = $extra['prefix'];
+              $suffix = $extra['suffix'];
+              $output_preprocess[] = array(
+                'media' => $media,
+                'href' => advagg_build_uri($preprocess_file),
+                'prefix' => $prefix,
+                'suffix' => $suffix,
+              );
+              $files_aggregates_included[$media][$preprocess_file] = $extra;
+            }
+            else {
+              $good = FALSE;
+              break;
+            }
+          }
         }
-
-        if ($extra !== FALSE && is_array($extra)) {
-          $prefix = $extra['prefix'];
-          $suffix = $extra['suffix'];
-          $output_preprocess[] = array(
-            'media' => $media,
-            'href' => advagg_build_uri($preprocess_file),
-            'prefix' => $prefix,
-            'suffix' => $suffix,
-          );
-          $files_aggregates_included[$media][$preprocess_file] = $extra;
+        if (empty($good)) {
+          // Redo with aggregation turned off and return the new value.
+          watchdog('advagg', 'CSS aggregation failed. %filename could not be saved correctly.', array('%filename' => $preprocess_file), WATCHDOG_ERROR);
+          $data = advagg_process_css($original_css, TRUE);
+          return $data;
         }
-        else {
-          $good = FALSE;
-          break;
-        }
-      }
-      if (!$good) {
-        // Redo with aggregation turned off and return the new value.
-        watchdog('advagg', 'CSS aggregation failed. %filename could not be saved correctly.', array('%filename' => $preprocess_file), WATCHDOG_ERROR);
-        $data = advagg_process_css($original_css, TRUE);
-        return $data;
       }
     }
   }
@@ -2338,30 +2341,34 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           $files_included[$path] = TRUE;
         }
       }
-      $preprocess_files = advagg_css_js_file_builder('js', $files, $query_string);
-      $good = TRUE;
-      foreach ($preprocess_files as $preprocess_file => $extra) {
-        // Empty aggregate, skip
-        if (empty($preprocess_file)) {
-          continue;
-        }
+      if (!empty($files)) {
+        $preprocess_files = advagg_css_js_file_builder('js', $files, $query_string);
+        if (!empty($preprocess_files)) {
+          $good = TRUE;
+          foreach ($preprocess_files as $preprocess_file => $extra) {
+            // Empty aggregate, skip
+            if (empty($preprocess_file)) {
+              continue;
+            }
 
-        if ($extra !== FALSE && is_array($extra)) {
-          $prefix = $extra['prefix'];
-          $suffix = $extra['suffix'];
-          $output_preprocess[] = array(advagg_build_uri($preprocess_file), $prefix, $suffix);
-          $files_aggregates_included[$preprocess_file] = $extra;
+            if ($extra !== FALSE && is_array($extra)) {
+              $prefix = $extra['prefix'];
+              $suffix = $extra['suffix'];
+              $output_preprocess[] = array(advagg_build_uri($preprocess_file), $prefix, $suffix);
+              $files_aggregates_included[$preprocess_file] = $extra;
+            }
+            else {
+              $good = FALSE;
+              break;
+            }
+          }
         }
-        else {
-          $good = FALSE;
-          break;
+        if (empty($good)) {
+          // Redo with aggregation turned off and return the new value.
+          watchdog('advagg', 'JS aggregation failed. %filename could not be saved correctly.', array('%filename' => $preprocess_file), WATCHDOG_ERROR);
+          $data = advagg_process_js($master_set, TRUE);
+          return $data;
         }
-      }
-      if (!$good) {
-        // Redo with aggregation turned off and return the new value.
-        watchdog('advagg', 'JS aggregation failed. %filename could not be saved correctly.', array('%filename' => $preprocess_file), WATCHDOG_ERROR);
-        $data = advagg_process_js($master_set, TRUE);
-        return $data;
       }
     }
 
@@ -2520,6 +2527,9 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
 
   // Send $files, get filename back
   $filenames = advagg_get_filename($files, $type, $counter, $md5);
+  if (empty($filenames)) {
+    return FALSE;
+  }
 
   // Debugging.
   if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
