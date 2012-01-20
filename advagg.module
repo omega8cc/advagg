@@ -830,12 +830,13 @@ function advagg_jquery_updater(&$js) {
   unset($js['core']['misc/jquery.js']);
 
   // Loop through each of the required replacements.
+  $replacement_path = drupal_get_path('module', 'jquery_update') .'/replace/';
   foreach (jquery_update_get_replacements() as $type => $replacements) {
     foreach ($replacements as $find => $replace) {
       // If the file to replace is loaded on this page...
       if (isset($js[$type][$find])) {
         // Create a new entry for the replacement file, and unset the original one.
-        $replace = JQUERY_UPDATE_REPLACE_PATH .'/'. $replace;
+        $replace = $replacement_path . $replace;
         $js[$type][$replace] = $js[$type][$find];
         unset($js[$type][$find]);
       }
