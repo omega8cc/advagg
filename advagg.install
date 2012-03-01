@@ -236,25 +236,9 @@ function advagg_requirements($phase) {
         );
       }
     }
-    init_theme();
     $hooks = theme_get_registry();
-    // TODO: Make this exception list into a hook.
-    $function = array_pop($hooks['page']['preprocess functions']);
-    if (module_exists('labjs')) {
-      $function = array_pop($hooks['page']['preprocess functions']);
-    }
-    if (module_exists('headjs')) {
-      $function = array_pop($hooks['page']['preprocess functions']);
-    }
-    if (module_exists('designkit')) {
-      $function = array_pop($hooks['page']['preprocess functions']);
-    }
-    if (module_exists('cdn') && function_exists('cdn_theme_registry_alter')) {
-      $function = array_pop($hooks['page']['preprocess functions']);
-    }
-    if (module_exists('conditional_styles')) {
-      $function = array_pop($hooks['page']['preprocess functions']);
-    }
+    // Test location of advagg_processor in $hooks['page']['preprocess functions'].
+    $function = advagg_install_theme_registry_location($hooks);
     if ($function != 'advagg_processor') {
       $requirements['advagg_theme'] = array(
         'title'       => $t('Adv CSS/JS Agg - Theme Hook'),
@@ -266,7 +250,7 @@ function advagg_requirements($phase) {
         )),
       );
     }
-    // Test closure function
+    // Test closure function.
     $function = $hooks['closure']['function'];
     if ($function != 'phptemplate_closure' && variable_get('advagg_closure', ADVAGG_CLOSURE)) {
       $requirements['advagg_closure'] = array(
@@ -281,6 +265,33 @@ function advagg_requirements($phase) {
     $requirements += advagg_check_missing_handler();
   }
   return $requirements;
+}
+
+function advagg_install_theme_registry_location($hooks) {
+  init_theme();
+  $hooks = $hooks['page']['preprocess functions'];
+
+  // Define hooks that we can safely ignore, that get executed after advagg.
+  $ignored_hooks = array(
+    'labjs_preprocess_page',
+    'headjs_preprocess_page',
+    'designkit_preprocess_page',
+    'cdn_preprocess_page',
+    'conditional_styles_preprocess_page',
+  );
+
+  // Call hook_advagg_theme_registry_alter().
+  drupal_alter('advagg_theme_registry', $ignored_hooks);
+
+  // Removed ignored hooks.
+  foreach ($ignored_hooks as $hook) {
+    if (isset($hooks[$key])) {
+      unset($hooks[$key]);
+    }
+  }
+
+  $function = array_pop($hooks);
+  return $function;
 }
 
 /**
