@@ -285,7 +285,8 @@ function advagg_install_theme_registry_location($hooks) {
 
   // Removed ignored hooks.
   foreach ($ignored_hooks as $hook) {
-    if (isset($hooks[$key])) {
+    $key = array_search($hook, $hooks);
+    if ($key !== FALSE) {
       unset($hooks[$key]);
     }
   }
