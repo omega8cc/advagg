@@ -869,7 +869,8 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
   $run_alter = FALSE;
   if (empty($bundle_md5)) {
     // Create bundle md5
-    $bundle_md5 = md5(implode('', $files));
+    $schema = advagg_get_server_schema();
+    $bundle_md5 = md5($schema . implode('', $files));
     $run_alter = TRUE;
 
     // Record root request in db.
@@ -1041,7 +1042,8 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   // Sort files for better cache hits.
   $temp_files = $files;
   sort($temp_files);
-  $cached_data_key = 'advagg_existing_' . md5(implode('', $temp_files));
+  $schema = advagg_get_server_schema();
+  $cached_data_key = 'advagg_existing_' . md5($schema . implode('', $temp_files));
 
   // Try cache first; cache table is cache_advagg_bundle_reuse. string is debug name.
   $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_find_existing_bundle');
@@ -2504,7 +2506,8 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
   $data = '';
 
   // Try cache first. When ever the counter changes this cache gets reset.
-  $cached_data_key = 'advagg_file_builder_' . md5(implode('', array_filter(array_unique($files))));
+  $schema = advagg_get_server_schema();
+  $cached_data_key = 'advagg_file_builder_' . md5($schema . implode('', array_filter(array_unique($files))));
   if (!$force) {
     // Try cache first; cache table is cache_advagg_bundle_reuse.
     $cached_data = advagg_cached_bundle_get($cached_data_key, 'file_builder_cache_object');
@@ -2677,7 +2680,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
 
   // Cache the output
   if (!$force && $cacheable) {
-    $new_cached_data_key = 'advagg_file_builder_' . md5(implode('', array_filter(array_unique($files_used))));
+    $new_cached_data_key = 'advagg_file_builder_' . md5($schema . implode('', array_filter(array_unique($files_used))));
     // Verify the files in equals the files out.
     if ($new_cached_data_key == $cached_data_key) {
       cache_set($cached_data_key, $output, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
