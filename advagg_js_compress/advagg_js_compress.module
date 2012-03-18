@@ -135,13 +135,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
     return;
   }
 
-  $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
-  if ($compressor == 0) {
-    advagg_js_compress_prep_jsminplus($contents, $files, $bundle_md5);
-  }
-  if ($compressor == 1) {
-    $contents = jsmin($contents);
-  }
+  advagg_js_compress_prep($contents, $files, $bundle_md5);
 }
 
 /**
@@ -187,12 +181,12 @@ function advagg_js_compress_advagg_js_inline_alter(&$contents) {
 }
 
 /**
- * Compress a JS string using jsmin+
+ * Compress a JS string
  *
  * @param $contents
  *   Javascript string.
  */
-function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
+function advagg_js_compress_prep(&$contents, $files, $bundle_md5) {
   // Make sure every file in this aggregate is compressible.
   $files_to_test = array();
   $list_bad = array();
@@ -250,16 +244,22 @@ function advagg_js_compress_prep_jsminplus(&$contents, $files, $bundle_md5) {
         }
       }
       if (!$cached && !empty($data)) {
-        list($before, $after) = advagg_js_compress_jsminplus($data);
-        $ratio = ($before - $after)/$before;
-        // Make sure the returned string is not empty or has a VERY high
-        // compression ratio.
-        if (empty($data) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
-          $data = advagg_build_js_bundle(array($file));
+        $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
+        if ($compressor == 0) {
+          list($before, $after) = advagg_js_compress_jsminplus($data);
+          $ratio = ($before - $after)/$before;
+          // Make sure the returned string is not empty or has a VERY high
+          // compression ratio.
+          if (empty($data) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+            $data = advagg_build_js_bundle(array($file));
+          }
+          elseif (isset($key)) {
+            // If using a cache set it.
+            cache_set($key, $data, $table);
+          }
         }
-        elseif (isset($key)) {
-          // If using a cache set it.
-          cache_set($key, $data, $table);
+        elseif ($compressor == 1) {
+          $contents = jsmin($contents);
         }
       }
       $contents .= $data . ";\n";
