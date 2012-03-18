@@ -2289,6 +2289,8 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           $info['prefix'] = isset($info['prefix']) ? $info['prefix'] : '';
           $info['suffix'] = isset($info['suffix']) ? $info['suffix'] : '';
         }
+        // $info needs to be unset, otherwise foreach loops below will break.
+        unset($info);
       }
 
       switch ($type) {
@@ -2330,6 +2332,8 @@ function advagg_process_js($master_set, $noagg = FALSE) {
               $preprocess_list[$path] = $info;
             }
           }
+          break;
+
       }
     }
 
