@@ -265,10 +265,11 @@ function advagg_admin_settings_form() {
     $extra = module_exists('boost') ? t('If boost is installed, you can use the cache directory for advagg files.') : '';
     $form['advagg_custom_files_dir'] = array(
       '#type'           => 'textfield',
-      '#field_prefix'   => '<div>' . t('You are using a private file system. You can serve aggregated files via a public folder.') . '</div>',
+      '#field_prefix'   => '<div>' . t('You are using a private file system. You must serve aggregated files via a public folder.') . '</div>',
       '#title'          => t('Use a different directory for storing advagg files'),
       '#default_value'  => variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR),
-      '#description'    => check_plain(t('If left blank it will use Drupals default files directory.') . ' ' . $extra),
+      '#description'    => check_plain(t('You need to create a publicly writable directory (same permissions as Drupals files folder).') . ' ' . $extra . ' ' . t('If you do not need this, you can put a space in this box.')),
+      '#required'       => TRUE,
     );
   }
   $options = array(
@@ -393,8 +394,9 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
 
   // Custom directory handling.
   if (!empty($form_state['values']['advagg_custom_files_dir'])) {
+    $form_state['values']['advagg_custom_files_dir'] = trim($form_state['values']['advagg_custom_files_dir']);
     $files_dir = $form_state['values']['advagg_custom_files_dir'];
-    if ($files_dir != $conf['advagg_custom_files_dir']) {
+    if (!empty($files_dir) && $files_dir != $conf['advagg_custom_files_dir']) {
 
       // Try to create dir structure.
       $cumulative = '';
