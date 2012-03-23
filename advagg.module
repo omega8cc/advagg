@@ -157,37 +157,6 @@ define('ADVAGG_PREPROCESS_CSS', TRUE);
  */
 define('ADVAGG_ONLY_CSS_FROM_VARIABLES', FALSE);
 
-// Create a closure function that does not add JavaScript.
-if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
-  if (!function_exists('phptemplate_closure')) {
-
-    /**
-     * Execute hook_footer() which is run at the end of the page right before
-     * the close of the body tag.
-     *
-     * @param $main (optional)
-     *   Whether the current page is the front page of the site.
-     * @return
-     *   A string containing the results of the hook_footer() calls.
-     */
-    function phptemplate_closure($main = 0) {
-      global $_advagg;
-      $_advagg['closure'] = TRUE;
-      $footer = implode("\n", module_invoke_all('footer', $main));
-      // If advagg is disabled, then include footer JS here.
-      if (!variable_get('advagg_enabled', ADVAGG_ENABLED)) {
-        $footer .= drupal_get_js('footer');
-      }
-      return $footer;
-    }
-
-  }
-  else {
-    global $_advagg;
-    $_advagg['closure'] = FALSE;
-  }
-}
-
 /**
  * Implements hook_permission().
  */
@@ -195,7 +164,7 @@ function advagg_permission() {
   return array(
     'bypass advanced aggregation' => array(
       'title' => t('bypass advanced aggregation'),
-      'description' => t('TODO Add a description for \'bypass advanced aggregation\''),
+      'description' => t('User can use URL query strings to bypass AdvAgg.'),
     ),
   );
 }
@@ -208,14 +177,14 @@ function advagg_menu() {
   $file_path = drupal_get_path('module', 'advagg');
 
   $items = array();
-  $items[$css_path . '/%'] = array(
+  $items[$css_path[1] . '/%'] = array(
     'page callback' => 'advagg_missing_css',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
-  $items[$js_path . '/%'] = array(
+  $items[$js_path[1] . '/%'] = array(
     'page callback' => 'advagg_missing_js',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -357,7 +326,7 @@ function advagg_cron() {
  * Implements hook_init().
  */
 function advagg_init() {
-  global $base_path, $conf, $_advagg;
+  global $base_path, $conf;
 
   // Disable advagg if requested.
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
@@ -375,108 +344,386 @@ function advagg_init() {
     $conf['preprocess_js'] = TRUE;
     $conf['advagg_use_full_cache'] = FALSE;
   }
+}
 
-  // Disable ctools_ajax_page_preprocess() if this functionality is available.
-  if (variable_get('advagg_enabled', ADVAGG_ENABLED) && function_exists('ctools_ajax_run_page_preprocess')) {
-    ctools_ajax_run_page_preprocess(FALSE);
-    $_advagg['ctools_patched'] = TRUE;
+/**
+ * Implements hook_element_info_alter().
+ *
+ * @param $type
+ */
+function advagg_element_info_alter(&$type) {
+  // Swap in our own aggregation callback.
+  if (isset($type['styles']['#aggregate_callback'])) {
+    $type['styles']['#aggregate_callback'] = '_advagg_aggregate_css';
+//     $type['styles']['#group_callback'] = '_advagg_group_css';
   }
 }
 
 /**
- * Implements hook_theme_registry_alter().
+ * Implementation of hook_theme_registry_alter().
  *
- * Make sure our preprocess function runs last for page.
+ * Replace template_process_html with _advagg_process_html
  *
  * @param $theme_registry
  *   The existing theme registry data structure.
  */
 function advagg_theme_registry_alter(&$theme_registry) {
-  global $_advagg;
-  if (isset($theme_registry['page'])) {
-    // If jquery_update's preprocess function is there already, remove it.
-    if (module_exists('jquery_update') && $key = array_search('jquery_update_preprocess_page', $theme_registry['page']['preprocess functions'])) {
-      unset($theme_registry['page']['preprocess functions'][$key]);
-    }
+  if (!isset($theme_registry['html'])) {
+    return;
+  }
 
-    // If ctools hasn't been patched remove it from getting pre-processed.
-    if (   !empty($_advagg['ctools_patched'])
-          && module_exists('ctools')
-          && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
-          ) {
-      unset($theme_registry['page']['preprocess functions'][$key]);
-    }
+  // Replace core's process function with our own.
+  $index = array_search('template_process_html', $theme_registry['html']['process functions']);
+  if ($index !== FALSE) {
+    $theme_registry['html']['process functions'][$index] = '_advagg_process_html';
+  }
+}
 
-    // Add our own preprocessing function to the end of the array.
-    $theme_registry['page']['preprocess functions'][] = 'advagg_processor';
 
-    // If labjs's is enabled, move it to the bottom.
-    if (module_exists('labjs') && $key = array_search('labjs_preprocess_page', $theme_registry['page']['preprocess functions'])) {
-      $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
-      unset($theme_registry['page']['preprocess functions'][$key]);
-    }
+/**
+ * Default callback to aggregate CSS files and inline content.
+ *
+ * Having the browser load fewer CSS files results in much faster page loads
+ * than when it loads many small files. This function aggregates files within
+ * the same group into a single file unless the site-wide setting to do so is
+ * disabled (commonly the case during site development). To optimize download,
+ * it also compresses the aggregate files by removing comments, whitespace, and
+ * other unnecessary content. Additionally, this functions aggregates inline
+ * content together, regardless of the site-wide aggregation setting.
+ *
+ * @param $css_groups
+ *   An array of CSS groups as returned by drupal_group_css(). This function
+ *   modifies the group's 'data' property for each group that is aggregated.
+ *
+ * @see drupal_group_css()
+ * @see drupal_pre_render_styles()
+ * @see system_element_info()
+ */
+function _advagg_aggregate_css(&$css_groups) {
+  $preprocess_css = (variable_get('preprocess_css', FALSE) && (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update'));
 
-    // If designkit is enabled, move it to the bottom.
-    if (module_exists('designkit') && $key = array_search('designkit_preprocess_page', $theme_registry['page']['preprocess functions'])) {
-      $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
-      unset($theme_registry['page']['preprocess functions'][$key]);
-    }
-
-    // If conditional styles is enabled, move it to the bottom.
-    if (module_exists('conditional_styles') && $key = array_search('conditional_styles_preprocess_page', $theme_registry['page']['preprocess functions'])) {
-      $theme_registry['page']['preprocess functions'][] = $theme_registry['page']['preprocess functions'][$key];
-      unset($theme_registry['page']['preprocess functions'][$key]);
+  // For each group that needs aggregation, aggregate its items.
+  foreach ($css_groups as $key => $group) {
+    switch ($group['type']) {
+      // If a file group can be aggregated into a single file, do so, and set
+      // the group's data property to the file path of the aggregate file.
+      case 'file':
+        if ($group['preprocess'] && $preprocess_css) {
+          $css_groups[$key]['data'] = drupal_build_css_cache($group['items']);
+        }
+        break;
+      // Aggregate all inline CSS content into the group's data property.
+      case 'inline':
+        $css_groups[$key]['data'] = '';
+        foreach ($group['items'] as $item) {
+          $css_groups[$key]['data'] .= drupal_load_stylesheet_content($item['data'], $item['preprocess']);
+        }
+        break;
     }
   }
 }
 
 /**
+ * Replacement for template_process_html().
+ */
+function _advagg_process_html(&$variables) {
+  // Render page_top and page_bottom into top level variables.
+  if (is_array($variables['page'])) {
+    $variables['page_top'] = drupal_render($variables['page']['page_top']);
+    $variables['page_bottom'] = drupal_render($variables['page']['page_bottom']);
+    // Place the rendered HTML for the page body into a top level variable.
+    $variables['page']              = $variables['page']['#children'];
+  }
+  $variables['head']    = drupal_get_html_head();
+
+  // CSS has nice hooks so we don't need to work around it.
+  $variables['css']     = drupal_add_css();
+  $variables['styles']  = drupal_get_css();
+
+  // JS needs hacks.
+  $javascript = advagg_get_full_js();
+  if (!empty($javascript)) {
+    $scopes = advagg_get_js_scopes($javascript);
+
+    // Add JS to the header and footer of the page.
+    foreach ($scopes as $scope => $use) {
+      if (!$use) {
+        continue;
+      }
+      $scripts = advagg_get_js($scope, $javascript);
+      if ($scope == 'header') {
+        $variables['scripts'] = $scripts;
+      }
+      elseif ($scope == 'footer') {
+        $variables['page_bottom'] .= $scripts;
+      }
+    }
+  }
+}
+
+/**
+ * Get full JS array.
+ *
+ * Note that hook_js_alter(&$javascript) is called during this function call
+ * to allow alterations of the JavaScript during its presentation. Calls to
+ * drupal_add_js() from hook_js_alter() will not be added to the output
+ * presentation. The correct way to add JavaScript during hook_js_alter()
+ * is to add another element to the $javascript array, deriving from
+ * drupal_js_defaults(). See locale_js_alter() for an example of this.
+ *
+ * @param $javascript
+ *   (optional) An array with all JavaScript code. Defaults to the default
+ *   JavaScript array for the given scope.
+ * @param $skip_alter
+ *   (optional) If set to TRUE, this function skips calling drupal_alter() on
+ *   $javascript, useful when the calling function passes a $javascript array
+ *   that has already been altered.
+ *
+ * @return
+ *   The raw JavaScript array.
+ *
+ * @see drupal_add_js()
+ * @see locale_js_alter()
+ * @see drupal_js_defaults()
+ */
+function advagg_get_full_js($javascript = NULL, $skip_alter = FALSE) {
+  if (!isset($javascript)) {
+    $javascript = drupal_add_js();
+  }
+  if (empty($javascript)) {
+    return FALSE;
+  }
+
+  // Allow modules to alter the JavaScript.
+  if (!$skip_alter) {
+    drupal_alter('js', $javascript);
+  }
+  return $javascript;
+}
+
+/**
+ * Get all javascript scopes set in the $javascript array.
+ *
+ * @param $javascript
+ *   An array with all JavaScript code.
+ *
+ * @return
+ *   Array of scopes that are currently being used.
+ */
+function advagg_get_js_scopes($javascript) {
+  // Return if nothing given to us.
+  if (empty($javascript) || !is_array($javascript)) {
+    return FALSE;
+  }
+
+  // Filter out elements of the given scope.
+  $scopes = array();
+  foreach ($javascript as $key => $item) {
+    // skip if the scope is not set.
+    if (!is_array($item) || empty($item['scope'])) {
+      continue;
+    }
+    if (!isset($scopes[$item['scope']])) {
+      $scopes[$item['scope']] = TRUE;
+    }
+  }
+  return $scopes;
+}
+
+/**
+ * Returns a themed presentation of all JavaScript code for the current page.
+ *
+ * References to JavaScript files are placed in a certain order: first, all
+ * 'core' files, then all 'module' and finally all 'theme' JavaScript files
+ * are added to the page. Then, all settings are output, followed by 'inline'
+ * JavaScript code. If running update.php, all preprocessing is disabled.
+ *
+ * @param $scope
+ *   (optional) The scope for which the JavaScript rules should be returned.
+ *   Defaults to 'header'.
+ * @param $javascript
+ *   (optional) An array with all JavaScript code. Defaults to the default
+ *   JavaScript array for the given scope.
+ *
+ * @return
+ *   All JavaScript code segments and includes for the scope as HTML tags.
+ */
+function advagg_get_js($scope, $javascript) {
+  // Filter out elements of the given scope.
+  $items = array();
+  foreach ($javascript as $key => $item) {
+    if ($item['scope'] == $scope) {
+      $items[$key] = $item;
+    }
+  }
+
+  $output = '';
+  // The index counter is used to keep aggregated and non-aggregated files in
+  // order by weight.
+  $index = 1;
+  $processed = array();
+  $files = array();
+  $preprocess_js = (variable_get('preprocess_js', FALSE) && (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update'));
+
+  // A dummy query-string is added to filenames, to gain control over
+  // browser-caching. The string changes on every update or full cache
+  // flush, forcing browsers to load a new copy of the files, as the
+  // URL changed. Files that should not be cached (see drupal_add_js())
+  // get REQUEST_TIME as query-string instead, to enforce reload on every
+  // page request.
+  $default_query_string = variable_get('css_js_query_string', '0');
+
+  // For inline JavaScript to validate as XHTML, all JavaScript containing
+  // XHTML needs to be wrapped in CDATA. To make that backwards compatible
+  // with HTML 4, we need to comment out the CDATA-tag.
+  $embed_prefix = "\n<!--//--><![CDATA[//><!--\n";
+  $embed_suffix = "\n//--><!]]>\n";
+
+  // Since JavaScript may look for arguments in the URL and act on them, some
+  // third-party code might require the use of a different query string.
+  $js_version_string = variable_get('drupal_js_version_query_string', 'v=');
+
+  // Sort the JavaScript so that it appears in the correct order.
+  uasort($items, 'drupal_sort_css_js');
+
+  // Provide the page with information about the individual JavaScript files
+  // used, information not otherwise available when aggregation is enabled.
+  $setting['ajaxPageState']['js'] = array_fill_keys(array_keys($items), 1);
+  unset($setting['ajaxPageState']['js']['settings']);
+  drupal_add_js($setting, 'setting');
+
+  // If we're outputting the header scope, then this might be the final time
+  // that drupal_get_js() is running, so add the setting to this output as well
+  // as to the drupal_add_js() cache. If $items['settings'] doesn't exist, it's
+  // because drupal_get_js() was intentionally passed a $javascript argument
+  // stripped off settings, potentially in order to override how settings get
+  // output, so in this case, do not add the setting to this output.
+  if ($scope == 'header' && isset($items['settings'])) {
+    $items['settings']['data'][] = $setting;
+  }
+
+  // Loop through the JavaScript to construct the rendered output.
+  $element = array(
+    '#tag' => 'script',
+    '#value' => '',
+    '#attributes' => array(
+      'type' => 'text/javascript',
+    ),
+  );
+  foreach ($items as $item) {
+    $query_string =  empty($item['version']) ? $default_query_string : $js_version_string . $item['version'];
+
+    switch ($item['type']) {
+      case 'setting':
+        $js_element = $element;
+        $js_element['#value_prefix'] = $embed_prefix;
+        $js_element['#value'] = 'jQuery.extend(Drupal.settings, ' . drupal_json_encode(drupal_array_merge_deep_array($item['data'])) . ");";
+        $js_element['#value_suffix'] = $embed_suffix;
+        $output .= theme('html_tag', array('element' => $js_element));
+        break;
+
+      case 'inline':
+        $js_element = $element;
+        if ($item['defer']) {
+          $js_element['#attributes']['defer'] = 'defer';
+        }
+        $js_element['#value_prefix'] = $embed_prefix;
+        $js_element['#value'] = $item['data'];
+        $js_element['#value_suffix'] = $embed_suffix;
+        $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        break;
+
+      case 'file':
+        $js_element = $element;
+        if (!$item['preprocess'] || !$preprocess_js) {
+          if ($item['defer']) {
+            $js_element['#attributes']['defer'] = 'defer';
+          }
+          $query_string_separator = (strpos($item['data'], '?') !== FALSE) ? '&' : '?';
+          $js_element['#attributes']['src'] = file_create_url($item['data']) . $query_string_separator . ($item['cache'] ? $query_string : REQUEST_TIME);
+          $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        }
+        else {
+          // By increasing the index for each aggregated file, we maintain
+          // the relative ordering of JS by weight. We also set the key such
+          // that groups are split by items sharing the same 'group' value and
+          // 'every_page' flag. While this potentially results in more aggregate
+          // files, it helps make each one more reusable across a site visit,
+          // leading to better front-end performance of a website as a whole.
+          // See drupal_add_js() for details.
+          $key = 'aggregate_' . $item['group'] . '_' . $item['every_page'] . '_' . $index;
+          $processed[$key] = '';
+          $files[$key][$item['data']] = $item;
+        }
+        break;
+
+      case 'external':
+        $js_element = $element;
+        // Preprocessing for external JavaScript files is ignored.
+        if ($item['defer']) {
+          $js_element['#attributes']['defer'] = 'defer';
+        }
+        $js_element['#attributes']['src'] = $item['data'];
+        $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        break;
+    }
+  }
+
+  // Aggregate any remaining JS files that haven't already been output.
+  if ($preprocess_js && count($files) > 0) {
+    foreach ($files as $key => $file_set) {
+      $uri = drupal_build_js_cache($file_set);
+      // Only include the file if was written successfully. Errors are logged
+      // using watchdog.
+      if ($uri) {
+        $preprocess_file = file_create_url($uri);
+        $js_element = $element;
+        $js_element['#attributes']['src'] = $preprocess_file;
+        $processed[$key] = theme('html_tag', array('element' => $js_element));
+      }
+    }
+  }
+
+  // Keep the order of JS files consistent as some are preprocessed and others are not.
+  // Make sure any inline or JS setting variables appear last after libraries have loaded.
+  return implode('', $processed) . $output;
+}
+
+
+/**
  * Get the CSS & JS path for advagg.
  *
- * @param $reset
- *   reset the static variables.
  * @return
- *   array($css_path, $js_path)
+ *   Example below:
+ *   array(
+ *     array(
+ *       public://advagg_css,
+ *       sites/default/files/advagg_css,
+ *     ),
+ *     array(
+ *       public://advagg_js,
+ *       sites/default/files/advagg_js,
+ *     ),
+ *   )
  */
-function advagg_get_root_files_dir($reset = FALSE) {
-  static $css_path = '';
-  static $js_path = '';
-  if ($reset) {
-    $css_path = '';
-    $js_path = '';
+function advagg_get_root_files_dir() {
+  static $css_paths;
+  static $js_paths;
+
+  // Make sure directories are available and writable.
+  if (empty($css_paths) || empty($js_paths)) {
+    $css_paths[0] = 'public://advagg_css';
+    $js_paths[0] = 'public://advagg_js';
+
+    file_prepare_directory($css_paths[0], FILE_CREATE_DIRECTORY);
+    file_prepare_directory($js_paths[0], FILE_CREATE_DIRECTORY);
+
+    // Not sure how good of an idea this is, but it does work.
+    $css_paths[1] = str_replace('\\', '/', substr(drupal_realpath($css_paths[0]), strlen(DRUPAL_ROOT)+1));
+    $js_paths[1] = str_replace('\\', '/', substr(drupal_realpath($js_paths[0]), strlen(DRUPAL_ROOT)+1));
   }
 
-  if (!empty($css_path) && !empty($js_path)) {
-    return array($css_path, $js_path);
-  }
-
-  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
-  if (!$public_downloads) {
-    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
-  }
-  if (empty($custom_path)) {
-    $css_path = file_create_path('advagg_css');
-    $js_path = file_create_path('advagg_js');
-    return array($css_path, $js_path);
-  }
-  file_prepare_directory($custom_path, FILE_CREATE_DIRECTORY);
-
-  // Get path name
-  $conf_path = conf_path();
-  if (is_link($conf_path)) {
-    $path = readlink($conf_path);
-  }
-  $conf_path = str_replace("\\", '/', $conf_path);
-  $conf_path = explode('/', $conf_path);
-  $conf_path = array_pop($conf_path);
-  $custom_path = $custom_path . '/' . $conf_path;
-  file_prepare_directory($custom_path, FILE_CREATE_DIRECTORY);
-
-  $css_path = $custom_path . '/advagg_css';
-  $js_path = $custom_path . '/advagg_js';
-  file_prepare_directory($css_path, FILE_CREATE_DIRECTORY);
-  file_prepare_directory($js_path, FILE_CREATE_DIRECTORY);
-  return array($css_path, $js_path);
+  return array($css_paths, $js_paths);
 }
 
 /**
@@ -1672,8 +1919,8 @@ function advagg_flush_caches() {
 
   // Garbage collection
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  file_scan_directory($css_path, '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
-  file_scan_directory($js_path, '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
+  file_scan_directory($css_path[1], '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
+  file_scan_directory($js_path[1], '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
 
   lock_release('advagg_flush_caches');
   return array('cache_advagg_bundle_reuse');
@@ -2620,10 +2867,10 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
   if ($type == 'js') {
-    $file_type_path = $js_path;
+    $file_type_path = $js_path[0];
   }
   if ($type == 'css') {
-    $file_type_path = $css_path;
+    $file_type_path = $css_path[0];
   }
 
   // Send $files, get filename back
@@ -2937,14 +3184,14 @@ function advagg_htaccess_check_generate($dest, $force = FALSE) {
   list($css_path, $js_path) = advagg_get_root_files_dir();
 
   $type = '';
-  if ($dir == $js_path) {
+  if ($dir == $js_path[1]) {
     $ext = 'js';
-    $path = $js_path;
+    $path = $js_path[1];
     $type = 'text/javascript';
   }
-  elseif ($dir == $css_path) {
+  elseif ($dir == $css_path[1]) {
     $ext = 'css';
-    $path = $css_path;
+    $path = $css_path[1];
     $type = 'text/css';
   }
   else {
