@@ -80,7 +80,7 @@ class CSSCompression_Combine {
     if ( ! class_exists( "CSSCompression_Combine_Border", false ) ) {
       $path = dirname(__FILE__) . '/Combine/';
       foreach ( $this->subcombines as $class ) {
-        require( $path . $class . '.inc' );
+        require DRUPAL_ROOT . '/' .  $path . $class . '.inc';
       }
     }
 

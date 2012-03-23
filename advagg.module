@@ -189,14 +189,19 @@ if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
 }
 
 /**
- * Implementation of hook_perm().
+ * Implements hook_permission().
  */
-function advagg_perm() {
-  return array('bypass advanced aggregation');
+function advagg_permission() {
+  return array(
+    'bypass advanced aggregation' => array(
+      'title' => t('bypass advanced aggregation'),
+      'description' => t('TODO Add a description for \'bypass advanced aggregation\''),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function advagg_menu() {
   list($css_path, $js_path) = advagg_get_root_files_dir();
@@ -217,7 +222,7 @@ function advagg_menu() {
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
-  $items['admin/settings/advagg'] = array(
+  $items['admin/config/advagg'] = array(
     'title' => 'Advanced CSS/JS Aggregation',
     'description' => 'Configuration for Advanced CSS/JS Aggregation.',
     'page callback' => 'advagg_admin_page',
@@ -226,12 +231,12 @@ function advagg_menu() {
     'file path' => $file_path,
     'file' => 'advagg.admin.inc',
   );
-  $items['admin/settings/advagg/config'] = array(
+  $items['admin/config/advagg/config'] = array(
     'title' => 'Configuration',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 0,
   );
-  $items['admin/settings/advagg/info'] = array(
+  $items['admin/config/advagg/info'] = array(
     'title' => 'Information',
     'description' => 'More detailed information about advagg.',
     'page callback' => 'advagg_admin_info_page',
@@ -251,7 +256,7 @@ function advagg_menu() {
 }
 
 /**
- * Implementation of hook_admin_menu().
+ * Implements hook_admin_menu().
  *
  * Add in a cache flush for advagg.
  */
@@ -269,7 +274,7 @@ function advagg_admin_menu(&$deleted) {
 }
 
 /**
- * Implementation of hook_admin_menu_output_alter().
+ * Implements hook_admin_menu_output_alter().
  *
  * Add in a cache flush for advagg.
  */
@@ -282,7 +287,7 @@ function advagg_admin_menu_output_alter(&$content) {
 }
 
 /**
- * Implementation of hook_cron().
+ * Implements hook_cron().
  */
 function advagg_cron() {
   if (!variable_get('advagg_prune_on_cron', ADVAGG_PRUNE_ON_CRON)) {
@@ -291,8 +296,8 @@ function advagg_cron() {
 
   // Set the oldest file/bundle to keep at 2 weeks.
   $max_time = module_exists('advagg_bundler') ? variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED) : 1209600;
-  $max_file_time = time() - $max_time;
-  $max_bundle_time = time() - ($max_time * 3);
+  $max_file_time = REQUEST_TIME - $max_time;
+  $max_bundle_time = REQUEST_TIME - ($max_time * 3);
   $bundles_removed = 0;
   $files_removed = array();
 
@@ -305,27 +310,39 @@ function advagg_cron() {
     }
 
     // Remove bundles referencing missing files, if they are older than 2 weeks.
-    $bundles = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s' AND timestamp < %d", $row['filename_md5'], $max_file_time);
-    while ($bundle_md5 = db_result($bundles)) {
+    $bundles = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = :filename_md5 AND timestamp < :timestamp", array(':filename_md5' => $row['filename_md5'], ':timestamp' => $max_file_time));
+    while ($bundle_md5 = $bundles->fetchField()) {
       $bundles_removed++;
-      db_query("DELETE FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5);
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("DELETE FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5) */
+      db_delete('advagg_bundles')
+  ->condition('bundle_md5', $bundle_md5)
+  ->execute();
     }
-    $count = db_result(db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE filename_md5 = '%s'", $row['filename_md5']));
+    $count = db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE filename_md5 = :filename_md5", array(':filename_md5' => $row['filename_md5']))->fetchField();
 
     // If no more bundles reference the missing file then remove the file.
     if (empty($count)) {
-      db_query("DELETE FROM {advagg_files} WHERE filename_md5 = '%s'", $row['filename_md5']);
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("DELETE FROM {advagg_files} WHERE filename_md5 = '%s'", $row['filename_md5']) */
+      db_delete('advagg_files')
+  ->condition('filename_md5', $row['filename_md5'])
+  ->execute();
       $files_removed[] = $row['filename'];
     }
   }
 
   // Prune old bundles
-  $bundles_removed += db_result(db_query("
+  $bundles_removed += db_query("
     SELECT COUNT(DISTINCT bundle_md5) AS advagg_count
     FROM advagg_bundles
     WHERE timestamp < %d
-  ", $max_bundle_time));
-  $results = db_query("DELETE FROM {advagg_bundles} WHERE timestamp < %d", $max_bundle_time);
+  ", $max_bundle_time)->fetchField();
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query("DELETE FROM {advagg_bundles} WHERE timestamp < %d", $max_bundle_time) */
+  $results = db_delete('advagg_bundles')
+  ->condition('timestamp', $max_bundle_time, '<')
+  ->execute();
 
   // Report to watchdog if anything was done.
   if (!empty($bundles_removed) || !empty($files_removed)) {
@@ -337,7 +354,7 @@ function advagg_cron() {
 }
 
 /**
- * Implementation of hook_init().
+ * Implements hook_init().
  */
 function advagg_init() {
   global $base_path, $conf, $_advagg;
@@ -367,7 +384,7 @@ function advagg_init() {
 }
 
 /**
- * Implementation of hook_theme_registry_alter().
+ * Implements hook_theme_registry_alter().
  *
  * Make sure our preprocess function runs last for page.
  *
@@ -384,8 +401,8 @@ function advagg_theme_registry_alter(&$theme_registry) {
 
     // If ctools hasn't been patched remove it from getting pre-processed.
     if (   !empty($_advagg['ctools_patched'])
-         && module_exists('ctools')
-         && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
+          && module_exists('ctools')
+          && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
           ) {
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
@@ -442,7 +459,7 @@ function advagg_get_root_files_dir($reset = FALSE) {
     $js_path = file_create_path('advagg_js');
     return array($css_path, $js_path);
   }
-  file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($custom_path, FILE_CREATE_DIRECTORY);
 
   // Get path name
   $conf_path = conf_path();
@@ -453,12 +470,12 @@ function advagg_get_root_files_dir($reset = FALSE) {
   $conf_path = explode('/', $conf_path);
   $conf_path = array_pop($conf_path);
   $custom_path = $custom_path . '/' . $conf_path;
-  file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($custom_path, FILE_CREATE_DIRECTORY);
 
   $css_path = $custom_path . '/advagg_css';
   $js_path = $custom_path . '/advagg_js';
-  file_check_directory($css_path, FILE_CREATE_DIRECTORY);
-  file_check_directory($js_path, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($css_path, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($js_path, FILE_CREATE_DIRECTORY);
   return array($css_path, $js_path);
 }
 
@@ -612,13 +629,13 @@ function advagg_string_ends_with($haystack, $needle) {
 }
 
 /**
- * Implementation of hook_advagg_disable_processor().
+ * Implements hook_advagg_disable_processor().
  */
 function advagg_advagg_disable_processor() {
   // Disable advagg on the configuration page; in case something bad happened.
   if (isset($_GET['q']) &&
-        (    $_GET['q'] == 'admin/settings/advagg'
-          || $_GET['q'] == 'admin/settings/advagg/config'
+        (    $_GET['q'] == 'admin/config/advagg'
+          || $_GET['q'] == 'admin/config/advagg/config'
           || $_GET['q'] == 'batch'
         )
       ) {
@@ -679,7 +696,7 @@ function advagg_processor(&$variables) {
   $css_var = $variables['css'];
   $css_orig = $css_var;
   if (!variable_get('advagg_only_css_from_variables', ADVAGG_ONLY_CSS_FROM_VARIABLES)) {
-    $css_func = drupal_add_css();
+    $css_func = drupal_add_css(CSS_DEFAULT);
     advagg_css_array_fixer($css_func);
   }
   else {
@@ -732,14 +749,14 @@ function advagg_processor(&$variables) {
 
   // JS
   $js_code = array();
-  $js_code['header'] = drupal_add_js(NULL, NULL, 'header');
+  $js_code['header'] = drupal_add_js(NULL, array('type' => NULL));
   if (variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
-    $js_code['footer'] = drupal_add_js(NULL, NULL, 'footer');
+    $js_code['footer'] = drupal_add_js(NULL, array('type' => NULL, 'scope' => 'footer'));
   }
   $skip_keys = variable_get('advagg_region_skip_keys', array('styles', 'scripts', 'zebra', 'id', 'directory', 'layout', 'head_title', 'base_path', 'front_page', 'head', 'body_classes', 'header', 'footer', 'closure'));
   foreach ($variables as $key => $value) {
     if (!in_array($key, $skip_keys) && is_string($value) && !empty($value) && !isset($js_code[$key])) {
-      $js_code[$key] = drupal_add_js(NULL, NULL, $key);
+      $js_code[$key] = drupal_add_js(NULL, array('type' => NULL, 'scope' => $key));
     }
   }
   $js_code_orig = $js_code;
@@ -876,7 +893,7 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     // Record root request in db.
     // Get counter if there.
     if (empty($counter)) {
-      $counter = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+      $counter = db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $bundle_md5))->fetchField();
     }
     // If this is a brand new bundle then insert file/bundle info into database.
     if ($counter === FALSE) {
@@ -885,9 +902,17 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     }
     // If bundle should be root and is not, then make it root.
     // Refresh timestamp if older then 12 hours.
-    $row = db_fetch_array(db_query("SELECT root, timestamp FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
-    if ($row['root'] === 0 || time() - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
-      db_query("UPDATE {advagg_bundles} SET root = '1', timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
+    $row = db_fetch_array(db_query("SELECT root, timestamp FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $bundle_md5)));
+    if ($row['root'] === 0 || REQUEST_TIME - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {advagg_bundles} SET root = '1', timestamp = %d WHERE bundle_md5 = '%s'", REQUEST_TIME, $bundle_md5) */
+      db_update('advagg_bundles')
+  ->fields(array(
+        'root' => '1',
+        'timestamp' => REQUEST_TIME,
+      ))
+  ->condition('bundle_md5', $bundle_md5)
+  ->execute();
     }
   }
 
@@ -968,9 +993,16 @@ function advagg_get_filename($files, $filetype, $counter = FALSE, $bundle_md5 = 
     );
 
     // Refresh timestamp if older then 12 hours.
-    $row = db_fetch_array(db_query("SELECT timestamp FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
-    if (time() - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
-      db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
+    $row = db_fetch_array(db_query("SELECT timestamp FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $bundle_md5)));
+    if (REQUEST_TIME - $row['timestamp'] > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", REQUEST_TIME, $bundle_md5) */
+      db_update('advagg_bundles')
+  ->fields(array(
+        'timestamp' => REQUEST_TIME,
+      ))
+  ->condition('bundle_md5', $bundle_md5)
+  ->execute();
     }
 
   }
@@ -1080,8 +1112,8 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
   // Find matching bundles and select first good one.
   $files_count = count($files);
   $results = db_query($query, $args);
-  while ($new_md5 = db_result($results)) {
-    $count = db_result(db_query("SELECT count(*) FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $new_md5));
+  while ($new_md5 = $results->fetchField()) {
+    $count = db_query("SELECT count(*) FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $new_md5))->fetchField();
     // Make sure bundle has the same number of files if using strict matching.
     if (!empty($count) && $count == $files_count) {
       $bundle_md5 = $new_md5;
@@ -1133,7 +1165,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
   }
 
   // Double check that the bundle doesn't exist now that we are in a lock.
-  $bundle_exists = db_result(db_query("SELECT 1 FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $bundle_md5));
+  $bundle_exists = db_query("SELECT 1 FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $bundle_md5))->fetchField();
   if ($bundle_exists) {
     lock_release($lock_name);
     return;
@@ -1143,14 +1175,35 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
     $filename_md5 = md5($filename);
 
     // Insert file into the advagg_files table if it doesn't exist.
-    $checksum = db_result(db_query("SELECT checksum FROM {advagg_files} WHERE filename_md5 = '%s'", $filename_md5));
+    $checksum = db_query("SELECT checksum FROM {advagg_files} WHERE filename_md5 = :filename_md5", array(':filename_md5' => $filename_md5))->fetchField();
     if (empty($checksum)) {
       $checksum = advagg_checksum($filename);
-      db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype, filesize) VALUES ('%s', '%s', '%s', '%s', %d)", $filename, $filename_md5, $checksum, $filetype, @filesize($filename));
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("INSERT INTO {advagg_files} (filename, filename_md5, checksum, filetype, filesize) VALUES ('%s', '%s', '%s', '%s', %d)", $filename, $filename_md5, $checksum, $filetype, @filesize($filename)) */
+      $id = db_insert('advagg_files')
+  ->fields(array(
+        'filename' => $filename,
+        'filename_md5' => $filename_md5,
+        'checksum' => $checksum,
+        'filetype' => $filetype,
+        'filesize' => @filesize($filename),
+      ))
+  ->execute();
     }
 
     // Create the entries in the advagg_bundles table.
-    db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root, timestamp) VALUES ('%s', '%s', '%d', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, time());
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("INSERT INTO {advagg_bundles} (bundle_md5, filename_md5, counter, porder, root, timestamp) VALUES ('%s', '%s', '%d', '%d', '%d', '%d')", $bundle_md5, $filename_md5, 0, $order, $root, REQUEST_TIME) */
+    $id = db_insert('advagg_bundles')
+  ->fields(array(
+      'bundle_md5' => $bundle_md5,
+      'filename_md5' => $filename_md5,
+      'counter' => 0,
+      'porder' => $order,
+      'root' => $root,
+      'timestamp' => REQUEST_TIME,
+    ))
+  ->execute();
   }
 
   lock_release($lock_name);
@@ -1169,7 +1222,7 @@ function advagg_insert_bundle_db($files, $filetype, $bundle_md5, $root) {
 function advagg_file_saver($data, $dest, $force, $type) {
   // Make sure the tmp folder is ready for use
   $tmp = file_directory_temp();
-  file_check_directory($tmp, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($tmp, FILE_CREATE_DIRECTORY);
 
   // Create the JS file.
   $file_save_data = 'file_save_data';
@@ -1224,7 +1277,7 @@ function advagg_file_saver($data, $dest, $force, $type) {
   // Make sure .htaccess file exists.
   advagg_htaccess_check_generate($dest);
 
-  cache_set($dest, time(), 'cache_advagg', CACHE_PERMANENT);
+  cache_set($dest, REQUEST_TIME, 'cache_advagg', CACHE_PERMANENT);
   return TRUE;
 }
 
@@ -1457,9 +1510,16 @@ function advagg_bundle_built($filepath) {
   $data = cache_get($filepath, 'cache_advagg');
   if (isset($data->data)) {
     // Refresh timestamp if older then 12 hours.
-    if (time() - $data->data > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
-      cache_set($filepath, time(), 'cache_advagg', CACHE_PERMANENT);
-      db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $md5);
+    if (REQUEST_TIME - $data->data > variable_get('advagg_file_last_used_interval', ADVAGG_FILE_LAST_USED_INTERVAL)) {
+      cache_set($filepath, REQUEST_TIME, 'cache_advagg', CACHE_PERMANENT);
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", REQUEST_TIME, $md5) */
+      db_update('advagg_bundles')
+  ->fields(array(
+        'timestamp' => REQUEST_TIME,
+      ))
+  ->condition('bundle_md5', $md5)
+  ->execute();
     }
     return TRUE;
   }
@@ -1475,11 +1535,22 @@ function advagg_bundle_built($filepath) {
     return FALSE;
   }
   // File existed on disk; place in cache.
-  cache_set($filepath, time(), 'cache_advagg', CACHE_PERMANENT);
-  db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", time(), $md5);
+  cache_set($filepath, REQUEST_TIME, 'cache_advagg', CACHE_PERMANENT);
+  // TODO Please review the conversion of this statement to the D7 database API syntax.
+  /* db_query("UPDATE {advagg_bundles} SET timestamp = %d WHERE bundle_md5 = '%s'", REQUEST_TIME, $md5) */
+  db_update('advagg_bundles')
+  ->fields(array(
+    'timestamp' => REQUEST_TIME,
+  ))
+  ->condition('bundle_md5', $md5)
+  ->execute();
   return TRUE;
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function advagg_get_bundle_from_filename($filename) {
   // Verify requested filename has the correct pattern.
   if (!preg_match('/^(j|cs)s_[0-9a-f]{32}_\d+\.(j|cs)s$/', $filename)) {
@@ -1514,7 +1585,7 @@ function advagg_get_bundle_from_filename($filename) {
 }
 
 /**
- * Implementation of hook_flush_caches().
+ * Implements hook_flush_caches().
  */
 function advagg_flush_caches() {
   // Try to allocate enough time to flush the cache
@@ -1557,14 +1628,22 @@ function advagg_flush_caches() {
     if ($checksum != $row['checksum'] || $update == TRUE) {
       $needs_refreshing[$row['filename_md5']] = $row['filename'];
       // Update checksum; increment counter.
-      db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1 WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']);
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {advagg_files} SET checksum = '%s', counter = counter + 1 WHERE filename_md5 = '%s'", $checksum, $row['filename_md5']) */
+      db_update('advagg_files')
+  ->fields(array(
+        'checksum' => $checksum,
+        'counter' => counter + 1,
+      ))
+  ->condition('filename_md5', $row['filename_md5'])
+  ->execute();
     }
   }
 
   // Get the bundles.
   $bundles = array();
   foreach ($needs_refreshing as $filename_md5 => $filename) {
-    $results = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = '%s'", $filename_md5);
+    $results = db_query("SELECT bundle_md5 FROM {advagg_bundles} WHERE filename_md5 = :filename_md5", array(':filename_md5' => $filename_md5));
     while ($row = db_fetch_array($results)) {
       $bundles[$row['bundle_md5']] = $row['bundle_md5'];
     }
@@ -1572,7 +1651,15 @@ function advagg_flush_caches() {
 
   foreach ($bundles as $bundle_md5) {
     // Increment Counter
-    db_query("UPDATE {advagg_bundles} SET counter = counter + 1, timestamp = %d WHERE bundle_md5 = '%s'", time(), $bundle_md5);
+    // TODO Please review the conversion of this statement to the D7 database API syntax.
+    /* db_query("UPDATE {advagg_bundles} SET counter = counter + 1, timestamp = %d WHERE bundle_md5 = '%s'", REQUEST_TIME, $bundle_md5) */
+    db_update('advagg_bundles')
+  ->fields(array(
+      'counter' => counter + 1,
+      'timestamp' => REQUEST_TIME,
+    ))
+  ->condition('bundle_md5', $bundle_md5)
+  ->execute();
 
     if (variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH)) {
       // Rebuild bundles on shutdown in the background. This is needed so that
@@ -1585,8 +1672,8 @@ function advagg_flush_caches() {
 
   // Garbage collection
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
-  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'advagg_delete_file_if_stale', TRUE);
+  file_scan_directory($css_path, '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
+  file_scan_directory($js_path, '/.*/', array('callback' => 'advagg_delete_file_if_stale'));
 
   lock_release('advagg_flush_caches');
   return array('cache_advagg_bundle_reuse');
@@ -1628,7 +1715,7 @@ function advagg_rebuild_bundle($bundle_md5, $counter = '', $force = FALSE) {
 function advagg_get_files_in_bundle($bundle_md5) {
   $files = array();
   $filetype = NULL;
-  $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
+  $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = :bundle_md5 ORDER BY porder ASC", array(':bundle_md5' => $bundle_md5));
   while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $filetype = $row['filetype'];
@@ -1648,7 +1735,7 @@ function advagg_delete_file_if_stale($filename) {
   if (strpos($filename, '.gz') !== FALSE) {
     return;
   }
-  $now = time();
+  $now = REQUEST_TIME;
   $file_last_mod = variable_get('advagg_stale_file_threshold', ADVAGG_STALE_FILE_THRESHOLD);
   $file_last_used = variable_get('advagg_stale_file_last_used_threshold', ADVAGG_STALE_FILE_LAST_USED_THRESHOLD);
 
@@ -1858,7 +1945,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   global $conf;
   $original_css = $css;
   if (!isset($css)) {
-    $css = drupal_add_css();
+    $css = drupal_add_css(CSS_DEFAULT);
   }
   if (empty($css)) {
     return FALSE;
@@ -2117,8 +2204,8 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
       // Test for versions > 1.5
       // Test for Pocket IE
       if (   stristr($_SERVER['HTTP_USER_AGENT'], 'microsoft internet explorer')
-           || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
-           || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
+            || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
+            || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
           ) {
         $is_ie = TRUE;
       }
@@ -2332,7 +2419,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
           foreach ($data as $path => $info) {
             if (!$info['preprocess'] || !$public_downloads || !$preprocess_js) {
-              $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?' . time()), $info['defer'], $info['prefix'], $info['suffix']);
+              $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?' . REQUEST_TIME), $info['defer'], $info['prefix'], $info['suffix']);
               $files_included[$path] = $info['preprocess'];
             }
             else {
@@ -2592,7 +2679,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
         else {
           // Set timeout.
           $socket_timeout = ini_set('default_socket_timeout', variable_get('advagg_socket_timeout', ADVAGG_SOCKET_TIMEOUT));
-          drupal_http_request($url, $headers, 'GET');
+          drupal_http_request($url, array('headers' => $headers));
           ini_set('default_socket_timeout', $socket_timeout);
         }
 
@@ -2668,7 +2755,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
       }
 
       // Create the advagg_$type/ within the files folder.
-      file_check_directory($file_type_path, FILE_CREATE_DIRECTORY);
+      file_prepare_directory($file_type_path, FILE_CREATE_DIRECTORY);
 
       // Write file. default function called: advagg_file_saver
       $function = variable_get('advagg_file_save_function', ADVAGG_FILE_SAVE_FUNCTION);
@@ -3397,7 +3484,7 @@ function advagg_async_send_http_request($fp = NULL, $request = '', $timeout = 30
 }
 
 /**
- * Implement hook_advagg_js_header_footer_alter.
+ * Implements hook_advagg_js_header_footer_alter().
  */
 function advagg_advagg_js_header_footer_alter(&$master_set, $preprocess_js, $public_downloads) {
   // Don't run the code below if ctools ajax is not loaded.
@@ -3417,7 +3504,7 @@ function advagg_advagg_js_header_footer_alter(&$master_set, $preprocess_js, $pub
   // Add list of CSS & JS files loaded to the settings in the footer.
   $loaded = array('CToolsAJAX' => array('scripts' => $js_files));
   // Save to the js settings array even though we do not reload it in advagg.
-  drupal_add_js($loaded, 'setting', 'footer');
+  drupal_add_js($loaded, array('type' => 'setting', 'scope' => 'footer'));
 
   // Add it to the settings array in the footer.
   if (!isset($master_set['footer']['setting']) || !is_array($master_set['footer']['setting'])) {
@@ -3427,7 +3514,7 @@ function advagg_advagg_js_header_footer_alter(&$master_set, $preprocess_js, $pub
 }
 
 /**
- * Implement hook_advagg_css_pre_alter.
+ * Implements hook_advagg_css_pre_alter().
  */
 function advagg_advagg_css_pre_alter(&$css, $preprocess_css, $public_downloads) {
   // Don't run the code below if ctools ajax is not loaded.
@@ -3440,7 +3527,7 @@ function advagg_advagg_css_pre_alter(&$css, $preprocess_css, $public_downloads) 
   ctools_process_css_files($css_files, $css);
 
   // Save to the js settings array.
-  drupal_add_js(array('CToolsAJAX' => array('css' => $css_files)), 'setting', 'footer');
+  drupal_add_js(array('CToolsAJAX' => array('css' => $css_files)), array('type' => 'setting', 'scope' => 'footer'));
 }
 
 /**
@@ -3459,9 +3546,9 @@ function advagg_advagg_css_pre_alter(&$css, $preprocess_css, $public_downloads) 
 function advagg_ctools_process_js_files(&$js_files, $scope, $scripts = NULL) {
   // Automatically extract any 'settings' added via drupal_add_js() and make
   // them the first command.
-  $scripts = drupal_add_js(NULL, NULL, $scope);
+  $scripts = drupal_add_js(NULL, array('type' => NULL, 'scope' => $scope));
   if (empty($scripts)) {
-    $scripts = drupal_add_js(NULL, NULL, $scope);
+    $scripts = drupal_add_js(NULL, array('type' => NULL, 'scope' => $scope));
   }
 
   // Get replacements that are going to be made by contrib modules and take
@@ -3554,6 +3641,7 @@ function advagg_db_multi_select_in($table, $field, $placeholder, $data, $returns
   // Build the query
   $query = "SELECT " . implode(', ', $returns) . " FROM {" . $table . "} WHERE $field IN ($in) $groupby";
   // Run the query
+  // TODO Please convert this statement to the D7 database API syntax.
   return db_query($query, $data);
 }
 
@@ -3583,7 +3671,7 @@ function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_ex
 
   // Run CSS code.
   $css_array = array();
-  $variables['css'] = drupal_add_css();
+  $variables['css'] = drupal_add_css(CSS_DEFAULT);
   if (module_exists('less')) {
     less_preprocess_page($variables, NULL);
   }
@@ -3605,9 +3693,9 @@ function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_ex
 
   // Run JS code.
   $js_array = array();
-  $variables['js']['header'] = drupal_add_js(NULL, NULL, 'header');
+  $variables['js']['header'] = drupal_add_js(NULL, array('type' => NULL));
   if (variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
-    $variables['js']['footer'] = drupal_add_js(NULL, NULL, 'footer');
+    $variables['js']['footer'] = drupal_add_js(NULL, array('type' => NULL, 'scope' => 'footer'));
   }
   advagg_jquery_updater($variables['js']['header']);
   // Remove excluded JS files.
@@ -3701,7 +3789,7 @@ function advagg_js_array($external_no_preprocess, $output_preprocess, $output_no
 }
 
 /**
- * Implementation of hook_file_download().
+ * Implements hook_file_download().
  *
  * Return the correct headers for advagg bundles.
  */

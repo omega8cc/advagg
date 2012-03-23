@@ -6,8 +6,8 @@
  */
 
 // Static dependencies, Subclasses loaded ondemand
-require( dirname(__FILE__) . '/lib/Exception.inc' );
-require( dirname(__FILE__) . '/lib/Control.inc' );
+require DRUPAL_ROOT . '/' .  dirname(__FILE__) . '/lib/Exception.inc';
+require DRUPAL_ROOT . '/' .  dirname(__FILE__) . '/lib/Control.inc';
 
 
 class CSSCompression {

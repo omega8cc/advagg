@@ -6,7 +6,7 @@
  */
 
 /**
- * Implement hook_drush_cache_clear.
+ * Implements hook_drush_cache_clear().
  *
  * @param $types
  *   List of cache types that can be cleared.

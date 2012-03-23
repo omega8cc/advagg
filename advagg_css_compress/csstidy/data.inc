@@ -24,13 +24,13 @@
  * @author Nikolay Matsievsky (speed at webo dot name) 2010
  */
 
-define('AT_START',     1);
-define('AT_END',       2);
-define('SEL_START',    3);
-define('SEL_END',      4);
-define('PROPERTY',     5);
-define('VALUE',        6);
-define('COMMENT',      7);
+define('AT_START',      1);
+define('AT_END',        2);
+define('SEL_START',     3);
+define('SEL_END',       4);
+define('PROPERTY',      5);
+define('VALUE',         6);
+define('COMMENT',       7);
 define('DEFAULT_AT', 41);
 
 /**

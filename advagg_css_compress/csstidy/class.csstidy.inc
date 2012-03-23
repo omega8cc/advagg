@@ -34,28 +34,28 @@
  *
  * @version 1.0
  */
-require_once('class.csstidy_ctype.inc');
+require_once DRUPAL_ROOT . '/' . 'class.csstidy_ctype.inc';
 
 /**
  * Various CSS data needed for correct optimisations etc.
  *
  * @version 1.3
  */
-require('data.inc');
+require DRUPAL_ROOT . '/' . 'data.inc';
 
 /**
  * Contains a class for printing CSS code
  *
  * @version 1.0
  */
-require('class.csstidy_print.inc');
+require DRUPAL_ROOT . '/' . 'class.csstidy_print.inc';
 
 /**
  * Contains a class for optimising CSS code
  *
  * @version 1.0
  */
-require('class.csstidy_optimise.inc');
+require DRUPAL_ROOT . '/' . 'class.csstidy_optimise.inc';
 
 /**
  * CSS Parser class
@@ -430,7 +430,7 @@ class csstidy {
     }
 
     if (@ctype_xdigit($string{$i + 1}) && ctype_space($string{$i})
-						 && !$replaced || !ctype_space($string{$i})) {
+						  && !$replaced || !ctype_space($string{$i})) {
       $i--;
     }
 
@@ -1016,7 +1016,7 @@ class csstidy {
       return $media;
     }
     end($this->css);
-    list($at, ) = each($this->css);
+    list($at,  ) = each($this->css);
     if ($at == $media) {
       return $media;
     }
@@ -1060,7 +1060,7 @@ class csstidy {
 
       // if last is the same, keep it
       end($this->css[$media]);
-      list($sel, ) = each($this->css[$media]);
+      list($sel,  ) = each($this->css[$media]);
       if ($sel == $selector) {
         return $selector;
       }

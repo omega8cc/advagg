@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_enable().
+ * Implements hook_enable().
  */
 function advagg_js_compress_enable() {
   // Flush advagg caches.
@@ -20,7 +20,7 @@ function advagg_js_compress_enable() {
 }
 
 /**
- * Implementation of hook_disable().
+ * Implements hook_disable().
  */
 function advagg_js_compress_disable() {
   // Flush advagg caches.
@@ -31,14 +31,15 @@ function advagg_js_compress_disable() {
 }
 
 /**
- * Implementation of hook_install().
+ * Implements hook_install().
  */
 function advagg_js_compress_install() {
-  drupal_install_schema('advagg_js_compress');
+  // TODO The drupal_(un)install_schema functions are called automatically in D7.
+  // drupal_install_schema('advagg_js_compress')
 }
 
 /**
- * Implementation of hook_uninstall().
+ * Implements hook_uninstall().
  */
 function advagg_js_compress_uninstall() {
   // Remove variables.
@@ -55,11 +56,12 @@ function advagg_js_compress_uninstall() {
   // Remove our cache table.
   cache_clear_all('*', 'cache_advagg_js_compress_inline', TRUE);
   cache_clear_all('*', 'cache_advagg_js_compress_file', TRUE);
-  drupal_uninstall_schema('advagg_js_compress');
+  // TODO The drupal_(un)install_schema functions are called automatically in D7.
+  // drupal_uninstall_schema('advagg_js_compress')
 }
 
 /**
- * Implementation of hook_requirements().
+ * Implements hook_requirements().
  */
 function advagg_js_compress_requirements($phase) {
   $requirements = array();
@@ -125,7 +127,7 @@ function advagg_js_compress_check_callback() {
 }
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function advagg_js_compress_schema() {
   $schema = array();
@@ -151,7 +153,10 @@ function advagg_js_compress_update_6100() {
     'query' => 'advagg files_data cache flushed.',
   );
 
-  return $ret;
+  // hook_update_N() no longer returns a $ret array. Instead, return
+  // nothing or a translated string indicating the update ran successfully.
+  // See http://drupal.org/node/224333#update_sql.
+  return t('TODO Add a descriptive string here to show in the UI.') /* $ret */;
 }
 
 /**
@@ -162,9 +167,12 @@ function advagg_js_compress_update_6101() {
 
   // Create cache table.
   $schema = advagg_js_compress_schema();
-  db_create_table($ret, 'cache_advagg_js_compress_inline', $schema['cache_advagg_js_compress_inline']);
+  db_create_table('cache_advagg_js_compress_inline', $schema['cache_advagg_js_compress_inline']);
 
-  return $ret;
+  // hook_update_N() no longer returns a $ret array. Instead, return
+  // nothing or a translated string indicating the update ran successfully.
+  // See http://drupal.org/node/224333#update_sql.
+  return t('TODO Add a descriptive string here to show in the UI.') /* $ret */;
 }
 
 /**
@@ -175,9 +183,12 @@ function advagg_js_compress_update_6102() {
 
   // Create cache table.
   $schema = advagg_js_compress_schema();
-  db_create_table($ret, 'cache_advagg_js_compress_file', $schema['cache_advagg_js_compress_file']);
+  db_create_table('cache_advagg_js_compress_file', $schema['cache_advagg_js_compress_file']);
 
-  return $ret;
+  // hook_update_N() no longer returns a $ret array. Instead, return
+  // nothing or a translated string indicating the update ran successfully.
+  // See http://drupal.org/node/224333#update_sql.
+  return t('TODO Add a descriptive string here to show in the UI.') /* $ret */;
 }
 
 /**
@@ -193,5 +204,8 @@ function advagg_js_compress_update_6103() {
     'query' => 'The cache_advagg_js_compress_file table has been cleared.',
   );
 
-  return $ret;
+  // hook_update_N() no longer returns a $ret array. Instead, return
+  // nothing or a translated string indicating the update ran successfully.
+  // See http://drupal.org/node/224333#update_sql.
+  return t('TODO Add a descriptive string here to show in the UI.') /* $ret */;
 }

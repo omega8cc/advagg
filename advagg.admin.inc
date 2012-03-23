@@ -11,7 +11,7 @@
 function advagg_admin_page() {
   $output = '';
   $file_path = drupal_get_path('module', 'advagg');
-  drupal_add_js(array('advagg' => array('key' => md5(drupal_get_private_key()))), 'setting');
+  drupal_add_js(array('advagg' => array('key' => md5(drupal_get_private_key()))), array('type' => 'setting', 'scope' => JS_DEFAULT));
   drupal_add_js($file_path . '/advagg.admin.js');
 
   $output .= drupal_get_form('advagg_admin_settings_form');
@@ -32,7 +32,7 @@ function advagg_admin_info_page() {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_admin_info_form() {
+function advagg_admin_info_form($form) {
   $form = array();
 
   $form['info'] = array(
@@ -51,7 +51,7 @@ function advagg_admin_info_form() {
   );
 
   $types = db_query("SELECT DISTINCT(filetype) FROM {advagg_files}");
-  while ($type = db_result($types)) {
+  while ($type = $types->fetchField()) {
     $form[$type] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
@@ -59,7 +59,7 @@ function advagg_admin_info_form() {
       '#title' => t('@type files', array('@type' => drupal_strtoupper($type))),
     );
     // filename  filename_md5  checksum  filetype  counter   data
-    $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = '%s'", $type);
+    $results = db_query("SELECT * FROM {advagg_files} WHERE filetype = :filetype", array(':filetype' => $type));
     while ($row = db_fetch_array($results)) {
       $data = advagg_get_file_data($row['filename_md5']);
       if (!empty($data)) {
@@ -76,7 +76,7 @@ function advagg_admin_info_form() {
       else {
         $form[$type][$row['filename_md5']] = array(
           '#type' => 'markup',
-          '#value' => '<div>' . format_plural($row['counter'], 'changed 1 time - %file<br />', 'changed %counter times - %file<br /></div>',   array(
+          '#value' => '<div>' . format_plural($row['counter'], 'changed 1 time - %file<br />', 'changed %counter times - %file<br /></div>',    array(
             '%counter' => $row['counter'],
             '%file' => $row['filename'],
           )),
@@ -135,7 +135,7 @@ function advagg_admin_info_form() {
 
   // If any files are missing list them.
   // TODO: Reset missing files list.
-  $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = '-1' ORDER BY filetype ASC");
+  $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = :checksum ORDER BY filetype ASC", array(':checksum' => '-1'));
   while ($row = db_fetch_array($results)) {
     $form['missing'][$row['filename_md5']] = array(
       '#type' => 'markup',
@@ -161,7 +161,7 @@ function advagg_admin_info_form() {
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
 
-  $filepath = $css_path . '/css_missing' . mt_rand() . time() . '_0.css';
+  $filepath = $css_path . '/css_missing' . mt_rand() . REQUEST_TIME . '_0.css';
   $url = _advagg_build_url($filepath);
   $headers = array(
     'Host' => $_SERVER['HTTP_HOST'],
@@ -169,7 +169,7 @@ function advagg_admin_info_form() {
   );
 
   timer_start(__FUNCTION__ . 'local');
-  $data_local = drupal_http_request($url, $headers);
+  $data_local = drupal_http_request($url, array('headers' => $headers));
   $data_local->timer = timer_stop(__FUNCTION__ . 'local');
   list($data, $rows) = advagg_form_print_r($data_local);
   $form['async']['normal'] = array(
@@ -209,10 +209,10 @@ function advagg_admin_info_form() {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_admin_settings_form() {
+function advagg_admin_settings_form($form) {
   $form = array();
   $readme = drupal_get_path('module', 'advagg') . '/README.txt';
-  $bundle_count = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp"));
+  $bundle_count = db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp")->fetchField();
 
   $form['advagg_enabled'] = array(
     '#type' => 'checkbox',
@@ -407,19 +407,19 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
           $cumulative .= '/' . $dir;
         }
         // If dir creation fails, bail out of loop.
-        if (!file_check_directory($cumulative, FILE_CREATE_DIRECTORY)) {
+        if (!file_prepare_directory($cumulative, FILE_CREATE_DIRECTORY)) {
           break;
         }
       }
 
       // See if dir exists and is writable.
-      if (file_check_directory($files_dir) == TRUE) {
+      if (file_prepare_directory($files_dir) == TRUE) {
 
         // Remove old files.
         list($css_path, $js_path) = advagg_get_root_files_dir();
-        file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+        file_scan_directory($css_path, '/.*/', array('callback' => 'file_delete'));
         @unlink($css_path);
-        file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+        file_scan_directory($js_path, '/.*/', array('callback' => 'file_delete'));
         @unlink($js_path);
 
         // Set new path.
@@ -507,8 +507,8 @@ function advagg_admin_master_reset() {
   module_invoke_all('advagg_master_reset');
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  file_scan_directory($css_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
-  file_scan_directory($js_path, '.*', array('.', '..', 'CVS'), 'file_delete', TRUE);
+  file_scan_directory($css_path, '/.*/', array('callback' => 'file_delete'));
+  file_scan_directory($js_path, '/.*/', array('callback' => 'file_delete'));
 
   drupal_set_message(t('Advanced CSS/JS Aggregation has been reset.'));
 }
@@ -587,7 +587,7 @@ function advagg_admin_batch_rebuild($form, &$form_state) {
 
   // Run it
   batch_set($batch);
-  batch_process('admin/settings/advagg');
+  batch_process('admin/config/advagg');
 }
 
 /**
@@ -597,11 +597,17 @@ function advagg_admin_rebuild_bundles($increment, &$context) {
   // init batch.
   if (!isset($context['sandbox']['progress'])) {
     $context['sandbox']['progress'] = 0;
-    $context['sandbox']['max'] = db_result(db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp"));
+    $context['sandbox']['max'] = db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp")->fetchField();
 
     // Increment All Counters.
     if ($increment) {
-      db_query("UPDATE {advagg_bundles} SET counter = counter + 1");
+      // TODO Please review the conversion of this statement to the D7 database API syntax.
+      /* db_query("UPDATE {advagg_bundles} SET counter = counter + 1") */
+      db_update('advagg_bundles')
+  ->fields(array(
+        'counter' => counter + 1,
+      ))
+  ->execute();
     }
   }
 
@@ -609,8 +615,8 @@ function advagg_admin_rebuild_bundles($increment, &$context) {
   $limit = 1;
 
   // Get list of all bundles.
-  $result = db_query_range("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5", $context['sandbox']['progress'], $limit);
-  while ($bundle_md5 = db_result($result)) {
+  $result = db_query_range("SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5");
+  while ($bundle_md5 = $result->fetchField()) {
     $filenames = advagg_rebuild_bundle($bundle_md5, '', TRUE);
     $filename = array();
     foreach ($filenames as $name => $data) {
@@ -630,11 +636,15 @@ function advagg_admin_rebuild_bundles($increment, &$context) {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function advagg_admin_rebuild_bundles_done($success, $results, $operations) {
   if ($success) {
     // Here we do something meaningful with the results.
     $message = count($results) . ' files generated.';
-    $message .= theme('item_list', $results);
+    $message .= theme('item_list', array('items' => $results));
   }
   else {
     // An error occurred.
@@ -684,6 +694,10 @@ function advagg_admin_toggle_bypass_cookie() {
   }
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function advagg_form_print_r($data) {
   $data = print_r($data, TRUE);
   $data = explode("\n", $data);

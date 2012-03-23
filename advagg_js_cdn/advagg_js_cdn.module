@@ -22,7 +22,7 @@ define('ADVAGG_JS_CDN_JQUERY_UI', TRUE);
 define('ADVAGG_JS_CDN_SWFOBJECT', TRUE);
 
 /**
- * Implement hook_advagg_js_pre_alter.
+ * Implements hook_advagg_js_pre_alter().
  */
 function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public_downloads, $scope) {
   // Exit early if we are not going to CDN any code.
@@ -30,8 +30,8 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
   $cdn_jquery_ui = variable_get('advagg_js_cdn_jquery_ui', ADVAGG_JS_CDN_JQUERY_UI);
   $cdn_swfobject = variable_get('advagg_js_cdn_swfobject', ADVAGG_JS_CDN_SWFOBJECT);
   if (   !$cdn_jquery
-       && !$cdn_jquery_ui
-       && !$cdn_swfobject
+        && !$cdn_jquery_ui
+        && !$cdn_swfobject
         ) {
     return FALSE;
   }
@@ -96,8 +96,8 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
       // jquery-ui.js
       if ($cdn_jquery_ui) {
         if (   isset($jquery_ui_filepath)
-             && isset($jquery_ui_version)
-             && $path == $jquery_ui_filepath
+              && isset($jquery_ui_version)
+              && $path == $jquery_ui_filepath
               ) {
           $info['preprocess'] = FALSE;
           $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/jqueryui/' . $jquery_ui_version . '/jquery-ui.min.js'] = $info;
@@ -108,7 +108,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
       // swfobject.js
       if ($cdn_swfobject) {
         if (   isset($swfobject_filepath)
-             && $path == $swfobject_filepath
+              && $path == $swfobject_filepath
               ) {
           $info['preprocess'] = FALSE;
           $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/swfobject/' . $swfobject_version . '/swfobject.js'] = $info;

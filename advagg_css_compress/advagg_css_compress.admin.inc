@@ -19,7 +19,7 @@ function advagg_css_compress_admin_page() {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_css_compress_admin_settings_form() {
+function advagg_css_compress_admin_settings_form($form) {
   $form = array();
 
   $form['advagg_css_compress_agg_files'] = array(

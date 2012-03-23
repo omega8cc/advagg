@@ -629,7 +629,7 @@ class csstidy_optimise {
 
     foreach ($shorthands as $key => $value) {
       if (isset($array[$value[0]]) && isset($array[$value[1]])
-							 && isset($array[$value[2]]) && isset($array[$value[3]]) && $value !== 0) {
+							  && isset($array[$value[2]]) && isset($array[$value[3]]) && $value !== 0) {
         $return[$key] = '';
 
         $important = '';
@@ -785,7 +785,7 @@ class csstidy_optimise {
 
         // Skip some properties if there is no background image
         if ((!isset($bg_img_array[$i]) || $bg_img_array[$i] === 'none')
-								 && ($bg_property === 'background-size' || $bg_property === 'background-position'
+								  && ($bg_property === 'background-size' || $bg_property === 'background-position'
 								|| $bg_property === 'background-attachment' || $bg_property === 'background-repeat')) {
           continue;
         }

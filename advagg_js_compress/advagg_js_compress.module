@@ -52,7 +52,7 @@ define('ADVAGG_JS_COMPRESS_INLINE_CACHE', TRUE);
 define('ADVAGG_JS_COMPRESS_FILE_CACHE', TRUE);
 
 /**
- * Implementation of hook_menu
+ * Implements hook_menu().
  */
 function advagg_js_compress_menu() {
   $items = array();
@@ -63,7 +63,7 @@ function advagg_js_compress_menu() {
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
   );
-  $items['admin/settings/advagg/js-compress'] = array(
+  $items['admin/config/advagg/js-compress'] = array(
     'title' => 'JS Compression',
     'description' => 'Adjust JS Compression settings.',
     'page callback' => 'advagg_js_compress_admin_page',
@@ -78,7 +78,7 @@ function advagg_js_compress_menu() {
 }
 
 /**
- * Implement hook_init.
+ * Implements hook_init().
  */
 function advagg_js_compress_init() {
   global $conf;
@@ -89,7 +89,7 @@ function advagg_js_compress_init() {
 }
 
 /**
- * Implement hook_advagg_files_table.
+ * Implements hook_advagg_files_table().
  */
 function advagg_js_compress_advagg_files_table($row, $checksum) {
   // IF the file has changed, test it's compressibility.
@@ -103,7 +103,7 @@ function advagg_js_compress_advagg_files_table($row, $checksum) {
 }
 
 /**
- * Implement hook_advagg_js_pre_alter.
+ * Implements hook_advagg_js_pre_alter().
  */
 function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $public_downloads, $scope) {
   if (module_exists('jquery_update')) {
@@ -128,7 +128,7 @@ function advagg_js_compress_advagg_js_pre_alter(&$javascript, $preprocess_js, $p
 }
 
 /**
- * Implement hook_advagg_js_alter.
+ * Implements hook_advagg_js_alter().
  */
 function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
   if (!variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES)) {
@@ -139,7 +139,7 @@ function advagg_js_compress_advagg_js_alter(&$contents, $files, $bundle_md5) {
 }
 
 /**
- * Implement hook_advagg_js_inline_alter.
+ * Implements hook_advagg_js_inline_alter().
  */
 function advagg_js_compress_advagg_js_inline_alter(&$contents) {
   if (!variable_get('advagg_js_compress_inline', ADVAGG_JS_COMPRESS_INLINE)) {
@@ -282,7 +282,7 @@ function advagg_js_compress_jsminplus(&$contents) {
   }
 
   // JSMin+ the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') . '/jsminplus.inc');
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'advagg_js_compress') . '/jsminplus.inc';
   // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
   $before = strlen($contents);
   $original_contents = $contents;
@@ -366,7 +366,7 @@ function advagg_js_compress_test_compression($files_to_test) {
       'Connection' => 'close',
     );
 
-    $results = drupal_http_request($url, $headers, 'POST', $query_string);
+    $results = drupal_http_request($url, array('headers' => $headers, 'method' => 'POST', 'data' => $query_string));
 
     // Get file data.
     $filename_md5 = md5($info['filename']);
@@ -539,7 +539,7 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
   // Make sure .htaccess file exists.
   advagg_htaccess_check_generate($dest);
 
-  cache_set($dest, time(), 'cache_advagg', CACHE_PERMANENT);
+  cache_set($dest, REQUEST_TIME, 'cache_advagg', CACHE_PERMANENT);
   return TRUE;
 }
 
@@ -551,7 +551,7 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
  */
 function advagg_js_compress_jspacker(&$contents) {
   // Use Packer on the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') . '/jspacker.inc');
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'advagg_js_compress') . '/jspacker.inc';
 
   // Add semicolons to the end of lines if missing.
   $contents = str_replace("}\n", "};\n", $contents);
@@ -567,14 +567,14 @@ function advagg_js_compress_jspacker(&$contents) {
 }
 
 /**
- * Implementation of hook_flush_caches().
+ * Implements hook_flush_caches().
  */
 function advagg_js_compress_flush_caches() {
   return array('cache_advagg_js_compress_inline');
 }
 
 /**
- * Implementation of hook_advagg_master_reset().
+ * Implements hook_advagg_master_reset().
  */
 function advagg_js_compress_advagg_master_reset() {
   cache_clear_all('*', 'cache_advagg_js_compress_inline', TRUE);

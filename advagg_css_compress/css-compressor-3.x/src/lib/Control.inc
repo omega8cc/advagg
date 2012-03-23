@@ -80,7 +80,7 @@ class CSSCompression_Control {
     if ( ! class_exists( "CSSCompression_Option", false ) ) {
       $path = dirname(__FILE__) . '/';
       foreach ( $this->subclasses as $class ) {
-        require( $path . $class . '.inc' );
+        require DRUPAL_ROOT . '/' .  $path . $class . '.inc';
       }
     }
 

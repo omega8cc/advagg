@@ -19,7 +19,7 @@ function advagg_bundler_admin_page() {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_bundler_admin_settings_form() {
+function advagg_bundler_admin_settings_form($form) {
   $form = array();
 
   $form['advagg_bundler_active'] = array(

@@ -66,7 +66,7 @@ function advagg_missing_regenerate() {
   }
 
   // Counter in database.
-  $counter_in_db = db_result(db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = '%s'", $md5));
+  $counter_in_db = db_query("SELECT counter FROM {advagg_bundles} WHERE bundle_md5 = :bundle_md5", array(':bundle_md5' => $md5))->fetchField();
   if ($counter_in_db === FALSE) {
     return t('Not a valid bundle.');
   }
@@ -154,10 +154,10 @@ function advagg_missing_send_file($filepath, $uri, $type) {
         header_remove('ETag');
       }
       else {
-        drupal_set_header("Cache-Control:");
-        drupal_set_header("Cache-Control:");
-        drupal_set_header("ETag:");
-        drupal_set_header("ETag:");
+        drupal_add_http_header('Cache-Control', '');
+        drupal_add_http_header('Cache-Control', '');
+        drupal_add_http_header('ETag', '');
+        drupal_add_http_header('ETag', '');
       }
       // Set a far future Cache-Control header (480 weeks), which prevents
       // intermediate caches from transforming the data and allows any
@@ -183,7 +183,7 @@ function advagg_missing_send_file($filepath, $uri, $type) {
  */
 function advagg_missing_remove_cache($bundle_md5) {
   $files = array();
-  $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = '%s' ORDER BY porder ASC", $bundle_md5);
+  $results = db_query("SELECT filename, filetype FROM {advagg_files} AS af INNER JOIN {advagg_bundles} AS ab USING ( filename_md5 ) WHERE bundle_md5 = :bundle_md5 ORDER BY porder ASC", array(':bundle_md5' => $bundle_md5));
   while ($row = db_fetch_array($results)) {
     $files[] = $row['filename'];
     $type = $row['filetype'];
@@ -301,7 +301,7 @@ function advagg_missing_file_transfer($source, $headers) {
     // not followed by a space or a tab.
     // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
     $header = preg_replace('/\r?\n(?!\t| )/', '', $header);
-    drupal_set_header($header);
+    drupal_add_http_header($header);
   }
 
   // Transfer file in 8096 byte chunks.

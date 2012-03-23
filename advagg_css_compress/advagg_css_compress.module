@@ -38,13 +38,13 @@ define('ADVAGG_CSS_COMPRESS_COMPRESSOR_LEVEL', 'sane');
 
 
 /**
- * Implementation of hook_menu
+ * Implements hook_menu().
  */
 function advagg_css_compress_menu() {
   $items = array();
   $file_path = drupal_get_path('module', 'advagg_css_compress');
 
-  $items['admin/settings/advagg/css-compress'] = array(
+  $items['admin/config/advagg/css-compress'] = array(
     'title' => 'CSS Compression',
     'description' => 'Adjust CSS Compression settings.',
     'page callback' => 'advagg_css_compress_admin_page',
@@ -59,7 +59,7 @@ function advagg_css_compress_menu() {
 }
 
 /**
- * Implement hook_advagg_css_alter.
+ * Implements hook_advagg_css_alter().
  */
 function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   if (!variable_get('advagg_css_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES)) {
@@ -76,7 +76,7 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
 }
 
 /**
- * Implement hook_advagg_css_inline_alter.
+ * Implements hook_advagg_css_inline_alter().
  */
 function advagg_css_compress_advagg_css_inline_alter(&$contents) {
   if (!variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE)) {
@@ -116,7 +116,7 @@ function advagg_css_compress_advagg_css_inline_alter(&$contents) {
 function advagg_css_compress_css_tidy(&$contents) {
   // Initialize CSSTidy.
   $filename = drupal_get_path('module', 'advagg_css_compress') . '/csstidy/class.csstidy.inc';
-  include_once($filename);
+  include_once DRUPAL_ROOT . '/' . $filename;
   $css = new csstidy();
 
   // Try to allocate enough time to run CSSTidy.
@@ -150,14 +150,14 @@ function advagg_css_compress_css_tidy(&$contents) {
 function advagg_css_compress_css_compressor(&$contents) {
   // Initialize CSSTidy.
   $filename = drupal_get_path('module', 'advagg_css_compress') . '/css-compressor-3.x/src/CSSCompression.inc';
-  include_once($filename);
+  include_once DRUPAL_ROOT . '/' . $filename;
 
   $CSSC = new CSSCompression(variable_get('advagg_css_compress_compressor_level', ADVAGG_CSS_COMPRESS_COMPRESSOR_LEVEL));
   $contents = $CSSC->compress($contents);
 }
 
 /**
- * Implementation of hook_flush_caches().
+ * Implements hook_flush_caches().
  */
 function advagg_css_compress_flush_caches() {
   return array('cache_advagg_css_compress_inline');

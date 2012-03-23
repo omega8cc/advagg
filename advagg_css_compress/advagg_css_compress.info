@@ -1,6 +1,7 @@
 name = AdvAgg Compress CSS
 description = Compress CSS with a 3rd party compressor, CSSTidy currently.
 package = Advanced CSS/JS Aggregation
-core = 6.x
+core = 7.x
 dependencies[] = advagg
 php = 5.0
+

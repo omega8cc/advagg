@@ -31,13 +31,13 @@ define('ADVAGG_BUNDLER_OUTDATED', 1209600);
 define('ADVAGG_BUNDLER_ACTIVE', TRUE);
 
 /**
- * Implementation of hook_menu
+ * Implements hook_menu().
  */
 function advagg_bundler_menu() {
   $items = array();
   $file_path = drupal_get_path('module', 'advagg_bundler');
 
-  $items['admin/settings/advagg/bundler'] = array(
+  $items['admin/config/advagg/bundler'] = array(
     'title' => 'Bundler',
     'description' => 'Adjust Bundler settings.',
     'page callback' => 'advagg_bundler_admin_page',
@@ -52,7 +52,7 @@ function advagg_bundler_menu() {
 }
 
 /**
- * Implement hook_advagg_filenames_alter.
+ * Implements hook_advagg_filenames_alter().
  */
 function advagg_bundler_advagg_filenames_alter(&$filenames) {
   // Get max number of sub aggregates to create.
@@ -174,7 +174,7 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
   static $analysis = array();
   if (empty($analysis)) {
     // See if we have a cached version of this.
-    $count = db_result(db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE root=1"));
+    $count = db_query("SELECT COUNT(*) FROM {advagg_bundles} WHERE root = :root", array(':root' => 1))->fetchField();
     $cache = cache_get('advagg_bundler_analysis:' . $count);
     if (empty($cache->data) || $force) {
       // "Magic Query"; only needs to run once.
@@ -208,7 +208,7 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
           GROUP BY
             filename_md5) AS ab
         INNER JOIN {advagg_files} AS af USING ( filename_md5 )
-      ", time() - variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED));
+      ", REQUEST_TIME - variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED));
 
       // Save query into a static array with the filename as the key.
       while ($row = db_fetch_array($result)) {
