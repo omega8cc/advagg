@@ -162,14 +162,14 @@ if (variable_get('advagg_closure', ADVAGG_CLOSURE)) {
   if (!function_exists('phptemplate_closure')) {
 
     /**
-    * Execute hook_footer() which is run at the end of the page right before
-    * the close of the body tag.
-    *
-    * @param $main (optional)
-    *   Whether the current page is the front page of the site.
-    * @return
-    *   A string containing the results of the hook_footer() calls.
-    */
+     * Execute hook_footer() which is run at the end of the page right before
+     * the close of the body tag.
+     *
+     * @param $main (optional)
+     *   Whether the current page is the front page of the site.
+     * @return
+     *   A string containing the results of the hook_footer() calls.
+     */
     function phptemplate_closure($main = 0) {
       global $_advagg;
       $_advagg['closure'] = TRUE;
@@ -292,7 +292,7 @@ function advagg_cron() {
   // Set the oldest file/bundle to keep at 2 weeks.
   $max_time = module_exists('advagg_bundler') ? variable_get('advagg_bundler_outdated', ADVAGG_BUNDLER_OUTDATED) : 1209600;
   $max_file_time = time() - $max_time;
-  $max_bundle_time = time() - ($max_time*3);
+  $max_bundle_time = time() - ($max_time * 3);
   $bundles_removed = 0;
   $files_removed = array();
 
@@ -384,8 +384,8 @@ function advagg_theme_registry_alter(&$theme_registry) {
 
     // If ctools hasn't been patched remove it from getting pre-processed.
     if (   !empty($_advagg['ctools_patched'])
-        && module_exists('ctools')
-        && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
+         && module_exists('ctools')
+         && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
           ) {
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
@@ -545,30 +545,30 @@ function advagg_string_ends_with($haystack, $needle) {
   // Define substr_compare if it doesn't exist (PHP 4 fix).
   if (!function_exists('substr_compare')) {
     /**
-    * Binary safe comparison of two strings from an offset, up to length
-    * characters.
-    *
-    * Compares main_str from position offset with str up to length characters.
-    * @see http://php.net/substr-compare#53084
-    *
-    * @param $main_str
-    *   The main string being compared.
-    * @param $str
-    *   The secondary string being compared.
-    * @param $offset
-    *   The start position for the comparison. If negative, it starts counting
-    *   from the end of the string.
-    * @param $length
-    *   The length of the comparison. The default value is the largest of the
-    *   length of the str compared to the length of main_str less the offset.
-    * @param $case_insensitivity
-    *   If TRUE, comparison is case insensitive.
-    * @return
-    *   Returns < 0 if main_str from position offset is less than str, > 0 if
-    *   it is greater than str, and 0 if they are equal. If offset is equal to
-    *   or greater than the length of main_str or length is set and is less than
-    *   1, substr_compare() prints a warning and returns FALSE.
-    */
+     * Binary safe comparison of two strings from an offset, up to length
+     * characters.
+     *
+     * Compares main_str from position offset with str up to length characters.
+     * @see http://php.net/substr-compare#53084
+     *
+     * @param $main_str
+     *   The main string being compared.
+     * @param $str
+     *   The secondary string being compared.
+     * @param $offset
+     *   The start position for the comparison. If negative, it starts counting
+     *   from the end of the string.
+     * @param $length
+     *   The length of the comparison. The default value is the largest of the
+     *   length of the str compared to the length of main_str less the offset.
+     * @param $case_insensitivity
+     *   If TRUE, comparison is case insensitive.
+     * @return
+     *   Returns < 0 if main_str from position offset is less than str, > 0 if
+     *   it is greater than str, and 0 if they are equal. If offset is equal to
+     *   or greater than the length of main_str or length is set and is less than
+     *   1, substr_compare() prints a warning and returns FALSE.
+     */
     function substr_compare($main_str, $str, $offset, $length = NULL, $case_insensitivity = FALSE) {
       $offset = (int) $offset;
 
@@ -608,7 +608,7 @@ function advagg_string_ends_with($haystack, $needle) {
   if ($needle_len > $haystack_len) {
     return FALSE;
   }
-  return substr_compare($haystack, $needle, $haystack_len-$needle_len, $needle_len, TRUE) === 0;
+  return substr_compare($haystack, $needle, $haystack_len -$needle_len, $needle_len, TRUE) === 0;
 }
 
 /**
@@ -830,7 +830,7 @@ function advagg_jquery_updater(&$js) {
   unset($js['core']['misc/jquery.js']);
 
   // Loop through each of the required replacements.
-  $replacement_path = drupal_get_path('module', 'jquery_update') .'/replace/';
+  $replacement_path = drupal_get_path('module', 'jquery_update') . '/replace/';
   foreach (jquery_update_get_replacements() as $type => $replacements) {
     foreach ($replacements as $find => $replace) {
       // If the file to replace is loaded on this page...
@@ -1085,7 +1085,10 @@ function advagg_find_existing_bundle(&$files, &$bundle_md5) {
     // Make sure bundle has the same number of files if using strict matching.
     if (!empty($count) && $count == $files_count) {
       $bundle_md5 = $new_md5;
-      $data = array(array('files' => $files, 'bundle_md5' => $bundle_md5));
+      $data = array(array(
+          'files' => $files,
+          'bundle_md5' => $bundle_md5,
+        ));
       cache_set($cached_data_key, $data, 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       return;
     }
@@ -1487,7 +1490,7 @@ function advagg_get_bundle_from_filename($filename) {
   $type = substr($filename, 0, strpos($filename, '_'));
 
   // Get extension
-  $ext = substr($filename, strpos($filename, '.', 37)+1);
+  $ext = substr($filename, strpos($filename, '.', 37) + 1);
 
   // Make sure extension is the same as the type.
   if ($ext != $type) {
@@ -1497,11 +1500,11 @@ function advagg_get_bundle_from_filename($filename) {
   // Extract info from wanted filename.
   if ($type == 'css') {
     $md5 = substr($filename, 4, 32);
-    $counter = substr($filename, 37, strpos($filename, '.', 38)-37);
+    $counter = substr($filename, 37, strpos($filename, '.', 38) -37);
   }
   elseif ($type == 'js') {
     $md5 = substr($filename, 3, 32);
-    $counter = substr($filename, 36, strpos($filename, '.', 37)-36);
+    $counter = substr($filename, 36, strpos($filename, '.', 37) -36);
   }
   else {
     return t('Wrong file type.');
@@ -1818,7 +1821,7 @@ function advagg_process_css_js_prep($noagg = FALSE, $type = NULL) {
   // browser-caching. The string changes on every update or full cache
   // flush, forcing browsers to load a new copy of the files, as the
   // URL changed.
-  $query_string = '?'. substr(variable_get('css_js_query_string', '0'), 0, 1);
+  $query_string = '?' . substr(variable_get('css_js_query_string', '0'), 0, 1);
 
   return array($preprocess, $public_downloads, $query_string);
 }
@@ -2114,8 +2117,8 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
       // Test for versions > 1.5
       // Test for Pocket IE
       if (   stristr($_SERVER['HTTP_USER_AGENT'], 'microsoft internet explorer')
-          || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
-          || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
+           || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
+           || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
           ) {
         $is_ie = TRUE;
       }
@@ -2165,19 +2168,19 @@ function advagg_unlimited_css_traditional($files, &$styles) {
     if (isset($css_file['href'])) {
       $href = $css_file['href'];
       if ($prefix != $last_prefix) {
-        $styles .= $last_suffix . "\n" . $prefix . '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . "\n";
+        $styles .= $last_suffix . "\n" . $prefix . '<link type="text/css" rel="stylesheet" media="' . $media . '" href="' . $href . '" />' . "\n";
       }
       else {
-        $styles .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $href . '" />' . "\n";
+        $styles .= '<link type="text/css" rel="stylesheet" media="' . $media . '" href="' . $href . '" />' . "\n";
       }
     }
     else {
       $data = $css_file['data'];
       if ($prefix != $last_prefix) {
-        $styles .= $last_suffix . "\n" . $prefix . '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . "\n";
+        $styles .= $last_suffix . "\n" . $prefix . '<style type="text/css" media="' . $media . '">' . "\n" . $data . "\n" . '</style>' . "\n";
       }
       else {
-        $styles .= '<style type="text/css" media="'. $media .'">' . "\n" . $data . "\n" . '</style>' . "\n";
+        $styles .= '<style type="text/css" media="' . $media . '">' . "\n" . $data . "\n" . '</style>' . "\n";
       }
     }
     $last_prefix = $prefix;
@@ -2203,17 +2206,17 @@ function advagg_unlimited_css_import($files, &$styles) {
     $href = $css_file['href'];
     if ($media_new != $media || $counter > variable_get('advagg_css_count_threshold', ADVAGG_CSS_COUNT_THRESHOLD)) {
       if ($media && !empty($import)) {
-        $styles .= "\n" . '<style type="text/css" media="'. $media .'">' . "\n". $import .'</style>';
+        $styles .= "\n" . '<style type="text/css" media="' . $media . '">' . "\n" . $import . '</style>';
         $import = '';
       }
       $counter = 0;
       $media = $media_new;
     }
-    $import .= '@import "'. $href .'";'."\n";
+    $import .= '@import "' . $href . '";' . "\n";
     $counter++;
   }
   if ($media && !empty($import)) {
-    $styles .= "\n".'<style type="text/css" media="'. $media .'">'."\n". $import .'</style>';
+    $styles .= "\n" . '<style type="text/css" media="' . $media . '">' . "\n" . $import . '</style>';
   }
 }
 
@@ -2269,7 +2272,11 @@ function advagg_process_js($master_set, $noagg = FALSE) {
     $setting_no_preprocess = array();
     $inline_no_preprocess = array();
     $external_no_preprocess = array();
-    $output_no_preprocess = array('core' => array(), 'module' => array(), 'theme' => array());
+    $output_no_preprocess = array(
+      'core' => array(),
+      'module' => array(),
+      'theme' => array(),
+    );
     $output_preprocess = array();
     $preprocess_list = array();
     $js_settings_array = array();
@@ -2325,7 +2332,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
           // Additionally, go through any remaining scripts if JS preprocessing is on and output the non-cached ones.
           foreach ($data as $path => $info) {
             if (!$info['preprocess'] || !$public_downloads || !$preprocess_js) {
-              $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?'. time()), $info['defer'], $info['prefix'], $info['suffix']);
+              $output_no_preprocess[$type][] = array(advagg_build_uri($path) . ($info['cache'] ? $query_string : '?' . time()), $info['defer'], $info['prefix'], $info['suffix']);
               $files_included[$path] = $info['preprocess'];
             }
             else {
@@ -2425,22 +2432,22 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
 
   if (!empty($external_no_preprocess)) {
     foreach ($external_no_preprocess as $values) {
-      list ($src, $defer, $prefix, $suffix) = $values;
-      $output .= $prefix . '<script type="text/javascript"'. ($defer ? ' defer="defer"' : '') . ' src="'. $src . '"></script>' . $suffix . "\n";
+      list($src, $defer, $prefix, $suffix) = $values;
+      $output .= $prefix . '<script type="text/javascript"' . ($defer ? ' defer="defer"' : '') . ' src="' . $src . '"></script>' . $suffix . "\n";
     }
   }
 
   if (!empty($output_preprocess)) {
     foreach ($output_preprocess as $values) {
-      list ($src, $prefix, $suffix) = $values;
-      $output .= $prefix . '<script type="text/javascript" src="'. $src .'"></script>' . $suffix . "\n";
+      list($src, $prefix, $suffix) = $values;
+      $output .= $prefix . '<script type="text/javascript" src="' . $src . '"></script>' . $suffix . "\n";
     }
   }
 
   foreach ($output_no_preprocess as $type => $list) {
     if (!empty($list)) {
       foreach ($list as $values) {
-        list ($src, $defer, $prefix, $suffix) = $values;
+        list($src, $defer, $prefix, $suffix) = $values;
         $output .= $prefix . '<script type="text/javascript"' . ($defer ? ' defer="defer"' : '') . ' src="' . $src . '"></script>' . $suffix . "\n";
       }
     }
@@ -2454,8 +2461,8 @@ function advagg_js_builder($external_no_preprocess, $output_preprocess, $output_
 
   if (!empty($inline_no_preprocess)) {
     foreach ($inline_no_preprocess as $values) {
-      list ($code, $defer, $prefix, $suffix) = $values;
-      $output .= $prefix . '<script type="text/javascript"'. ($defer ? ' defer="defer"' : '') .'>' . $embed_prefix . $code . $embed_suffix . '</script>' . $suffix . "\n";
+      list($code, $defer, $prefix, $suffix) = $values;
+      $output .= $prefix . '<script type="text/javascript"' . ($defer ? ' defer="defer"' : '') . '>' . $embed_prefix . $code . $embed_suffix . '</script>' . $suffix . "\n";
     }
   }
 
@@ -2555,7 +2562,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
     $bundle_md5 = $info['bundle_md5'];
     $prefix = '';
     $suffix = '';
-    $filepath = $file_type_path .'/'. $filename;
+    $filepath = $file_type_path . '/' . $filename;
 
     // Invoke hook_advagg_js_extra_alter() or hook_advagg_css_extra_alter to
     // give installed modules a chance to modify the prefix or suffix for a
@@ -2592,13 +2599,21 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
         // Return filepath if we are going to wait for the bundle to be
         // generated or if the bundle already exists.
         if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) < 2 || advagg_bundle_built($filepath)) {
-          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+          $output[$filepath] = array(
+            'prefix' => $prefix,
+            'suffix' => $suffix,
+            'files' => array_map('advagg_return_true', array_flip($files)),
+          );
         }
         else {
           // Aggregate isn't built yet, send back the files that where going to
           // be in it.
           foreach ($files as $file) {
-            $output[$file . $query_string] = array('prefix' => '', 'suffix' => '', 'files' => array($file . $query_string => TRUE));
+            $output[$file . $query_string] = array(
+              'prefix' => '',
+              'suffix' => '',
+              'files' => array($file . $query_string => TRUE),
+            );
           }
           $cacheable = FALSE;
           advagg_disable_page_cache();
@@ -2611,13 +2626,21 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
       if (!lock_acquire($lock_name)) {
         if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) == 0 ) {
           $locks[] = array($lock_name => $filepath);
-          $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+          $output[$filepath] = array(
+            'prefix' => $prefix,
+            'suffix' => $suffix,
+            'files' => array_map('advagg_return_true', array_flip($files)),
+          );
         }
         else {
           // Aggregate isn't built yet, send back the files that where going
           // to be in it.
           foreach ($files as $file) {
-            $output[$file . $query_string] = array('prefix' => '', 'suffix' => '', 'files' => array($file . $query_string => TRUE));
+            $output[$file . $query_string] = array(
+              'prefix' => '',
+              'suffix' => '',
+              'files' => array($file . $query_string => TRUE),
+            );
           }
           $cacheable = FALSE;
           advagg_disable_page_cache();
@@ -2664,7 +2687,11 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
     else {
       $files_used = array_merge($files_used, $files);
     }
-    $output[$filepath] = array('prefix' => $prefix, 'suffix' => $suffix, 'files' => array_map('advagg_return_true', array_flip($files)));
+    $output[$filepath] = array(
+      'prefix' => $prefix,
+      'suffix' => $suffix,
+      'files' => array_map('advagg_return_true', array_flip($files)),
+    );
   }
 
   // Wait for all locks before returning.
@@ -2708,7 +2735,7 @@ function advagg_build_css_bundle($files) {
   foreach ($files as $file) {
     $contents = drupal_load_stylesheet($file, TRUE);
     // Return the path to where this CSS file originated from.
-    $base = base_path() . dirname($file) .'/';
+    $base = base_path() . dirname($file) . '/';
     _drupal_build_css_path(NULL, $base);
     // Prefix all paths within this CSS file, ignoring external and absolute paths.
     $data .= preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_drupal_build_css_path', $contents);
@@ -2740,7 +2767,7 @@ function advagg_build_js_bundle($files) {
   foreach ($files as $file) {
     // Append a ';' and a newline after each JS file to prevent them from running together.
     if (advagg_file_exists($file)) {
-      $data .= file_get_contents($file) .";\n";
+      $data .= file_get_contents($file) . ";\n";
     }
   }
   return $data;
@@ -3039,7 +3066,7 @@ function advagg_drupal_to_js($var) {
       foreach ($var as $k => $v) {
         $output[] = advagg_drupal_to_js(strval($k)) . ': ' . advagg_drupal_to_js($v);
       }
-      return '{ ' . implode(', ', $output) .' }';
+      return '{ ' . implode(', ', $output) . ' }';
     default:
       return 'null';
   }
@@ -3126,7 +3153,7 @@ function _advagg_drupal_load_stylesheet($matches) {
   // Alter all internal url() paths. Leave external paths alone. We don't need
   // to normalize absolute paths here (i.e. remove folder/... segments) because
   // that will be done later.
-  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1'. $directory, $file);
+  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1' . $directory, $file);
 }
 
 /**
@@ -3219,7 +3246,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
 
   $flags = STREAM_CLIENT_CONNECT;
   if (variable_get('advagg_async_socket_connect', ADVAGG_ASYNC_SOCKET_CONNECT)) {
-    $flags = STREAM_CLIENT_ASYNC_CONNECT|STREAM_CLIENT_CONNECT;
+    $flags = STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT;
   }
   if (empty($options['context'])) {
     $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], $flags);
@@ -3301,7 +3328,7 @@ function advagg_async_connect_http_request($url, array $options = array()) {
  *   (optional) A file pointer.
  * @param $request
  *   (optional) A string containing the request headers to send to the server.
-  * @param $timeout
+ * @param $timeout
  *   (optional) An integer holding the stream timeout value.
  * @return bool
  *   TRUE if function worked as planed.
@@ -3441,7 +3468,7 @@ function advagg_ctools_process_js_files(&$js_files, $scope, $scripts = NULL) {
   // them into account so we don't double-load scripts.
   static $replacements = NULL;
   if (!isset($replacements)) {
-  $replacements = module_invoke_all('js_replacements');
+    $replacements = module_invoke_all('js_replacements');
   }
 
   $settings = array();
@@ -3546,7 +3573,7 @@ function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_ex
   // Setup variables.
   $variables = array(
     'css' => array(),
-    'js'  => array(),
+    'js' => array(),
   );
   // Setup render functions.
   $css_function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
@@ -3632,9 +3659,9 @@ function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_ex
  */
 function advagg_css_array($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess, $inline_included, $files_included, $files_aggregates_included) {
   return array(
-    'inline'            => $inline_included,
-    'files'             => $files_included,
-    'files_aggregates'  => $files_aggregates_included,
+    'inline' => $inline_included,
+    'files' => $files_included,
+    'files_aggregates' => $files_aggregates_included,
   );
 }
 
@@ -3666,10 +3693,10 @@ function advagg_css_array($external_no_preprocess, $module_no_preprocess, $outpu
  */
 function advagg_js_array($external_no_preprocess, $output_preprocess, $output_no_preprocess, $setting_no_preprocess, $inline_no_preprocess, $scope, $js_settings_array, $inline_included, $files_included, $files_aggregates_included) {
   return array(
-    'settings'          => $js_settings_array,
-    'inline'            => $inline_included,
-    'files'             => $files_included,
-    'files_aggregates'  => $files_aggregates_included,
+    'settings' => $js_settings_array,
+    'inline' => $inline_included,
+    'files' => $files_included,
+    'files_aggregates' => $files_aggregates_included,
   );
 }
 
@@ -3723,7 +3750,7 @@ function _advagg_build_url($filepath = '') {
   // Server auth.
   $auth = '';
   if (isset($_SERVER['AUTH_TYPE']) && $_SERVER['AUTH_TYPE'] == 'Basic') {
-    $auth = $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] .'@';
+    $auth = $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] . '@';
   }
 
   // Host.

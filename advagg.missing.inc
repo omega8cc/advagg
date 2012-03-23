@@ -88,14 +88,14 @@ function advagg_missing_regenerate() {
     $file_type_path = $css_path;
   }
   $new_filename = advagg_build_filename($type, $md5, $counter);
-  $filepath = $file_type_path .'/'. $new_filename;
+  $filepath = $file_type_path . '/' . $new_filename;
 
   // Only process if we got an older counter.
   // If we have an out of range counter see if a simlar file exists and serve
   // that up.
   if ($counter > $counter_in_db || $counter < 0) {
     $new_filename = advagg_build_filename($type, $md5, $counter_in_db);
-    $filepath = $file_type_path .'/'. $new_filename;
+    $filepath = $file_type_path . '/' . $new_filename;
     advagg_missing_send_file($filepath, advagg_build_uri($filepath), $type);
     exit;
   }
@@ -201,7 +201,7 @@ function advagg_missing_remove_cache($bundle_md5) {
   if (!empty($filenames)) {
     foreach ($filenames as $key => $info) {
       $filename = $info['filename'];
-      $filepath = $file_type_path .'/'. $filename;
+      $filepath = $file_type_path . '/' . $filename;
 
       cache_set($filepath, FALSE, 'cache_advagg', TRUE);
     }
@@ -228,7 +228,7 @@ function advagg_missing_async_opp($output, $wait = TRUE, $content_type = "text/h
   // Calculate Content Length
   if ($length == 0) {
     $output .= "\n";
-    $length = (advagg_missing_strlen($output)-1);
+    $length = (advagg_missing_strlen($output) -1);
   }
   // Prime php for background operations
   $loop = 0;
@@ -342,8 +342,8 @@ function advagg_missing_file_create_path($dest = 0) {
       return $dest;
     }
     // Not found, try again with prefixed directory path.
-    else if (file_check_location($file_path .'/'. $dest, $file_path)) {
-      return $file_path .'/'. $dest;
+    else if (file_check_location($file_path . '/' . $dest, $file_path)) {
+      return $file_path . '/' . $dest;
     }
   }
   // File not found.

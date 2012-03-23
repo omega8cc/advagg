@@ -72,9 +72,9 @@ function advagg_js_compress_requirements($phase) {
     $advagg_js_compress_callback = variable_get('advagg_js_compress_callback', ADVAGG_JS_COMPRESS_CALLBACK);
     if (is_array($compressible)) {
       $requirements['advagg_js_compress_callback'] = array(
-        'title'       => $t('AdvAgg JS Compress - Callback'),
-        'severity'    => REQUIREMENT_WARNING,
-        'value'       => $t('The callback for testing if a JS file is compressible is not working.'),
+        'title' => $t('AdvAgg JS Compress - Callback'),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('The callback for testing if a JS file is compressible is not working.'),
         'description' => $t('As a result if jsmin+ encounters a file that it cannot compress, it will kill that PHP process.'),
       );
       if ($advagg_js_compress_callback != FALSE) {
@@ -83,9 +83,9 @@ function advagg_js_compress_requirements($phase) {
     }
     else {
       $requirements['advagg_js_compress_callback'] = array(
-        'title'       => $t('AdvAgg JS Compress - Callback'),
-        'severity'    => REQUIREMENT_OK,
-        'value'       => $t('The callback is working correctly.'),
+        'title' => $t('AdvAgg JS Compress - Callback'),
+        'severity' => REQUIREMENT_OK,
+        'value' => $t('The callback is working correctly.'),
       );
       if ($advagg_js_compress_callback == FALSE) {
         variable_set('advagg_js_compress_callback', TRUE);
@@ -100,9 +100,9 @@ function advagg_js_compress_requirements($phase) {
     // doesn't impose a limit on memory used by PHP scripts
     if ($compressor == 0 && $memory_limit && $memory_limit != -1 && parse_size($memory_limit) < parse_size('96M')) {
       $requirements['advagg_js_compress_memory_limit'] = array(
-        'title'       => $t('AdvAgg JS Compress - Memory Limit'),
-        'value'       => $memory_limit,
-        'severity'    => REQUIREMENT_WARNING,
+        'title' => $t('AdvAgg JS Compress - Memory Limit'),
+        'value' => $memory_limit,
+        'severity' => REQUIREMENT_WARNING,
         'description' => $t('It is highly recommended that you set your PHP memory_limit at least 96M if you are going to use JSMin+.'),
       );
     }
@@ -146,7 +146,10 @@ function advagg_js_compress_update_6100() {
   $ret = array();
 
   cache_clear_all('*', 'cache_advagg_files_data', TRUE);
-  $ret[] = array('success' => TRUE, 'query' => 'advagg files_data cache flushed.');
+  $ret[] = array(
+    'success' => TRUE,
+    'query' => 'advagg files_data cache flushed.',
+  );
 
   return $ret;
 }
@@ -185,7 +188,10 @@ function advagg_js_compress_update_6103() {
 
   // Clear cache_advagg_js_compress_file cache.
   cache_clear_all('*', 'cache_advagg_js_compress_file', TRUE);
-  $ret[] = array('success' => TRUE, 'query' => 'The cache_advagg_js_compress_file table has been cleared.');
+  $ret[] = array(
+    'success' => TRUE,
+    'query' => 'The cache_advagg_js_compress_file table has been cleared.',
+  );
 
   return $ret;
 }

@@ -162,7 +162,7 @@ function advagg_js_compress_advagg_js_inline_alter(&$contents) {
     $original_contents = $contents;
 
     list($before, $after) = advagg_js_compress_jsminplus($contents);
-    $ratio = ($before - $after)/$before;
+    $ratio = ($before - $after) / $before;
     // Make sure the returned string is not empty or has a VERY high
     // compression ratio.
     if (empty($contents) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
@@ -247,7 +247,7 @@ function advagg_js_compress_prep(&$contents, $files, $bundle_md5) {
         $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
         if ($compressor == 0) {
           list($before, $after) = advagg_js_compress_jsminplus($data);
-          $ratio = ($before - $after)/$before;
+          $ratio = ($before - $after) / $before;
           // Make sure the returned string is not empty or has a VERY high
           // compression ratio.
           if (empty($data) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
@@ -282,7 +282,7 @@ function advagg_js_compress_jsminplus(&$contents) {
   }
 
   // JSMin+ the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') .'/jsminplus.inc');
+  require_once(drupal_get_path('module', 'advagg_js_compress') . '/jsminplus.inc');
   // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
   $before = strlen($contents);
   $original_contents = $contents;
@@ -429,7 +429,7 @@ function advagg_js_compress_test_file($values = NULL) {
     list($before, $after) = advagg_js_compress_jsminplus($contents);
 
     // Set to "-2" if compression ratio sucks.
-    $ratio = ($before - $after)/$before;
+    $ratio = ($before - $after) / $before;
     if ($ratio < variable_get('advagg_js_compress_ratio', ADVAGG_JS_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -2;
       advagg_set_file_data($md5, $data);
@@ -551,7 +551,7 @@ function advagg_js_compress_file_saver($data, $dest, $force, $type) {
  */
 function advagg_js_compress_jspacker(&$contents) {
   // Use Packer on the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') .'/jspacker.inc');
+  require_once(drupal_get_path('module', 'advagg_js_compress') . '/jspacker.inc');
 
   // Add semicolons to the end of lines if missing.
   $contents = str_replace("}\n", "};\n", $contents);

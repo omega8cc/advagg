@@ -23,10 +23,10 @@ function advagg_bundler_admin_settings_form() {
   $form = array();
 
   $form['advagg_bundler_active'] = array(
-    '#type'           => 'checkbox',
-    '#title'          => t('Bundler is Active'),
-    '#default_value'  => variable_get('advagg_bundler_active', ADVAGG_BUNDLER_ACTIVE),
- '#description'    => t('If not checked, the bundler will passively monitor your site, but it will not split up aggregates.'),
+    '#type' => 'checkbox',
+    '#title' => t('Bundler is Active'),
+    '#default_value' => variable_get('advagg_bundler_active', ADVAGG_BUNDLER_ACTIVE),
+    '#description' => t('If not checked, the bundler will passively monitor your site, but it will not split up aggregates.'),
   );
 
   $options = array(
@@ -43,25 +43,25 @@ function advagg_bundler_admin_settings_form() {
     10 => 10,
   );
   $form['advagg_bundler_max_css'] = array(
-    '#type'           => 'select',
-    '#title'          => t('Max Number Of CSS Bundles Per Page'),
-    '#default_value'  => variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS),
-    '#options'        => $options,
-    '#description'    => t('If 0 is selected then the bundler is disabled'),
+    '#type' => 'select',
+    '#title' => t('Max Number Of CSS Bundles Per Page'),
+    '#default_value' => variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS),
+    '#options' => $options,
+    '#description' => t('If 0 is selected then the bundler is disabled'),
   );
   $form['advagg_bundler_max_js'] = array(
-    '#type'           => 'select',
-    '#title'          => t('Max Number Of JS Bundles Per Page'),
-    '#default_value'  => variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS),
-    '#options'        => $options,
-    '#description'    => t('If 0 is selected then the bundler is disabled'),
+    '#type' => 'select',
+    '#title' => t('Max Number Of JS Bundles Per Page'),
+    '#default_value' => variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS),
+    '#options' => $options,
+    '#description' => t('If 0 is selected then the bundler is disabled'),
   );
 
   $form['info'] = array(
-    '#type'          => 'fieldset',
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
-    '#title'         => t('Raw Grouping Info'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Raw Grouping Info'),
   );
   module_load_include('inc', 'advagg', 'advagg.admin');
   $analysis = advagg_bundler_analysis('', TRUE);
@@ -74,10 +74,10 @@ function advagg_bundler_admin_settings_form() {
 
   list($rawtext, $rows) = advagg_form_print_r($data);
   $form['info']['advagg_bundler_info'] = array(
-    '#type'           => 'textarea',
-    '#title'          => t('%count different groupings', array('%count' => count($data))),
-    '#default_value'  => $rawtext,
-    '#rows'           => $rows-1,
+    '#type' => 'textarea',
+    '#title' => t('%count different groupings', array('%count' => count($data))),
+    '#default_value' => $rawtext,
+    '#rows' => $rows -1,
   );
 
   return system_settings_form($form);
