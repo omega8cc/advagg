@@ -58,6 +58,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
   // Get max number of sub aggregates to create.
   $max_css = variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS);
   $max_js = variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS);
+  $schema = advagg_get_current_schema();
 
   $output = array();
   foreach ($filenames as $values) {
@@ -65,7 +66,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     $filetype = $values['filetype'];
     $files = $values['files'];
     $bundle_md5 = $values['bundle_md5'];
-    $cached_data_key = 'bundler_' . $bundle_md5;
+    $cached_data_key = 'bundler_' . $schema . '_' . $bundle_md5;
 
     // Try cache first; cache table is cache_advagg_bundle_reuse.
     $cached_data = advagg_cached_bundle_get($cached_data_key, 'advagg_bundler_filenames_alter');
@@ -145,7 +146,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
     $data = array();
     foreach ($groupings as $bundle) {
       $values['files'] = $bundle;
-      $values['bundle_md5'] = md5(implode('', $bundle));
+      $values['bundle_md5'] = md5($schema . implode('', $bundle));
       $data[] = $values;
       $output[] = $values;
     }
