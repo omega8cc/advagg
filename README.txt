@@ -11,6 +11,7 @@ CONTENTS OF THIS FILE
  * Features & benefits
  * Configuration
  * Notes
+ * JavaScript Bookmarklet
  * Technical Details & Hooks
  * Single htaccess rules
  * nginx Configuration
@@ -209,6 +210,15 @@ lower.
 The cron job for AdvAgg is there as a garbage collector. It only needs to run
 once a week; running it every hour isn't going to be bad, it isn't necessary
 though.
+
+
+JAVASCRIPT BOOKMARKLET
+----------------------
+
+You can use this JS code as a bookmarklet for toggling the AdvAgg URL parameter.
+See http://en.wikipedia.org/wiki/Bookmarklet for more details.
+
+    javascript:(function(){var loc = document.location.href,qs = document.location.search,regex_off = /\&?advagg=-1/,goto = loc;if(qs.match(regex_off)) {goto = loc.replace(regex_off, '');} else {qs = qs ? qs + '&advagg=-1' : '?advagg=-1';goto = document.location.pathname + qs;}window.location = goto;})();
 
 
 TECHNICAL DETAILS & HOOKS
