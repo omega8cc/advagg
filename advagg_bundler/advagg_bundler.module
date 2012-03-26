@@ -58,7 +58,7 @@ function advagg_bundler_advagg_filenames_alter(&$filenames) {
   // Get max number of sub aggregates to create.
   $max_css = variable_get('advagg_bundler_max_css', ADVAGG_BUNDLER_MAX_CSS);
   $max_js = variable_get('advagg_bundler_max_js', ADVAGG_BUNDLER_MAX_JS);
-  $schema = advagg_get_current_schema();
+  $schema = advagg_get_server_schema();
 
   $output = array();
   foreach ($filenames as $values) {
