@@ -1024,9 +1024,9 @@ class csstidy {
       if (is_numeric($media)) {
         $media++;
       }
-    }
-    else {
-      $media .= " ";
+      else {
+        $media .= " ";
+      }
     }
     return $media;
   }
