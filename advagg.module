@@ -384,8 +384,8 @@ function advagg_theme_registry_alter(&$theme_registry) {
 
     // If ctools hasn't been patched remove it from getting pre-processed.
     if (   !empty($_advagg['ctools_patched'])
-         && module_exists('ctools')
-         && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
+        && module_exists('ctools')
+        && $key = array_search('ctools_ajax_page_preprocess', $theme_registry['page']['preprocess functions'])
           ) {
       unset($theme_registry['page']['preprocess functions'][$key]);
     }
@@ -2117,9 +2117,9 @@ function advagg_unlimited_css_builder($external_no_preprocess, $module_no_prepro
       // Test for versions > 1.5
       // Test for Pocket IE
       if (   stristr($_SERVER['HTTP_USER_AGENT'], 'microsoft internet explorer')
-           || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
-           || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
-          ) {
+          || stristr($_SERVER['HTTP_USER_AGENT'], 'msie')
+          || stristr($_SERVER['HTTP_USER_AGENT'], 'mspie')
+            ) {
         $is_ie = TRUE;
       }
     }

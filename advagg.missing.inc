@@ -338,11 +338,11 @@ function advagg_missing_file_create_path($dest = 0) {
       return $dest;
     }
     // check if the destination is instead inside the Drupal temporary files directory.
-    else if (file_check_location($dest, file_directory_temp())) {
+    elseif (file_check_location($dest, file_directory_temp())) {
       return $dest;
     }
     // Not found, try again with prefixed directory path.
-    else if (file_check_location($file_path . '/' . $dest, $file_path)) {
+    elseif (file_check_location($file_path . '/' . $dest, $file_path)) {
       return $file_path . '/' . $dest;
     }
   }
