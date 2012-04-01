@@ -322,7 +322,7 @@ function advagg_cron() {
   // Prune old bundles
   $bundles_removed += db_result(db_query("
     SELECT COUNT(DISTINCT bundle_md5) AS advagg_count
-    FROM advagg_bundles
+    FROM {advagg_bundles}
     WHERE timestamp < %d
   ", $max_bundle_time));
   $results = db_query("DELETE FROM {advagg_bundles} WHERE timestamp < %d", $max_bundle_time);
