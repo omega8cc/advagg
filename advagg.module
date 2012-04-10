@@ -534,6 +534,44 @@ function advagg_css_array_fixer(&$css_func) {
 }
 
 /**
+ * Remove css files from the array if there is a color module equivalent of it.
+ *
+ * @param $css_func
+ *   Drupal CSS array.
+ */
+function advagg_color_css(&$css) {
+  if (!module_exists('color') || empty($css['all']['theme'])) {
+    return;
+  }
+  $file_path = file_directory_path();
+
+  // Find all color css files.
+  $files = array();
+  foreach ($css['all']['theme'] as $file => $preprocess) {
+    if (strpos($file, $file_path) === FALSE) {
+      continue;
+    }
+    if (strpos($file, '/color/') === FALSE) {
+      continue;
+    }
+    $files[basename($file)] = $file;
+  }
+
+  // Return if no color css files are found.
+  if (empty($files)) {
+    return;
+  }
+
+  // Remove css files from the stack if there is a color variant of it.
+  foreach ($css['all']['theme'] as $file => $preprocess) {
+    $basename = basename($file);
+    if (isset($files[$basename]) && !in_array($file, $files)) {
+      unset($css['all']['theme'][$file]);
+    }
+  }
+}
+
+/**
  * See if a string ends with a substring.
  *
  * @param $haystack
@@ -694,6 +732,7 @@ function advagg_processor(&$variables) {
   }
   $css_conditional_styles = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
   $css_styles = $variables['styles'];
+  advagg_color_css($css);
 
   // Try cache.
   if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
