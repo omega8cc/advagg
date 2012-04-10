@@ -445,14 +445,16 @@ function advagg_get_root_files_dir($reset = FALSE) {
   file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
 
   // Get path name
-  $conf_path = conf_path();
-  if (is_link($conf_path)) {
-    $path = readlink($conf_path);
+  if (!variable_get('advagg_no_conf_path', FALSE)) {
+    $conf_path = conf_path();
+    if (is_link($conf_path)) {
+      $path = readlink($conf_path);
+    }
+    $conf_path = str_replace("\\", '/', $conf_path);
+    $conf_path = explode('/', $conf_path);
+    $conf_path = array_pop($conf_path);
+    $custom_path = $custom_path . '/' . $conf_path;
   }
-  $conf_path = str_replace("\\", '/', $conf_path);
-  $conf_path = explode('/', $conf_path);
-  $conf_path = array_pop($conf_path);
-  $custom_path = $custom_path . '/' . $conf_path;
   file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
 
   $css_path = $custom_path . '/advagg_css';
