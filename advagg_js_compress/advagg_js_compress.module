@@ -281,19 +281,24 @@ function advagg_js_compress_jsminplus(&$contents) {
     @set_time_limit(240);
   }
 
-  // JSMin+ the contents of the aggregated file.
-  require_once(drupal_get_path('module', 'advagg_js_compress') . '/jsminplus.inc');
-  // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
+  // Only include jsminplus.inc if the JSMinPlus class doesn't exist.
+  if (!class_exists('JSMinPlus')) {
+    include(drupal_get_path('module', 'advagg_js_compress') . '/jsminplus.inc');
+  }
+  // Get the JS string length before the compression operation.
   $before = strlen($contents);
   $original_contents = $contents;
   try {
+    // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
     $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
     ob_start();
+    // JSMin+ the contents of the aggregated file.
     $contents = JSMinPlus::minify($contents);
     $error = trim(ob_get_contents());
     if (!empty($error)) {
       throw new Exception($error);
     }
+    // Get the JS string length after the compression operation.
     $after = strlen($contents);
   }
   catch (Exception $e) {
@@ -446,7 +451,7 @@ function advagg_js_compress_test_file($values = NULL) {
       exit;
     }
 
-    // Everything worked, mark this file as compressable.
+    // Everything worked, mark this file as compressible.
     $data['advagg_js_compress']['tested']['jsminplus'] = 1;
     advagg_set_file_data($md5, $data);
 
