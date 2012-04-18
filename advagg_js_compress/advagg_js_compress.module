@@ -162,10 +162,13 @@ function advagg_js_compress_advagg_js_inline_alter(&$contents) {
     $original_contents = $contents;
 
     list($before, $after) = advagg_js_compress_jsminplus($contents);
-    $ratio = ($before - $after) / $before;
+    $ratio = 0;
+    if ($before != 0) {
+      $ratio = ($before - $after) / $before;
+    }
     // Make sure the returned string is not empty or has a VERY high
     // compression ratio.
-    if (empty($contents) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+    if (empty($contents) || empty($ratio) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
       $contents = $original_contents;
     }
 
@@ -247,10 +250,13 @@ function advagg_js_compress_prep(&$contents, $files, $bundle_md5) {
         $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
         if ($compressor == 0) {
           list($before, $after) = advagg_js_compress_jsminplus($data);
-          $ratio = ($before - $after) / $before;
+          $ratio = 0;
+          if ($before != 0) {
+            $ratio = ($before - $after) / $before;
+          }
           // Make sure the returned string is not empty or has a VERY high
           // compression ratio.
-          if (empty($data) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+          if (empty($data) || empty($ratio) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
             $data = advagg_build_js_bundle(array($file));
           }
           elseif (isset($key)) {
@@ -435,7 +441,10 @@ function advagg_js_compress_test_file($values = NULL) {
     list($before, $after) = advagg_js_compress_jsminplus($contents);
 
     // Set to "-2" if compression ratio sucks.
-    $ratio = ($before - $after) / $before;
+    $ratio = 0;
+    if ($before != 0) {
+      $ratio = ($before - $after) / $before;
+    }
     if ($ratio < variable_get('advagg_js_compress_ratio', ADVAGG_JS_COMPRESS_RATIO)) {
       $data['advagg_js_compress']['tested']['jsminplus'] = -2;
       advagg_set_file_data($md5, $data);
