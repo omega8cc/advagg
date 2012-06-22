@@ -6,42 +6,19 @@
  */
 
 /**
- * Page generation function for admin/settings/advagg
- */
-function advagg_admin_page() {
-  $output = '';
-  $file_path = drupal_get_path('module', 'advagg');
-  drupal_add_js(array('advagg' => array('key' => md5(drupal_get_private_key()))), array('type' => 'setting', 'scope' => JS_DEFAULT));
-  drupal_add_js($file_path . '/advagg.admin.js');
-
-  $output .= drupal_get_form('advagg_admin_settings_form');
-  return $output;
-}
-
-/**
- * Page generation function for admin/settings/advagg/info
- */
-function advagg_admin_info_page() {
-  $output = '';
-  return $output . drupal_get_form('advagg_admin_info_form');
-}
-
-/**
  * Form builder; Configure advagg settings.
  *
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_admin_info_form($form) {
-  $form = array();
-
+function advagg_admin_info_form($form, $form_state) {
   $form['info'] = array(
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#title' => t('Hook Theme Info'),
   );
-  init_theme();
+  drupal_theme_initialize();
   $hooks = theme_get_registry();
   $data = implode("\n", $hooks['page']['preprocess functions']);
   $form['info']['advagg_debug_info'] = array(
@@ -136,7 +113,7 @@ function advagg_admin_info_form($form) {
   // If any files are missing list them.
   // TODO: Reset missing files list.
   $results = db_query("SELECT * FROM {advagg_files} WHERE checksum = :checksum ORDER BY filetype ASC", array(':checksum' => '-1'));
-  while ($row = db_fetch_array($results)) {
+  while ($row = $results->fetchAssoc()) {
     $form['missing'][$row['filename_md5']] = array(
       '#type' => 'markup',
       '#value' => '<div>' . check_plain($row['filename']) . '<br /></div>',
@@ -171,13 +148,22 @@ function advagg_admin_info_form($form) {
   timer_start(__FUNCTION__ . 'local');
   $data_local = drupal_http_request($url, array('headers' => $headers));
   $data_local->timer = timer_stop(__FUNCTION__ . 'local');
-  list($data, $rows) = advagg_form_print_r($data_local);
-  $form['async']['normal'] = array(
-    '#type' => 'textarea',
-    '#title' => check_plain($url),
-    '#default_value' => $data,
-    '#rows' => min($rows + 1, 50),
-  );
+  // Use Krumo if Devel is installed.
+  if (module_exists('devel')) {
+    $form['async']['cdn'] = array(
+      '#markup' => kprint_r($data_local, TRUE, t('Local Asynchronous Mode') . ' (' . check_plain($url) . ')'),
+    );
+  }
+  // Otherwise, throw output in a textarea.
+  else {
+    list($data, $rows) = advagg_form_print_r($data_local);
+    $form['async']['normal'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Local Asynchronous Mode') . ' (' . check_plain($url) . ')',
+      '#default_value' => $data,
+      '#rows' => min($rows + 1, 50),
+    );
+  }
 
   if (module_exists('cdn')) {
     global $conf;
@@ -191,13 +177,22 @@ function advagg_admin_info_form($form) {
     timer_start(__FUNCTION__ . 'cdn');
     $data_cdn = drupal_http_request($url_cdn);
     $data_cdn->timer = timer_stop(__FUNCTION__ . 'cdn');
-    list($data, $rows) = advagg_form_print_r($data_cdn);
-    $form['async']['cdn'] = array(
-      '#type' => 'textarea',
-      '#title' => check_plain($url_cdn),
-      '#default_value' => $data,
-      '#rows' => min($rows + 1, 50),
-    );
+    // Use Krumo if Devel is installed.
+    if (module_exists('devel')) {
+      $form['async']['cdn'] = array(
+        '#markup' => kprint_r($data_cdn, TRUE, t('CDN Asynchronous Mode') . ' (' . check_plain($url) . ')'),
+      );
+    }
+    // Otherwise, throw output in a textarea.
+    else {
+      list($data, $rows) = advagg_form_print_r($data_cdn);
+      $form['async']['cdn'] = array(
+        '#type' => 'textarea',
+        '#title' => t('CDN Asynchronous Mode') . ' (' . check_plain($url) . ')',
+        '#default_value' => $data,
+        '#rows' => min($rows + 1, 50),
+      );
+    }
   }
 
   return $form;
@@ -209,9 +204,12 @@ function advagg_admin_info_form($form) {
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_admin_settings_form($form) {
-  $form = array();
-  $readme = drupal_get_path('module', 'advagg') . '/README.txt';
+function advagg_admin_settings_form($form, $form_state) {
+  $file_path = drupal_get_path('module', 'advagg');
+  drupal_add_js(array('advagg' => array('key' => md5(drupal_get_private_key()))), 'setting');
+  drupal_add_js($file_path . '/advagg.admin.js');
+  
+  $readme = $file_path . '/README.txt';
   $bundle_count = db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp")->fetchField();
 
   $form['advagg_enabled'] = array(
@@ -258,7 +256,7 @@ function advagg_admin_settings_form($form) {
     '#default_value' => variable_get('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH),
     '#description' => t('You can enable if your server will not timeout on a request. This will call advagg_rebuild_bundle() as a <a href="http://php.net/register-shutdown-function">shutdown function</a> for every bundle that has been marked as expired; thus rebuilding that bundle in the same request as the flush.'),
   );
-  $public_downloads = (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PUBLIC);
+  $public_downloads = (file_default_scheme() == 'public');
   if (!$public_downloads) {
     $extra = module_exists('boost') ? t('If boost is installed, you can use the cache directory for advagg files.') : '';
     $form['advagg_custom_files_dir'] = array(
@@ -417,9 +415,9 @@ function advagg_admin_settings_form_validate($form, &$form_state) {
 
         // Remove old files.
         list($css_path, $js_path) = advagg_get_root_files_dir();
-        file_scan_directory($css_path, '/.*/', array('callback' => 'file_delete'));
+        file_scan_directory($css_path, '/.*/', array('callback' => 'file_unmanaged_delete'));
         @unlink($css_path);
-        file_scan_directory($js_path, '/.*/', array('callback' => 'file_delete'));
+        file_scan_directory($js_path, '/.*/', array('callback' => 'file_unmanaged_delete'));
         @unlink($js_path);
 
         // Set new path.
@@ -467,8 +465,8 @@ function advagg_admin_settings_form_submit($form, &$form_state) {
     advagg_clearstatcache(TRUE, $css_path);
     advagg_clearstatcache(TRUE, $js_path);
     if (file_exists($css_path) || file_exists($js_path)) {
-      file_delete($css_path);
-      file_delete($js_path);
+      file_unmanaged_delete($css_path);
+      file_unmanaged_delete($js_path);
       drupal_set_message(t('Advanced CSS/JS Aggregation directory level htaccess files have been removed.'));
     }
   }
@@ -507,8 +505,8 @@ function advagg_admin_master_reset() {
   module_invoke_all('advagg_master_reset');
 
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  file_scan_directory($css_path, '/.*/', array('callback' => 'file_delete'));
-  file_scan_directory($js_path, '/.*/', array('callback' => 'file_delete'));
+  file_scan_directory($css_path, '/.*/', array('callback' => 'file_unmanaged_delete'));
+  file_scan_directory($js_path, '/.*/', array('callback' => 'file_unmanaged_delete'));
 
   drupal_set_message(t('Advanced CSS/JS Aggregation has been reset.'));
 }
@@ -663,10 +661,10 @@ function advagg_admin_recreate_htaccess() {
   $css_path .= '/.htaccess';
   $js_path .= '/.htaccess';
 
-  file_delete($css_path);
+  file_unmanaged_delete($css_path);
   advagg_htaccess_check_generate($css_path, TRUE);
 
-  file_delete($js_path);
+  file_unmanaged_delete($js_path);
   advagg_htaccess_check_generate($js_path, TRUE);
 
   drupal_set_message(t('Advanced CSS/JS Aggregation htaccess files rebuilt.'));

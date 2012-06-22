@@ -175,16 +175,15 @@ function advagg_permission() {
 function advagg_menu() {
   list($css_path, $js_path) = advagg_get_root_files_dir();
   $file_path = drupal_get_path('module', 'advagg');
-
   $items = array();
-  $items[$css_path[1] . '/%'] = array(
+  $items[$css_path . '/%'] = array(
     'page callback' => 'advagg_missing_css',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
-  $items[$js_path[1] . '/%'] = array(
+  $items[$js_path . '/%'] = array(
     'page callback' => 'advagg_missing_js',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
@@ -194,7 +193,8 @@ function advagg_menu() {
   $items['admin/config/advagg'] = array(
     'title' => 'Advanced CSS/JS Aggregation',
     'description' => 'Configuration for Advanced CSS/JS Aggregation.',
-    'page callback' => 'advagg_admin_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_admin_settings_form'),
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('administer site configuration'),
     'file path' => $file_path,
@@ -208,7 +208,8 @@ function advagg_menu() {
   $items['admin/config/advagg/info'] = array(
     'title' => 'Information',
     'description' => 'More detailed information about advagg.',
-    'page callback' => 'advagg_admin_info_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_admin_info_form'),
     'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer site configuration'),
     'file path' => $file_path,
@@ -272,7 +273,7 @@ function advagg_cron() {
 
   // Prune old files
   $results = db_query("SELECT filename, filename_md5 FROM {advagg_files}");
-  while ($row = db_fetch_array($results)) {
+  while ($row = $results->fetchAssoc()) {
     // If the file exists, do nothing
     if (file_exists($row['filename'])) {
       continue;
@@ -306,7 +307,7 @@ function advagg_cron() {
     SELECT COUNT(DISTINCT bundle_md5) AS advagg_count
     FROM advagg_bundles
     WHERE timestamp < %d
-  ", $max_bundle_time)->fetchField();
+  ", array($max_bundle_time))->fetchField();
   // TODO Please review the conversion of this statement to the D7 database API syntax.
   /* db_query("DELETE FROM {advagg_bundles} WHERE timestamp < %d", $max_bundle_time) */
   $results = db_delete('advagg_bundles')
@@ -327,6 +328,41 @@ function advagg_cron() {
  */
 function advagg_init() {
   global $base_path, $conf;
+  
+  // Initially set these values.
+  if (!isset($conf['advagg_enabled'])) {
+    variable_set('advagg_enabled', ADVAGG_ENABLED);
+  }
+  if (!isset($conf['advagg_closure'])) {
+    variable_set('advagg_closure', ADVAGG_CLOSURE);
+  }
+  if (!isset($conf['advagg_async_generation'])) {
+    variable_set('advagg_async_generation', ADVAGG_ASYNC_GENERATION);
+  }
+  if (!isset($conf['advagg_gzip_compression'])) {
+    variable_set('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION);
+  }
+  if (!isset($conf['advagg_dir_htaccess'])) {
+    variable_set('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS);
+  }
+  if (!isset($conf['advagg_rebuild_on_flush'])) {
+    variable_set('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH);
+  }
+  if (!isset($conf['advagg_custom_files_dir'])) {
+    variable_set('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  }
+  if (!isset($conf['advagg_aggregate_mode'])) {
+    variable_set('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE);
+  }
+  if (!isset($conf['advagg_page_cache_mode'])) {
+    variable_set('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE);
+  }
+  if (!isset($conf['advagg_checksum_mode'])) {
+    variable_set('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
+  }
+  if (!isset($conf['advagg_server_addr'])) {
+    variable_set('advagg_server_addr', FALSE);
+  }
 
   // Disable advagg if requested.
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
@@ -371,7 +407,6 @@ function advagg_theme_registry_alter(&$theme_registry) {
   if (!isset($theme_registry['html'])) {
     return;
   }
-
   // Replace core's process function with our own.
   $index = array_search('template_process_html', $theme_registry['html']['process functions']);
   if ($index !== FALSE) {
@@ -707,23 +742,20 @@ function advagg_get_js($scope, $javascript) {
  *   )
  */
 function advagg_get_root_files_dir() {
-  static $css_paths;
-  static $js_paths;
+  static $css_path;
+  static $js_path;
 
   // Make sure directories are available and writable.
-  if (empty($css_paths) || empty($js_paths)) {
-    $css_paths[0] = 'public://advagg_css';
-    $js_paths[0] = 'public://advagg_js';
-
-    file_prepare_directory($css_paths[0], FILE_CREATE_DIRECTORY);
-    file_prepare_directory($js_paths[0], FILE_CREATE_DIRECTORY);
-
-    // Not sure how good of an idea this is, but it does work.
-    $css_paths[1] = str_replace('\\', '/', substr(drupal_realpath($css_paths[0]), strlen(DRUPAL_ROOT)+1));
-    $js_paths[1] = str_replace('\\', '/', substr(drupal_realpath($js_paths[0]), strlen(DRUPAL_ROOT)+1));
+  if (empty($css_path) || empty($js_path)) {
+    $css_path = 'public://advagg_css';
+    $js_path = 'public://advagg_js';
+    file_prepare_directory($css_path, FILE_CREATE_DIRECTORY);
+    file_prepare_directory($js_path, FILE_CREATE_DIRECTORY);
+    $css_path = parse_url(file_create_url($css_path));
+    $js_path = parse_url(file_create_url($js_path));
   }
 
-  return array($css_paths, $js_paths);
+  return array(ltrim($css_path['path'], '/'), ltrim($js_path['path'], '/'));
 }
 
 /**
@@ -1491,7 +1523,7 @@ function advagg_file_saver($data, $dest, $force, $type) {
     advagg_clearstatcache(TRUE, $dest);
     if (@filesize($dest) == 0 && !empty($data)) {
       // Filename is bad, create a new one next time.
-      file_delete($dest);
+      file_unmanaged_delete($dest);
       return FALSE;
     }
   }
@@ -1514,7 +1546,7 @@ function advagg_file_saver($data, $dest, $force, $type) {
         advagg_clearstatcache(TRUE, $gzip_dest);
         if (@filesize($gzip_dest) == 0 && !empty($gzip_data)) {
           // Filename is bad, create a new one next time.
-          file_delete($gzip_dest);
+          file_unmanaged_delete($gzip_dest);
           return FALSE;
         }
       }
@@ -1603,7 +1635,7 @@ function advagg_file_move(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
   if (advagg_file_copy($source, $dest, $replace)) {
     $path_current = is_object($source) ? $source->filepath : $source;
 
-    if ($path_original == $path_current || file_delete($path_original)) {
+    if ($path_original == $path_current || file_unmanaged_delete($path_original)) {
       return 1;
     }
     drupal_set_message(t('The removal of the original file %file has failed.', array('%file' => $path_original)), 'error');
@@ -1854,7 +1886,7 @@ function advagg_flush_caches() {
   // Find files that have changed.
   $needs_refreshing = array();
   $results = db_query("SELECT * FROM {advagg_files}");
-  while ($row = db_fetch_array($results)) {
+  while ($row = $results->fetchAssoc()) {
     $checksum = advagg_checksum($row['filename']);
     // Let other modules see if the bundles needs to be rebuilt.
     // hook_advagg_files_table
@@ -2001,8 +2033,8 @@ function advagg_delete_file_if_stale($filename) {
     $file_last_a = max($file_last_a, $file_last_agz);
     if ($now - $data->data > $file_last_used && $now - $file_last_a > $file_last_used) {
       // Delete file if it hasn't been used in the last 3 days.
-      file_delete($filename);
-      file_delete($filename . '.gz');
+      file_unmanaged_delete($filename);
+      file_unmanaged_delete($filename . '.gz');
     }
     else {
       // Touch file so we don't check again for another 6 days.
@@ -2011,8 +2043,8 @@ function advagg_delete_file_if_stale($filename) {
   }
   else {
     // Delete file if it is not in the cache.
-    file_delete($filename);
-    file_delete($filename . '.gz');
+    file_unmanaged_delete($filename);
+    file_unmanaged_delete($filename . '.gz');
   }
 }
 
@@ -4105,6 +4137,5 @@ function _advagg_build_url($filepath = '') {
 //         ) {
 //     $port = ':' . $_SERVER['SERVER_PORT'];
 //   }
-
   return 'http://' . $auth . $ip . $port . $base_path . $filepath;
 }
