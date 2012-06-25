@@ -40,11 +40,13 @@ function advagg_css_compress_admin_settings_form() {
     '#options' => array(
       0 => 'CSSTidy',
       1 => 'CSS Compressor',
+      2 => 'YUI CSSMin',
     ),
-    '#description' => t('<a href="@csscompressor">CSS Compressor</a> is a faster CSS compression alternative. <a href="@csstidy">CSSTidy</a> is a well known CSS compression library, but it has some known issues/limitations.',
+    '#description' => t('<a href="@csstidy">CSSTidy</a> is a well known CSS compression library, but it has some known issues/limitations.<br \> <a href="@csscompressor">CSS Compressor</a> is a faster CSS compression alternative.<br \> <a href="@cssmin">YUI CSSMin</a> is a php port of the java library from yahoo and is fairly quick.<br \>',
       array(
-      '@csscompressor' => 'http://www.codenothing.com/css-compressor/',
       '@csstidy' => 'https://github.com/Cerdic/CSSTidy',
+      '@csscompressor' => 'http://www.codenothing.com/css-compressor/',
+      '@cssmin' => 'http://code.google.com/p/minify/',
     )
     ),
   );
@@ -56,7 +58,7 @@ function advagg_css_compress_admin_settings_form() {
       '#description' => t('If disabled CSS selectors will try to be merged together, significantly reducing the css file size. May result in broken layouts is disabled. This only applies to compression through the CSSTidy library.'),
     );
   }
-  else {
+  elseif ($advagg_css_compressor == 1) {
     $form['advagg_css_compress_compressor_level'] = array(
       '#type' => 'radios',
       '#title' => t('CSS Compressor: Select the CSS Compression to use'),

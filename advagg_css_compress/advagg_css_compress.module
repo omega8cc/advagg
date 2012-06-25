@@ -29,7 +29,7 @@ define('ADVAGG_CSS_COMPRESS_INLINE_CACHE', TRUE);
 /**
  * Default value for which css compression library to use.
  */
-define('ADVAGG_CSS_COMPRESSOR', 1);
+define('ADVAGG_CSS_COMPRESSOR', 2);
 
 /**
  * Default value for which css compression library to use.
@@ -70,8 +70,11 @@ function advagg_css_compress_advagg_css_alter(&$contents, $files, $bundle_md5) {
   if ($compressor == 0) {
     advagg_css_compress_css_tidy($contents);
   }
-  if ($compressor == 1) {
+  elseif ($compressor == 1) {
     advagg_css_compress_css_compressor($contents);
+  }
+  elseif ($compressor == 2) {
+    advagg_css_compress_yui_cssmin($contents);
   }
 }
 
@@ -155,6 +158,25 @@ function advagg_css_compress_css_compressor(&$contents) {
   $CSSC = new CSSCompression(variable_get('advagg_css_compress_compressor_level', ADVAGG_CSS_COMPRESS_COMPRESSOR_LEVEL));
   $contents = $CSSC->compress($contents);
 }
+
+/**
+ * Use the CSSmin library from YUI to compress the CSS.
+ */
+function advagg_css_compress_yui_cssmin(&$contents) {
+  // Include CSS_Compressor from Stephen Clay.
+//   $filename = drupal_get_path('module', 'advagg_css_compress') . '/yui/Compressor.inc';
+//   include_once($filename);
+//   $contents = preg_replace('/@charset[^;]+;\\s*/', '', $contents);
+//   $contents = Minify_CSS_Compressor::process($contents);
+
+  // Include CSSmin from YUI.
+  $filename = drupal_get_path('module', 'advagg_css_compress') . '/yui/CSSMin.inc';
+  include_once($filename);
+  $cssmin = new CSSmin();
+  // Create a new line after 4k of text.
+  $contents = trim($cssmin->run($contents, 4096));
+}
+
 
 /**
  * Implementation of hook_flush_caches().
