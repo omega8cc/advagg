@@ -163,18 +163,12 @@ function advagg_css_compress_css_compressor(&$contents) {
  * Use the CSSmin library from YUI to compress the CSS.
  */
 function advagg_css_compress_yui_cssmin(&$contents) {
-  // Include CSS_Compressor from Stephen Clay.
-//   $filename = drupal_get_path('module', 'advagg_css_compress') . '/yui/Compressor.inc';
-//   include_once($filename);
-//   $contents = preg_replace('/@charset[^;]+;\\s*/', '', $contents);
-//   $contents = Minify_CSS_Compressor::process($contents);
-
   // Include CSSmin from YUI.
   $filename = drupal_get_path('module', 'advagg_css_compress') . '/yui/CSSMin.inc';
   include_once($filename);
   $cssmin = new CSSmin();
-  // Create a new line after 4k of text.
-  $contents = trim($cssmin->run($contents, 4096));
+  // Compress the CSS splitting lines after 4k of text
+  $contents = $cssmin->run($contents, 4096);
 }
 
 
