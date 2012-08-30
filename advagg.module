@@ -2771,15 +2771,32 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
  *   string containing all the files.
  */
 function advagg_build_css_bundle($files) {
-  $data = '';
+  // Check if CSS compression is enabled.
+  if (module_exists('advagg_css') && (variable_get('advagg_css_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES) || variable_get('advagg_css_compress_inline', ADVAGG_CSS_COMPRESS_INLINE))) {
+    $optimize = FALSE;
+  }
+  else {
+    $optimize = TRUE;
+  }
+
   // Build aggregate CSS file.
+  $data = '';
   foreach ($files as $file) {
-    $contents = drupal_load_stylesheet($file, TRUE);
-    // Return the path to where this CSS file originated from.
-    $base = base_path() . dirname($file) . '/';
-    _drupal_build_css_path(NULL, $base);
-    // Prefix all paths within this CSS file, ignoring external and absolute paths.
-    $data .= preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_drupal_build_css_path', $contents);
+    $contents = advagg_drupal_load_stylesheet($file, $optimize);
+
+    // Build the base URL of this CSS file: start with the full URL.
+    $css_base_url = file_create_url($file);
+    // Move to the parent.
+    $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
+    // Simplify to a relative URL if the stylesheet URL starts with the
+    // base URL of the website.
+    if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
+      $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
+    }
+
+    _drupal_build_css_path(NULL, $css_base_url . '/');
+    // Anchor all paths in the CSS with its base URL, ignoring external and absolute paths.
+    $data .= preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
   }
 
   // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
@@ -3195,6 +3212,54 @@ function _advagg_drupal_load_stylesheet($matches) {
   // to normalize absolute paths here (i.e. remove folder/... segments) because
   // that will be done later.
   return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1' . $directory, $file);
+}
+
+/**
+ * Loads the stylesheet and resolves all @import commands.
+ *
+ * Loads a stylesheet and replaces @import commands with the contents of the
+ * imported file. Use this instead of file_get_contents when processing
+ * stylesheets.
+ *
+ * The returned contents are compressed removing white space and comments only
+ * when CSS aggregation is enabled. This optimization will not apply for
+ * color.module enabled themes with CSS aggregation turned off.
+ *
+ * @param $file
+ * Name of the stylesheet to be processed.
+ * @param $optimize
+ * Defines if CSS contents should be compressed or not.
+ * @param $reset_basepath
+ * Used internally to facilitate recursive resolution of @import commands.
+ *
+ * @return
+ * Contents of the stylesheet, including any resolved @import commands.
+ */
+function advagg_drupal_load_stylesheet($file, $optimize = NULL, $reset_basepath = TRUE) {
+  // These statics are not cache variables, so we don't use drupal_static().
+  static $_optimize, $basepath;
+  if ($reset_basepath) {
+    $basepath = '';
+  }
+  // Store the value of $optimize for preg_replace_callback with nested
+  // @import loops.
+  if (isset($optimize)) {
+    $_optimize = $optimize;
+  }
+  // Stylesheets are relative one to each other. Start by adding a base path
+  // prefix provided by the parent stylesheet (if necessary).
+  if ($basepath && !file_uri_scheme($file)) {
+    $file = $basepath . '/' . $file;
+  }
+  $basepath = dirname($file);
+  // Load the CSS stylesheet. We suppress errors because themes may specify
+  // stylesheets in their .info file that don't exist in the theme's path,
+  // but are merely there to disable certain module CSS files.
+  if ($contents = @file_get_contents($file)) {
+    // Return the processed stylesheet.
+    return advagg_drupal_load_stylesheet_content($contents, $_optimize);
+  }
+  return '';
 }
 
 /**
