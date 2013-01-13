@@ -451,3 +451,72 @@ function advagg_unlimited_css_import($files, &$styles) {
     $styles .= "\n" . '<style type="text/css" media="' . $media . '">' . "\n" . $import . '</style>';
   }
 }
+
+/**
+ * Merge 2 css arrays together.
+ *
+ * @param $array1
+ *   first array
+ * @param $array2
+ *   second array
+ * @return
+ *   combined array
+ */
+function advagg_merge_css($array1, $array2) {
+  if (!empty($array2)) {
+    foreach ($array2 as $media => $types) {
+      foreach ($types as $type => $files) {
+        foreach ($files as $file => $preprocess) {
+          $array1[$media][$type][$file] = $preprocess;
+        }
+      }
+    }
+  }
+  return $array1;
+}
+
+/**
+ * Merge 2 css arrays together.
+ *
+ * @param $array1
+ *   first array
+ * @param $array2
+ *   second array
+ * @return
+ *   combined array
+ */
+function advagg_merge_inline_css($array1, $array2) {
+  foreach ($array2 as $media => $types) {
+    foreach ($types as $type => $blobs) {
+      foreach ($blobs as $prefix => $data) {
+        foreach ($data as $suffix => $blob) {
+          $array1[$media][$type][$prefix][$suffix] = $blob;
+        }
+      }
+    }
+  }
+  return $array1;
+}
+
+/**
+ * Remove .less files from the array.
+ *
+ * @param $css_func
+ *   Drupal CSS array.
+ */
+function advagg_css_array_fixer(&$css_func) {
+  if (!module_exists('less')) {
+    return;
+  }
+
+  // Remove '.css.less' files from the stack.
+  foreach ($css_func as $k => $v) {
+    foreach ($v as $ke => $va) {
+      foreach ($va as $file => $preprocess) {
+        if (substr($file, -5) === '.less') {
+          unset($css_func[$k][$ke][$file]);
+        }
+      }
+    }
+  }
+}
