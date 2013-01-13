@@ -295,3 +295,34 @@ function advagg_get_js($scope, $javascript) {
   // Make sure any inline or JS setting variables appear last after libraries have loaded.
   return implode('', $processed) . $output;
 }
+
+/**
+ * Special handling for jquery update.
+ *
+ * @param $js
+ *   List of files in the header
+ */
+function advagg_jquery_updater(&$js) {
+  if (!module_exists('jquery_update') || !variable_get('jquery_update_replace', TRUE) || empty($js)) {
+    return;
+  }
+
+  // Replace jquery.js first.
+  $new_jquery = array(jquery_update_jquery_path() => $js['core']['misc/jquery.js']);
+  $js['core'] = array_merge($new_jquery, $js['core']);
+  unset($js['core']['misc/jquery.js']);
+
+  // Loop through each of the required replacements.
+  $replacement_path = drupal_get_path('module', 'jquery_update') . '/replace/';
+  foreach (jquery_update_get_replacements() as $type => $replacements) {
+    foreach ($replacements as $find => $replace) {
+      // If the file to replace is loaded on this page...
+      if (isset($js[$type][$find])) {
+        // Create a new entry for the replacement file, and unset the original one.
+        $replace = $replacement_path . $replace;
+        $js[$type][$replace] = $js[$type][$find];
+        unset($js[$type][$find]);
+      }
+    }
+  }
+}
