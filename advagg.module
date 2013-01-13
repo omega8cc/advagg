@@ -125,41 +125,6 @@ function advagg_admin_flush_cache() {
 function advagg_init() {
   global $base_path, $conf;
   
-  // Initially set these values.
-  if (!isset($conf['advagg_enabled'])) {
-    variable_set('advagg_enabled', ADVAGG_ENABLED);
-  }
-  if (!isset($conf['advagg_closure'])) {
-    variable_set('advagg_closure', ADVAGG_CLOSURE);
-  }
-  if (!isset($conf['advagg_async_generation'])) {
-    variable_set('advagg_async_generation', ADVAGG_ASYNC_GENERATION);
-  }
-  if (!isset($conf['advagg_gzip_compression'])) {
-    variable_set('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION);
-  }
-  if (!isset($conf['advagg_dir_htaccess'])) {
-    variable_set('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS);
-  }
-  if (!isset($conf['advagg_rebuild_on_flush'])) {
-    variable_set('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH);
-  }
-  if (!isset($conf['advagg_custom_files_dir'])) {
-    variable_set('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
-  }
-  if (!isset($conf['advagg_aggregate_mode'])) {
-    variable_set('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE);
-  }
-  if (!isset($conf['advagg_page_cache_mode'])) {
-    variable_set('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE);
-  }
-  if (!isset($conf['advagg_checksum_mode'])) {
-    variable_set('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
-  }
-  if (!isset($conf['advagg_server_addr'])) {
-    variable_set('advagg_server_addr', FALSE);
-  }
-
   // Disable advagg if requested.
   if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
     $conf['advagg_enabled'] = FALSE;

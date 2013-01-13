@@ -150,3 +150,8 @@ define('ADVAGG_PREPROCESS_CSS', TRUE);
  * Default value to see if preprocess CSS files.
  */
 define('ADVAGG_ONLY_CSS_FROM_VARIABLES', FALSE);
+
+/**
+ * Default value for server address.
+ */
+define('ADVAGG_SERVER_ADDR', FALSE);

@@ -9,12 +9,52 @@
  * Implements hook_enable().
  */
 function advagg_enable() {
+  global $conf;
+
+  // Ensure advagg constants are available.
+  drupal_load('module', 'advagg');
+  
+  // Initially set these values.
+  if (!isset($conf['advagg_enabled'])) {
+    variable_set('advagg_enabled', ADVAGG_ENABLED);
+  }
+  if (!isset($conf['advagg_closure'])) {
+    variable_set('advagg_closure', ADVAGG_CLOSURE);
+  }
+  if (!isset($conf['advagg_async_generation'])) {
+    variable_set('advagg_async_generation', ADVAGG_ASYNC_GENERATION);
+  }
+  if (!isset($conf['advagg_gzip_compression'])) {
+    variable_set('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION);
+  }
+  if (!isset($conf['advagg_dir_htaccess'])) {
+    variable_set('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS);
+  }
+  if (!isset($conf['advagg_rebuild_on_flush'])) {
+    variable_set('advagg_rebuild_on_flush', ADVAGG_REBUILD_ON_FLUSH);
+  }
+  if (!isset($conf['advagg_custom_files_dir'])) {
+    variable_set('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
+  }
+  if (!isset($conf['advagg_aggregate_mode'])) {
+    variable_set('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE);
+  }
+  if (!isset($conf['advagg_page_cache_mode'])) {
+    variable_set('advagg_page_cache_mode', ADVAGG_PAGE_CACHE_MODE);
+  }
+  if (!isset($conf['advagg_checksum_mode'])) {
+    variable_set('advagg_checksum_mode', ADVAGG_CHECKSUM_MODE);
+  }
+  if (!isset($conf['advagg_server_addr'])) {
+    variable_set('advagg_server_addr', ADVAGG_SERVER_ADDR);
+  }
+  
   // Create the advagg_css/ path within the files folder.
   $css_path = 'public://advagg_css';
   file_prepare_directory($css_path, FILE_CREATE_DIRECTORY);
   $js_path = 'public://advagg_js';
   // Create the advagg_js/ path within the files folder.
-  file_prepare_directory($js_path, FILE_CREATE_DIRECTORY);
+  file_prepare_directory($js_path, FILE_CREATE_DIRECTORY);  
 
   // Include the module file.
   register_shutdown_function('drupal_load', 'module', 'advagg');
