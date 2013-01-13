@@ -51,14 +51,6 @@ function advagg_menu() {
   return $items;
 }
 
-function advagg_admin_menu_cache_info() {
-  $caches['advagg'] = array(
-    'title' => t('Advanced CSS/JS Aggregation'),
-    'callback' => 'advagg_admin_flush_cache',
-  );
-  return $caches;
-}
-
 /**
  * Implements hook_form_FORM_ID_alter().
  */
@@ -66,7 +58,21 @@ function advagg_form_system_performance_settings_alter(&$form, &$form_state) {
   include_once(dirname(__FILE__) . "/includes/admin.inc");
   _advagg_form_system_performance_settings_alter($form, $form_state);
 }
- 
+
+/**
+ * Implements hook_admin_menu_cache_info().
+ *
+ * Add in a cache flush for advagg.
+ */
+function advagg_admin_menu_cache_info() {
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+    $caches['advagg'] = array(
+      'title' => t('CSS/JS Aggregation'),
+      'callback' => 'advagg_admin_flush_cache',
+    );
+    return $caches;
+  }
+}
 
 /**
  * Implements hook_admin_menu_output_alter().
@@ -74,11 +80,43 @@ function advagg_form_system_performance_settings_alter(&$form, &$form_state) {
  * Add in a cache flush for advagg.
  */
 function advagg_admin_menu_output_alter(&$content) {
-  if (!empty($content['icon']['icon']['flush-cache']['#access']) && !empty($content['icon']['icon']['flush-cache']['requisites']) && empty($content['icon']['icon']['flush-cache']['advagg'])) {
-    $content['icon']['icon']['flush-cache']['advagg'] = $content['icon']['icon']['flush-cache']['requisites'];
-    $content['icon']['icon']['flush-cache']['advagg']['#title'] = t('Adv CSS/JS Agg');
-    $content['icon']['icon']['flush-cache']['advagg']['#href'] = 'admin_menu/flush-cache/advagg';
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+    // Remove default core aggregation link.
+    unset($content['icon']['icon']['flush-cache']['assets']);
   }
+}
+
+/**
+ * Cache clear callback for admin_menu/flush-cache/advagg.
+ */
+function advagg_admin_flush_cache() {
+  global $_advagg;
+  _drupal_flush_css_js();
+  $cache_tables = advagg_flush_caches();
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+
+  if (empty($_advagg['files'])) {
+    drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));
+  }
+  else {
+    if (empty($_advagg['rebuilt'])) {
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />!files <br />Marked Bundles Count: %count', array(
+        '!files' => nl2br(filter_xss(implode("\n", $_advagg['files']))),
+        '%count' => count($_advagg['bundles']),
+      )
+      ));
+    }
+    else {
+      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been incremented and rebuilt. <br />Old Files: <br />%files <br />%count done.', array(
+        '%files' => implode('<br />', $_advagg['files']),
+        '%count' => count($_advagg['rebuilt']),
+      )
+      ));
+    }
+  }
+  drupal_goto(current_path());
 }
 
 /**

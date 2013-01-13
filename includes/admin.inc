@@ -207,7 +207,7 @@ function _advagg_admin_form_general(&$form, &$form_state) {
 function _advagg_admin_settings_cache(&$form, &$form_state) {
   $bundle_count = db_query("SELECT COUNT(*) FROM (SELECT bundle_md5 FROM {advagg_bundles} GROUP BY bundle_md5) as temp")->fetchField();
   $callbacks = array(
-    'advagg_admin_flush_cache_button' => array(
+    'advagg_admin_flush_cache' => array(
       '#value' => t('Flush AdvAgg Cache'),
       '#description' => t('Scan all files referenced in aggregated files. If any of them have changed, increment the counters containing that file and rebuild the bundle.'),
     ),
@@ -535,12 +535,12 @@ function advagg_admin_settings_form_submit($form, &$form_state) {
   // If checksum mode changed, smart flush cache with new checksum mode selected.
   if ($conf['advagg_checksum_mode'] != $form_state['values']['advagg_checksum_mode']) {
     $conf['advagg_checksum_mode'] = $form_state['values']['advagg_checksum_mode'];
-    advagg_admin_flush_cache_button();
+    advagg_admin_flush_cache();
   }
 
   // If advagg is enabled/disabled, smart flush the cache.
   if ($conf['advagg_enabled'] != $form_state['values']['advagg_enabled']) {
-    advagg_admin_flush_cache_button();
+    advagg_admin_flush_cache();
   }
 }
 
@@ -561,46 +561,6 @@ function advagg_admin_master_reset() {
   file_scan_directory($js_path, '/.*/', array('callback' => 'file_unmanaged_delete'));
 
   drupal_set_message(t('Advanced CSS/JS Aggregation has been reset.'));
-}
-
-/**
- * Cache clear button.
- */
-function advagg_admin_flush_cache_button() {
-  global $_advagg;
-  _drupal_flush_css_js();
-  $cache_tables = advagg_flush_caches();
-  foreach ($cache_tables as $table) {
-    cache_clear_all('*', $table, TRUE);
-  }
-
-  if (empty($_advagg['files'])) {
-    drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and no out of date bundles detected.'));
-  }
-  else {
-    if (empty($_advagg['rebuilt'])) {
-      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been marked. <br />Old Files: <br />!files <br />Marked Bundles Count: %count', array(
-        '!files' => nl2br(filter_xss(implode("\n", $_advagg['files']))),
-        '%count' => count($_advagg['bundles']),
-      )
-      ));
-    }
-    else {
-      drupal_set_message(t('Advanced CSS/JS Aggregation cache scanned and out of date bundles have been incremented and rebuilt. <br />Old Files: <br />%files <br />%count done.', array(
-        '%files' => implode('<br />', $_advagg['files']),
-        '%count' => count($_advagg['rebuilt']),
-      )
-      ));
-    }
-  }
-}
-
-/**
- * Cache clear callback for admin_menu/flush-cache/advagg.
- */
-function advagg_admin_flush_cache() {
-  advagg_admin_flush_cache_button();
-  drupal_goto();
 }
 
 /**
