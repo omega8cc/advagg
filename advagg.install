@@ -712,3 +712,25 @@ function advagg_schema() {
 
   return $schema;
 }
+
+/**
+*
+* Upgrades Advanced Aggregation from Drupal 6 to Drupal 7
+*
+*/
+function advagg_update_7000(&$sandbox){
+  $variables = array(
+    'advagg_checksum_mode' => array(
+      'mtime' => 'filemtime',
+    ),
+  );
+  foreach ($variables as $name => $values) {
+    foreach ($values as $old => $new) {
+      $variable = variable_get($name, $old);
+      if ($variable === $old) {
+        variable_set($name, $new);
+      }
+    }
+  }
+  return t('Upgraded Advanced Aggregation from Drupal 6 to Drupal 7.');
+}
