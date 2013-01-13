@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Constants for the advagg module.
+ */
+
+/**
  * Default value to see if advanced CSS/JS aggregation is enabled.
  */
 define('ADVAGG_ENABLED', TRUE);

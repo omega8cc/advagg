@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Admin page callbacks for the advanced CSS/JS aggregation module.
+ * Administration UI callbacks for the advagg module.
  */
  
 function _advagg_form_system_performance_settings_alter(&$form, &$form_state) {

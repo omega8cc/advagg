@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ * CSS processing functions for the advagg module.
+ */
 function advagg_process_html_css(&$variables) {
   // dpm($variables);
   return;
@@ -519,4 +523,182 @@ function advagg_css_array_fixer(&$css_func) {
       }
     }
   }
+}
+
+/**
+ * Adds a CSS file to the stylesheet queue.
+ *
+ * @param $data
+ *   (optional) The CSS data that will be set. If not set then the inline CSS
+ *   array will be passed back.
+ * @param $media
+ *   (optional) The media type for the stylesheet, e.g., all, print, screen.
+ * @param $prefix
+ *   (optional) prefix to add before the inlined css.
+ * @param $suffix
+ *   (optional) suffix to add after the inlined css.
+ * @return
+ *   An array of CSS files.
+ */
+function advagg_add_css_inline($data = NULL, $media = 'all', $prefix = NULL, $suffix = NULL) {
+  static $css = array();
+
+  // Store inline data in a static.
+  if (isset($data)) {
+    if (!isset($css[$media]['inline'][$prefix][$suffix])) {
+      $css[$media]['inline'][$prefix][$suffix] = $data;
+    }
+    else {
+      $css[$media]['inline'][$prefix][$suffix] .= "\n" . $data;
+    }
+    return;
+  }
+  else {
+    return $css;
+  }
+}
+
+/**
+ * Process the contents of a stylesheet for aggregation.
+ *
+ * @param $contents
+ *   The contents of the stylesheet.
+ * @param $optimize
+ *   (optional) Boolean whether CSS contents should be minified. Defaults to
+ *   FALSE.
+ * @return
+ *   Contents of the stylesheet including the imported stylesheets.
+ */
+function advagg_drupal_load_stylesheet_content($contents, $optimize = FALSE) {
+  // Remove multiple charset declarations for standards compliance (and fixing Safari problems).
+  $contents = preg_replace('/^@charset\s+[\'"](\S*)\b[\'"];/i', '', $contents);
+
+  if ($optimize) {
+    // Perform some safe CSS optimizations.
+    // Regexp to match comment blocks.
+    $comment     = '/\*[^*]*\*+(?:[^/*][^*]*\*+)*/';
+    // Regexp to match double quoted strings.
+    $double_quot = '"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"';
+    // Regexp to match single quoted strings.
+    $single_quot = "'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'";
+    // Strip all comment blocks, but keep double/single quoted strings.
+    $contents = preg_replace(
+      "<($double_quot|$single_quot)|$comment>Ss",
+      "$1",
+      $contents
+    );
+    // Remove certain whitespace.
+    // There are different conditions for removing leading and trailing
+    // whitespace.
+    // @see http://php.net/manual/en/regexp.reference.subpatterns.php
+    $contents = preg_replace('<
+      # Strip leading and trailing whitespace.
+        \s*([@{};,])\s*
+      # Strip only leading whitespace from:
+      # - Closing parenthesis: Retain "@media (bar) and foo".
+      | \s+([\)])
+      # Strip only trailing whitespace from:
+      # - Opening parenthesis: Retain "@media (bar) and foo".
+      # - Colon: Retain :pseudo-selectors.
+      | ([\(:])\s+
+    >xS',
+      // Only one of the three capturing groups will match, so its reference
+      // will contain the wanted value and the references for the
+      // two non-matching groups will be replaced with empty strings.
+      '$1$2$3',
+      $contents
+    );
+    // End the file with a new line.
+    $contents = trim($contents);
+    $contents .= "\n";
+  }
+
+  // Replaces @import commands with the actual stylesheet content.
+  // This happens recursively but omits external files.
+  $contents = preg_replace_callback('/@import\s*(?:url\(\s*)?[\'"]?(?![a-z]+:)([^\'"\()]+)[\'"]?\s*\)?\s*;/', '_advagg_drupal_load_stylesheet', $contents);
+  return $contents;
+}
+
+/**
+ * Loads stylesheets recursively and returns contents with corrected paths.
+ *
+ * This function is used for recursive loading of stylesheets and
+ * returns the stylesheet content with all url() paths corrected.
+ */
+function _advagg_drupal_load_stylesheet($matches) {
+  $filename = $matches[1];
+  // Load the imported stylesheet and replace @import commands in there as well.
+  $file = advagg_build_css_bundle(array($filename));
+
+  // Determine the file's directory.
+  $directory = dirname($filename);
+  // If the file is in the current directory, make sure '.' doesn't appear in
+  // the url() path.
+  $directory = $directory == '.' ? '' : $directory . '/';
+
+  // Alter all internal url() paths. Leave external paths alone. We don't need
+  // to normalize absolute paths here (i.e. remove folder/... segments) because
+  // that will be done later.
+  return preg_replace('/url\(\s*([\'"]?)(?![a-z]+:|\/+)/i', 'url(\1' . $directory, $file);
+}
+
+/**
+ * Logic to figure out what kind of css tags to use.
+ *
+ * @param $external_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $module_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $output_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $output_preprocess
+ *   array of css files ($media, $href, $prefix, $suffix)
+ * @param $theme_no_preprocess
+ *   array of css files ($media, $href)
+ * @param $inline_no_preprocess
+ *   array of css data to inline ($media, $data)
+ * @param $files_included
+ *   array of css files included. $a[$media][] = $filename
+ * @param $files_aggregates_included
+ *   array of css files & aggregates included. $a[$media][] = $filename
+ * @param $inline_included
+ *   array of inline css included. $a[$media][] = $datablob;
+ * @return
+ *   html for loading the css. html for the head.
+ */
+function advagg_css_array($external_no_preprocess, $module_no_preprocess, $output_no_preprocess, $output_preprocess, $theme_no_preprocess, $inline_no_preprocess, $inline_included, $files_included, $files_aggregates_included) {
+  return array(
+    'inline' => $inline_included,
+    'files' => $files_included,
+    'files_aggregates' => $files_aggregates_included,
+  );
+}
+
+/**
+ * Given a list of files, grab their contents and glue it into one big string.
+ *
+ * @param $files
+ *   array of filenames.
+ * @return
+ *   string containing all the files.
+ */
+function advagg_build_css_bundle($files) {
+  $data = '';
+  // Build aggregate CSS file.
+  foreach ($files as $file) {
+    $contents = drupal_load_stylesheet($file, TRUE);
+    // Return the path to where this CSS file originated from.
+    $base = base_path() . dirname($file) . '/';
+    _drupal_build_css_path(NULL, $base);
+    // Prefix all paths within this CSS file, ignoring external and absolute paths.
+    $data .= preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_drupal_build_css_path', $contents);
+  }
+
+  // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
+  // @import rules must proceed any other style, so we move those to the top.
+  $regexp = '/@import[^;]+;/i';
+  preg_match_all($regexp, $data, $matches);
+  $data = preg_replace($regexp, '', $data);
+  $data = implode('', $matches[0]) . $data;
+  return $data;
 }

@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Drupal cron functions for the advagg module.
+ */
+
+/**
  * Implements hook_cron().
  */
 function advagg_cron() {
