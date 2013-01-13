@@ -51,24 +51,6 @@ function advagg_menu() {
   return $items;
 }
 
-/**
- * Implements hook_admin_menu().
- *
- * Add in a cache flush for advagg.
- */
-function advagg_admin_menu(&$deleted) {
-  $links = array();
-
-  $links[] = array(
-    'title' => 'Adv CSS/JS Agg',
-    'path' => 'admin_menu/flush-cache/advagg',
-    'query' => 'destination',
-    'parent_path' => 'admin_menu/flush-cache',
-  );
-
-  return $links;
-}
-
 function advagg_admin_menu_cache_info() {
   $caches['advagg'] = array(
     'title' => t('Advanced CSS/JS Aggregation'),
