@@ -6,6 +6,31 @@
  */
 
 /**
+ * Filter array by matching keys against a regular expression.
+ *
+ * @param string $pattern
+ *   The regular expression to check keys with.
+ * @param array $array
+ *   The array to iterate over, this is referenced.
+ * @param int $depth
+ *   (optional) The maximum depth to iterate through. Defaults to 0, the entire array.
+ * @param int $level
+ *   The internal variable to determine which iteration level the function is at. Do not use.
+ */
+function advagg_array_filter_preg_match($pattern, array &$array, $depth = 0, $level = 1) {
+  foreach ($array as $key => $value) {
+    // If pattern matches key, remove it.
+    if (preg_match($pattern, $key) === 1) {
+      unset($array[$key]);
+    }
+    // Continue iterating over array if necessary.
+    elseif (is_array($value) && ($depth === 0 || $depth < $level)) {
+      advagg_preg_array_filter_key($pattern, $array[$key], $depth, $level + 1);
+    }
+  }
+}
+
+/**
  * Given path output uri to that file
  */
 function advagg_build_uri($path) {

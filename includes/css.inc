@@ -557,29 +557,6 @@ function advagg_merge_inline_css($array1, $array2) {
 }
 
 /**
- * Remove .less files from the array.
- *
- * @param $css_func
- *   Drupal CSS array.
- */
-function advagg_css_array_fixer(&$css_func) {
-  if (!module_exists('less')) {
-    return;
-  }
-
-  // Remove '.css.less' files from the stack.
-  foreach ($css_func as $k => $v) {
-    foreach ($v as $ke => $va) {
-      foreach ($va as $file => $preprocess) {
-        if (substr($file, -5) === '.less') {
-          unset($css_func[$k][$ke][$file]);
-        }
-      }
-    }
-  }
-}
-
-/**
  * Adds a CSS file to the stylesheet queue.
  *
  * @param $data
