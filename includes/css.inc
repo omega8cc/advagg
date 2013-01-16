@@ -38,22 +38,25 @@ function advagg_process_html_css(&$variables) {
   $cid = FALSE;
   if ($cache) {
     // Build the cache ID.
-    $cid = array('advagg_processor', 'css');
-    // MD5 hash of the CSS array.
-    $cid[] = md5(serialize(array($css, $conditional)));
-    // Schema, http or https.
-    $cid[] = advagg_get_server_schema();
-    // Hostname.
-    $cid[] = $_SERVER['HTTP_HOST'];
-    // CSS rendering function.
-    $cid[] = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
-    // CSS/JS query string.
-    $cid[] = variable_get('css_js_query_string', base_convert(REQUEST_TIME, 10, 36));
-    $cid = implode(':', $cid);
+    $cid = 'advagg:css:' . md5(serialize(array(
+      // Schema, http or https.
+      advagg_get_server_schema(),
+      // Hostname.
+      $_SERVER['HTTP_HOST'],
+      // CSS rendering function.
+      variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION),
+      // CSS array.
+      $css,
+      // Conditional CSS markup.
+      $conditional,
+      // CSS/JS query string.
+      variable_get('css_js_query_string', base_convert(REQUEST_TIME, 10, 36)),
+    )));
   }
-  // Retrieve cashed data.
+  return;
+  // Retrieve existing cache data.
   $existing_cache = $cid ? cache_get($cid, 'cache_advagg_bundle_reuse') : FALSE;
-  // Use cached data if it exists.
+  // Use existing cache data if possible.
   if ($existing_cache && !empty($existing_cache->data)) {
     $variables['styles'] = $existing_cache->data;
   }
