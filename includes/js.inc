@@ -7,11 +7,12 @@
 
 
 function advagg_process_html_js(&$variables) {
+  // @TODO Remove forced return to actually process the JS.
+  return;
+
   $js = drupal_add_js();
   drupal_alter('js', $js);
   $variables['js'] = $js;
-  // dpm($js);
-  return;
   $schema = advagg_get_server_schema();
   $js_code = array();
   $js_code['header'] = drupal_add_js(NULL, array('type' => NULL));
