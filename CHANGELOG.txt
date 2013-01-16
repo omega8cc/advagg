@@ -1,0 +1,4 @@
+Change Log
+==========
+
+2013-01-16: RENAMED advagg_process_css_js_prep() to advagg_process_prep()

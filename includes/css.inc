@@ -109,7 +109,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
   }
 
   // Get useful info.
-  list($preprocess_css, $scheme, $query_string) = advagg_process_css_js_prep($noagg, 'css');
+  list($preprocess_css, $scheme, $query_string) = advagg_process_prep($noagg, 'css');
 
   // Invoke hook_advagg_css_pre_alter() to give installed modules a chance to
   // modify the data in the $javascript array if necessary.

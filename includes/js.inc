@@ -393,7 +393,7 @@ function advagg_process_js($master_set, $noagg = FALSE) {
   }
 
   // Get useful info.
-  list($preprocess_js, $scheme, $query_string) = advagg_process_css_js_prep($noagg, 'js');
+  list($preprocess_js, $scheme, $query_string) = advagg_process_prep($noagg, 'js');
   $advagg_json_encode_function = variable_get('advagg_json_encode_function', 'drupal_json_encode');
 
   $output = array();

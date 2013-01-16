@@ -239,67 +239,6 @@ function advagg_advagg_disable_processor() {
 }
 
 /**
- * ***MODIFIED CORE FUNCTIONS BELOW***
- *
- * @see drupal_get_css()
- * @see drupal_build_css_cache()
- * @see drupal_get_js()
- * @see drupal_build_js_cache()
- */
-
-/**
- * Returns an array of values needed for aggregation
- *
- * @param $noagg
- *   (optional) Bool indicating that aggregation should be disabled if TRUE.
- * @param $type
- *   (optional) String. js or css.
- * @return
- *   array of values to be imported via list() function.
- */
-function advagg_process_css_js_prep($noagg = FALSE, $type = NULL) {
-  global $conf;
-  $preprocess = (!defined('MAINTENANCE_MODE') || MAINTENANCE_MODE != 'update');
-
-  // URL bypass.
-  if ($noagg || (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation'))) {
-    $preprocess = FALSE;
-    $conf['advagg_use_full_cache'] = FALSE;
-  }
-
-  // Cookie bypass.
-  if (advagg_cookie_bypass()) {
-    $preprocess = FALSE;
-    $conf['advagg_use_full_cache'] = FALSE;
-  }
-
-  $scheme = file_default_scheme();
-  if ($scheme !== 'public') {
-    $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
-    if (!empty($custom_path)) {
-      $scheme = 'public';
-    }
-  }
-
-  if ($preprocess) {
-    if ($type == 'js' && !variable_get('advagg_preprocess_js', ADVAGG_PREPROCESS_JS)) {
-      $preprocess = FALSE;
-    }
-    if ($type == 'css' && !variable_get('advagg_preprocess_css', ADVAGG_PREPROCESS_CSS)) {
-      $preprocess = FALSE;
-    }
-  }
-
-  // A dummy query-string is added to filenames, to gain control over
-  // browser-caching. The string changes on every update or full cache
-  // flush, forcing browsers to load a new copy of the files, as the
-  // URL changed.
-  $query_string = '?' . substr(variable_get('css_js_query_string', '0'), 0, 1);
-
-  return array($preprocess, $scheme, $query_string);
-}
-
-/**
  * Send out a fast 404 and exit.
  */
 function advagg_missing_fast404($msg = '') {
