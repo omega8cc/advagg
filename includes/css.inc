@@ -4,59 +4,67 @@
  * @file
  * CSS processing functions for the advagg module.
  */
+
+/**
+ * The CSS processor function for handling aggregation.
+ *
+ * @param array $variables
+ *   The variables array provided by hook_process_html().
+ *
+ * @see advagg_process_html()
+ * @see hook_process_html()
+ */
 function advagg_process_html_css(&$variables) {
-  // dpm($variables);
+  // @TODO Remove forced return to actually process the CSS.
   return;
-  $schema = advagg_get_server_schema();
-  $css_var = $variables['css'];
-  $css_orig = $css_var;
+  
+  // Work from copied values.
+  $css = $variables['css'];
+  $styles = $variables['styles'];
+  $conditional = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
+  // Merge in any remaining CSS not provided by $variables array.
   if (!variable_get('advagg_only_css_from_variables', ADVAGG_ONLY_CSS_FROM_VARIABLES)) {
-    $css_func = drupal_add_css(CSS_DEFAULT);
-    advagg_css_array_fixer($css_func);
+    $css = array_merge_recursive_distinct($css, drupal_add_css());
   }
+  // Merge in inline css.
+  $css = array_merge_recursive_distinct($css, advagg_add_css_inline());
+  
+  // @TODO Need to put this back in.
+  // Remove .less files.
+  // advagg_css_array_fixer($css);
+  
+  // Determine if caching should be used.
+  $cache = variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE);
+  $cid = FALSE;
+  if ($cache) {
+    // Build the cache ID.
+    $cid = array('advagg_processor', 'css');
+    // MD5 hash of the CSS array.
+    $cid[] = md5(serialize(array($css, $conditional)));
+    // Schema, http or https.
+    $cid[] = advagg_get_server_schema();
+    // Hostname.
+    $cid[] = $_SERVER['HTTP_HOST'];
+    // CSS rendering function.
+    $cid[] = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
+    // CSS/JS query string.
+    $cid[] = variable_get('css_js_query_string', base_convert(REQUEST_TIME, 10, 36));
+    $cid = implode(':', $cid);
+  }
+  // Retrieve cashed data.
+  $existing_cache = $cid ? cache_get($cid, 'cache_advagg_bundle_reuse') : FALSE;
+  // Use cached data if it exists.
+  if ($existing_cache && !empty($existing_cache->data)) {
+    $variables['styles'] = $existing_cache->data;
+  }
+  // Otherwise, process the CSS.
   else {
-    $css_func = array();
-  }
-  $css = array_merge($css_var, $css_func);
-  $css_func_inline = advagg_add_css_inline();
-  if (!empty($css_func_inline)) {
-    $css = advagg_merge_inline_css($css, $css_func_inline);
-  }
-  $css_conditional_styles = !empty($variables['conditional_styles']) ? $variables['conditional_styles'] : '';
-  $css_styles = $variables['styles'];
-
-  // Try cache.
-  if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
-    // Build the cache ID
-    // md5 of the CSS input
-    // http or https
-    // hostname
-    // the js rendering function
-    // css/js query string
-    $cid = 'advagg_processor:css:'
-      . md5(serialize(array($css, $css_conditional_styles))) . ':'
-      . $schema . ':'
-      . $_SERVER['HTTP_HOST'] . ':'
-      . variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION) . ':'
-      . substr(variable_get('css_js_query_string', '0'), 0, 1);
-    $cache = cache_get($cid, 'cache_advagg_bundle_reuse');
-  }
-  elseif (isset($cid)) {
-    unset($cid);
-  }
-  if (!empty($cache->data)) {
-    $variables['styles'] = $cache->data;
-  }
-  else {
-    // Build HTML code.
-    $processed_css = advagg_process_css($css);
-    if (!empty($processed_css)) {
-      $variables['styles'] = $processed_css;
+    if ($processed = advagg_process_css($css)) {
+      $variables['styles'] = $processed;
     }
-    $variables['styles'] .= $css_conditional_styles;
-
+    $variables['styles'] .= $conditional;
     // Cache output.
-    if (isset($cid) && variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && lock_acquire($cid)) {
+    if ($cache && lock_acquire($cid)) {
       cache_set($cid, $variables['styles'], 'cache_advagg_bundle_reuse', CACHE_TEMPORARY);
       lock_release($cid);
     }
