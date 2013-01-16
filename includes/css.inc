@@ -29,10 +29,11 @@ function advagg_process_html_css(&$variables) {
   // Merge in inline css.
   $css = array_merge_recursive_distinct($css, advagg_add_css_inline());
   
-  // @TODO Need to put this back in.
-  // Remove .less files.
-  // advagg_css_array_fixer($css);
-  
+  // Filter out .less files.
+  if (module_exists('less')) {
+    advagg_array_filter_preg_match('/.less$/', $css, 1);
+  }
+      
   // Determine if caching should be used.
   $cache = variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE);
   $cid = FALSE;
