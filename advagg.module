@@ -6,13 +6,44 @@
  *
  */
 
+define('ADVAGG_AGGREGATE_MODE', 2);                       // Default mode for aggregate creation.
+define('ADVAGG_ASYNC_GENERATION', FALSE);                 // Default generate the aggregate async.
+define('ADVAGG_ASYNC_SOCKET_CONNECT', FALSE);             // Default value to see if we can use the STREAM_CLIENT_ASYNC_CONNECT flag.
+define('ADVAGG_BUNDLE_BUILT_MODE', FALSE);                // Default mode of advagg_bundle_built() in regards to how file_exists is used.
+define('ADVAGG_CHECKSUM_MODE', 'filemtime');              // Default file checksum mode.
+define('ADVAGG_CLOSURE', TRUE);                           // Default value to see if advanced CSS/JS aggregation is enabled.
+define('ADVAGG_COOKIE_NAME', 'AdvAggDisabled');           // Default value for the name of the cookie used to bypass aggregation.
+define('ADVAGG_CSS_COUNT_THRESHOLD', 25);                 // Default value for number of files that can be added before using @import.
+define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);           // Default value for not using @import if logged in and not IE.
+define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder'); // Default function used to render css output.
+define('ADVAGG_CUSTOM_FILES_DIR', '');                    // Default value for a custom files directory just for advagg directories.
+define('ADVAGG_DEBUG', FALSE);                            // Default value for writing debug info to watchdog.
+define('ADVAGG_DIR_HTACCESS', TRUE);                      // Default value for creating a htaccess file in the advagg directories.
+define('ADVAGG_ENABLED', TRUE);                           // Default value to see if advanced CSS/JS aggregation is enabled.
+define('ADVAGG_FILE_LAST_USED_INTERVAL', 1296000);        // Default file last used check-in is 12 hours.
+define('ADVAGG_FILE_SAVE_FUNCTION', 'advagg_file_saver'); // Default function used to save files.
+define('ADVAGG_GZIP_COMPRESSION', FALSE);                 // Default gzip compression setting.
+define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder'); // Default function used to render js output.
+define('ADVAGG_ONLY_CSS_FROM_VARIABLES', FALSE);          // Default value to see if preprocess CSS files.
+define('ADVAGG_PAGE_CACHE_MODE', TRUE);                   // Default mode of advagg in regards to the page cache.
+define('ADVAGG_PREPROCESS_CSS', TRUE);                    // Default value to see if preprocess CSS files.
+define('ADVAGG_PREPROCESS_JS', TRUE);                     // Default value to see if preprocess JavaScript files.
+define('ADVAGG_PRUNE_ON_CRON', TRUE);                     // Default value to see if we removed old files/bundles from the database.
+define('ADVAGG_REBUILD_ON_FLUSH', FALSE);                 // Default value for rebuilding the bundle on cache flush.
+define('ADVAGG_SERVER_ADDR', FALSE);                      // Default value for server address.
+define('ADVAGG_SOCKET_TIMEOUT', 1);                       // How long to wait for the server to come back with an async opp.
+define('ADVAGG_STALE_FILE_LAST_USED_THRESHOLD', 259200);  // Default stale file threshold is 3 days for atime.
+define('ADVAGG_STALE_FILE_THRESHOLD', 518400);            // Default stale file threshold is 6 days for mtime.
+define('ADVAGG_STRICT_JS_BUNDLES', TRUE);                 // Default value to see if JS bundle matching should be strict.
+define('ADVAGG_USE_FULL_CACHE', TRUE);                    // Default value to see if we cache at the advagg_processor level.
+
 // __DIR__ fallback for PHP <5.3.0
 if (!defined('__DIR__')) {
   define('__DIR__', dirname(__FILE__));
 }
 
 // Load Includes
-$includes = array('constants', 'async', 'bundle', 'cache', 'cron', 'css', 'file', 'js', 'utilities');
+$includes = array('async', 'bundle', 'cache', 'cron', 'css', 'file', 'js', 'utilities');
 if (module_exists('ctools')) {
   $includes[] = 'ctools';
 }
