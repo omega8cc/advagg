@@ -1,4 +1,5 @@
 Change Log
 ==========
 
-2013-01-16: RENAMED advagg_process_css_js_prep() to advagg_process_prep()
+2013-01-16: RENAMED   advagg_process_css_js_prep() to advagg_process_prep()
+2013-01-13: ADDED     hook_advagg_admin_form() - Hook that provides modules an easier way to provide additional settings in the vertical tabs container.
