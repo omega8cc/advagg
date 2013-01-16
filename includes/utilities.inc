@@ -113,6 +113,16 @@ function advagg_clearstatcache($clear_realpath_cache = FALSE, $filename = NULL) 
 }
 
 /**
+ * Helper function to determine if the cookie to bypass aggregation is active.
+ *
+ * @return bool
+ *   TRUE if enabled, FALSE otherwise.
+ */
+function advagg_cookie_bypass() {
+  return !empty($_COOKIE[ADVAGG_COOKIE_NAME]) && $_COOKIE[ADVAGG_COOKIE_NAME] === md5(drupal_get_private_key()) ? TRUE : FALSE;
+}
+
+/**
  * Select records in the database matching where IN(...).
  *
  * NOTE Be aware of the servers max_packet_size variable.

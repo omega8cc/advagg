@@ -123,9 +123,7 @@ function advagg_init() {
     $conf['advagg_use_full_cache'] = FALSE;
   }
   // Do not use the cache if the disable cookie is set.
-  $cookie_name = 'AdvAggDisabled';
-  $key = md5(drupal_get_private_key());
-  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
+  if (advagg_cookie_bypass()) {
     $conf['advagg_use_full_cache'] = FALSE;
   }
 }
@@ -270,9 +268,7 @@ function advagg_process_css_js_prep($noagg = FALSE, $type = NULL) {
   }
 
   // Cookie bypass.
-  $cookie_name = 'AdvAggDisabled';
-  $key = md5(drupal_get_private_key());
-  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
+  if (advagg_cookie_bypass()) {
     $preprocess = FALSE;
     $conf['advagg_use_full_cache'] = FALSE;
   }

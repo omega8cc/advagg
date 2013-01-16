@@ -687,19 +687,17 @@ function advagg_admin_recreate_htaccess() {
  */
 function advagg_admin_toggle_bypass_cookie() {
   global $base_path;
-  $cookie_name = 'AdvAggDisabled';
   $key = md5(drupal_get_private_key());
-
   // If the cookie does exist then remove it.
-  if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
-    setcookie($cookie_name, '', -1, $base_path, '.' . $_SERVER['HTTP_HOST']);
-    unset($_COOKIE[$cookie_name]);
+  if (advagg_cookie_bypass()) {
+    setcookie(ADVAGG_COOKIE_NAME, '', -1, $base_path, '.' . $_SERVER['HTTP_HOST']);
+    unset($_COOKIE[ADVAGG_COOKIE_NAME]);
     drupal_set_message(t('AdvAgg Bypass Cookie Removed.'));
   }
   // If the cookie does not exist then set it.
   else {
-    setcookie($cookie_name, $key, 0, $base_path, '.' . $_SERVER['HTTP_HOST']);
-    $_COOKIE[$cookie_name] = $key;
+    setcookie(ADVAGG_COOKIE_NAME, $key, 0, $base_path, '.' . $_SERVER['HTTP_HOST']);
+    $_COOKIE[ADVAGG_COOKIE_NAME] = $key;
     drupal_set_message(t('AdvAgg Bypass Cookie Set.'));
   }
 }
