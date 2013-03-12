@@ -3,4 +3,3 @@ description = Provides intelligent bundling of CSS and JS files by grouping file
 package = Advanced CSS/JS Aggregation
 core = 7.x
 dependencies[] = advagg
-

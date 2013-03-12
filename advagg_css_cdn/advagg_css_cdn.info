@@ -1,0 +1,4 @@
+name = AdvAgg CDN CSS
+description = Use a shared CDN for CSS libraries, Google Libraries API currently.
+package = Advanced CSS/JS Aggregation
+core = 7.x

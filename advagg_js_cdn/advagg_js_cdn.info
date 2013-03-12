@@ -2,5 +2,3 @@ name = AdvAgg CDN Javascript
 description = Use a shared CDN for javascript libraries, Google Libraries API currently.
 package = Advanced CSS/JS Aggregation
 core = 7.x
-dependencies[] = advagg
-

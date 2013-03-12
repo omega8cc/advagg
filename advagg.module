@@ -2,59 +2,69 @@
 
 /**
  * @file
- * Advanced CSS/JS aggregation module
- *
+ * Advanced CSS/JS aggregation module.
  */
 
-define('ADVAGG_AGGREGATE_MODE', 2);                       // Default mode for aggregate creation.
-define('ADVAGG_ASYNC_GENERATION', FALSE);                 // Default generate the aggregate async.
-define('ADVAGG_ASYNC_SOCKET_CONNECT', FALSE);             // Default value to see if we can use the STREAM_CLIENT_ASYNC_CONNECT flag.
-define('ADVAGG_BUNDLE_BUILT_MODE', FALSE);                // Default mode of advagg_bundle_built() in regards to how file_exists is used.
-define('ADVAGG_CHECKSUM_MODE', 'filemtime');              // Default file checksum mode.
-define('ADVAGG_CLOSURE', TRUE);                           // Default value to see if advanced CSS/JS aggregation is enabled.
-define('ADVAGG_COOKIE_NAME', 'AdvAggDisabled');           // Default value for the name of the cookie used to bypass aggregation.
-define('ADVAGG_CSS_COUNT_THRESHOLD', 25);                 // Default value for number of files that can be added before using @import.
-define('ADVAGG_CSS_LOGGED_IN_IE_DETECT', TRUE);           // Default value for not using @import if logged in and not IE.
-define('ADVAGG_CSS_RENDER_FUNCTION', 'advagg_unlimited_css_builder'); // Default function used to render css output.
-define('ADVAGG_CUSTOM_FILES_DIR', '');                    // Default value for a custom files directory just for advagg directories.
-define('ADVAGG_DEBUG', FALSE);                            // Default value for writing debug info to watchdog.
-define('ADVAGG_DIR_HTACCESS', TRUE);                      // Default value for creating a htaccess file in the advagg directories.
-define('ADVAGG_ENABLED', TRUE);                           // Default value to see if advanced CSS/JS aggregation is enabled.
-define('ADVAGG_FILE_LAST_USED_INTERVAL', 1296000);        // Default file last used check-in is 12 hours.
-define('ADVAGG_FILE_SAVE_FUNCTION', 'advagg_file_saver'); // Default function used to save files.
-define('ADVAGG_GZIP_COMPRESSION', FALSE);                 // Default gzip compression setting.
-define('ADVAGG_JS_RENDER_FUNCTION', 'advagg_js_builder'); // Default function used to render js output.
-define('ADVAGG_ONLY_CSS_FROM_VARIABLES', FALSE);          // Default value to see if preprocess CSS files.
-define('ADVAGG_PAGE_CACHE_MODE', TRUE);                   // Default mode of advagg in regards to the page cache.
-define('ADVAGG_PREPROCESS_CSS', TRUE);                    // Default value to see if preprocess CSS files.
-define('ADVAGG_PREPROCESS_JS', TRUE);                     // Default value to see if preprocess JavaScript files.
-define('ADVAGG_PRUNE_ON_CRON', TRUE);                     // Default value to see if we removed old files/bundles from the database.
-define('ADVAGG_REBUILD_ON_FLUSH', FALSE);                 // Default value for rebuilding the bundle on cache flush.
-define('ADVAGG_SERVER_ADDR', FALSE);                      // Default value for server address.
-define('ADVAGG_SOCKET_TIMEOUT', 1);                       // How long to wait for the server to come back with an async opp.
-define('ADVAGG_STALE_FILE_LAST_USED_THRESHOLD', 259200);  // Default stale file threshold is 3 days for atime.
-define('ADVAGG_STALE_FILE_THRESHOLD', 518400);            // Default stale file threshold is 6 days for mtime.
-define('ADVAGG_STRICT_JS_BUNDLES', TRUE);                 // Default value to see if JS bundle matching should be strict.
-define('ADVAGG_USE_FULL_CACHE', TRUE);                    // Default value to see if we cache at the advagg_processor level.
+// Define default variables.
+/**
+ * Default space characters.
+ */
+define('ADVAGG_SPACE', '__');
 
-// __DIR__ fallback for PHP <5.3.0
-if (!defined('__DIR__')) {
-  define('__DIR__', dirname(__FILE__));
-}
+/**
+ * Default value to see if advanced CSS/JS aggregation is enabled.
+ */
+define('ADVAGG_ENABLED', TRUE);
 
-// Load Includes
-$includes = array('async', 'bundle', 'cache', 'cron', 'css', 'file', 'js', 'utilities');
-if (module_exists('ctools')) {
-  $includes[] = 'ctools';
-}
-foreach ($includes as $file) {
-  $file = __DIR__ . "/includes/$file.inc";
-  if (file_exists($file)) {
-    include $file;
+/**
+ * Default value to see if .gz files should be created as well.
+ */
+define('ADVAGG_GZIP', TRUE);
+
+/**
+ * Default value to see we use core's default grouping of CSS/JS files.
+ */
+define('ADVAGG_CORE_GROUPS', TRUE);
+
+/**
+ * Default value to see if we cache the full CSS/JS structure.
+ */
+define('ADVAGG_USE_FULL_CACHE', TRUE);
+
+/**
+ * Default value to see if we cache the file information.
+ */
+define('ADVAGG_USE_FILE_CACHE', TRUE);
+
+/**
+ * Default value of counter.
+ */
+define('ADVAGG_GLOBAL_COUNTER', 0);
+
+/**
+ * Send non blocking requests in order to generate aggregated files via HTTPRL.
+ */
+define('ADVAGG_USE_HTTPRL', TRUE);
+
+// Core hook implementations.
+/**
+ * Implements hook_hook_info().
+ */
+function advagg_hook_info() {
+  // List of hooks that can be inside of *.advagg.inc files.
+  $advagg_hooks = array(
+    'advagg_get_css_file_contents_alter',
+    'advagg_get_css_aggregate_contents_alter',
+    'advagg_get_js_file_contents_alter',
+    'advagg_get_js_aggregate_contents_alter',
+    'advagg_save_aggregate_alter',
+    'advagg_build_aggregate_plans_alter',
+  );
+  $hooks = array();
+  foreach ($advagg_hooks as $hook) {
+    $hooks[$hook] = array('group' => 'advagg');
   }
-  else {
-    drupal_set_message(t('Required include not found: !include', array('!include' => $file)), 'error', FALSE);
-  }
+  return $hooks;
 }
 
 /**
@@ -74,365 +84,865 @@ function advagg_permission() {
  */
 function advagg_menu() {
   list($css_path, $js_path) = advagg_get_root_files_dir();
-  $file_path = drupal_get_path('module', 'advagg') . '/includes';
+  $file_path = drupal_get_path('module', 'advagg');
+
   $items = array();
-  $items[$css_path . '/%'] = array(
-    'page callback' => 'advagg_missing_css',
+  $items[$css_path[1] . '/%'] = array(
+    'title' => "Generate css aggregate",
+    'page callback' => 'advagg_missing_aggregate',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
     'file path' => $file_path,
-    'file' => 'missing.inc',
+    'file' => 'advagg.missing.inc',
   );
-  $items[$js_path . '/%'] = array(
-    'page callback' => 'advagg_missing_js',
+  $items[$js_path[1] . '/%'] = array(
+    'title' => "Generate js aggregate",
+    'page callback' => 'advagg_missing_aggregate',
     'type' => MENU_CALLBACK,
     'access callback' => TRUE,
     'file path' => $file_path,
-    'file' => 'missing.inc',
+    'file' => 'advagg.missing.inc',
+  );
+  $items['admin/config/development/advagg'] = array(
+    'title' => 'Advanced CSS/JS Aggregation',
+    'description' => 'Configuration for Advanced CSS/JS Aggregation.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_admin_settings_form'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+    'weight' => -10,
+  );
+  $items['admin/config/development/advagg/config'] = array(
+    'title' => 'Configuration',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/config/development/advagg/operations'] = array(
+    'title' => 'Preform An Operation',
+    'description' => 'Flush caches, set the bypass cookie, take drastic actions.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_admin_operations_form'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+    'weight' => -9,
+  );
+  $items['admin/config/development/advagg/info'] = array(
+    'title' => 'Information',
+    'description' => 'More detailed information about advagg.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_admin_info_form'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg.admin.inc',
+    'weight' => -8,
   );
   return $items;
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
+ * Implements hook_cron().
+ *
+ * This should be ran about once a day.
  */
-function advagg_form_system_performance_settings_alter(&$form, &$form_state) {
-  include __DIR__ . '/includes/admin.inc';
-  _advagg_form_system_performance_settings_alter($form, $form_state);
+function advagg_cron() {
+  $return = array();
+  // Clear out all stale advagg aggregated files.
+  module_load_include('inc', 'advagg', 'advagg.cache');
+  $return[] = advagg_delete_stale_aggregates();
+
+  // Remove aggregates that include missing files.
+  $return[] = advagg_remove_missing_files_from_db();
+
+  // Remove unused aggregates.
+  $return[] = advagg_remove_old_unused_aggregates();
+  return $return;
 }
 
 /**
- * Implements hook_init().
+ * Implements hook_flush_caches().
+ *
+ * @param $all_bins
+ *   TRUE: Get all advagg cache bins
  */
-function advagg_init() {
-  global $conf;
-  // Disable advagg if requested.
-  if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
-    $conf['advagg_enabled'] = FALSE;
-    $conf['advagg_use_full_cache'] = FALSE;
+function advagg_flush_caches($all_bins = FALSE) {
+  // Get list of cache bins to clear.
+  $bins = array();
+  $bins[] = 'cache_advagg_aggregates';
+  if ($all_bins) {
+    $bins[] = 'cache_advagg_info';
   }
-  // Enable debugging if requested.
-  if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
-    $conf['advagg_debug'] = TRUE;
-    $conf['advagg_use_full_cache'] = FALSE;
-  }
-  // Enable core preprocessing if requested.
-  if (isset($_GET['advagg-core']) && $_GET['advagg-core'] == 1 && user_access('bypass advanced aggregation')) {
-    $conf['preprocess_css'] = TRUE;
-    $conf['preprocess_js'] = TRUE;
-    $conf['advagg_use_full_cache'] = FALSE;
-  }
-  // Do not use the cache if the disable cookie is set.
-  if (advagg_cookie_bypass()) {
-    $conf['advagg_use_full_cache'] = FALSE;
-  }
+  return $bins;
 }
 
 /**
  * Implements hook_element_info_alter().
  *
  * @param $type
+ *   Configuration array.
  */
 function advagg_element_info_alter(&$type) {
   // Swap in our own aggregation callback.
   if (isset($type['styles']['#aggregate_callback'])) {
     $type['styles']['#aggregate_callback'] = '_advagg_aggregate_css';
-//     $type['styles']['#group_callback'] = '_advagg_group_css';
   }
 }
 
 /**
- * Implements hook_process_html().
+ * Implements hook_theme_registry_alter().
+ *
+ * Replace template_process_html with _advagg_process_html
+ *
+ * @param $theme_registry
+ *   The existing theme registry data structure.
  */
-function advagg_process_html(&$variables) {
-  global $_advagg;
-  // Invoke hook_advagg_disable_processor
-  $disabled = module_invoke_all('advagg_disable_processor');
-  // If disabled, skip
-  if (!variable_get('advagg_enabled', ADVAGG_ENABLED) || in_array(TRUE, $disabled, TRUE)) {
-    // @TODO: Determine if this is still necessary with the D7 version of
-    // jquery_update.
-    // if (module_exists('jquery_update')) {
-    //   return jquery_update_preprocess_page($variables);
-    // }
-    // else {
-    //   return;
-    // }
+function advagg_theme_registry_alter(&$theme_registry) {
+  if (!isset($theme_registry['html'])) {
     return;
   }
-  // CSS
-  advagg_process_html_css($variables);
-  // JS
-  advagg_process_html_js($variables);
-  // Send requests to server if async enabled.
-  advagg_async_send_http_request();
-  // Write debug info to watchdog if debugging enabled.
-  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
-    $data = array(
-      'css_before_vars' => $css_orig,
-      'css_before_function' => $css_func,
-      'css_before_styles' => $css_styles,
-      'css_before_inline' => $css_func_inline,
-      'css_before_conditional_styles' => $css_conditional_styles,
-      'css_merged' => $css,
-      'css_after' => $processed_css,
-      'js_before' => $js_code_orig,
-      'js_after' => $js_code,
-    );
-    $data['runtime'] = isset($_advagg['debug']) ? $_advagg['debug'] : FALSE;
-    $data = str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', nl2br(htmlentities(iconv('utf-8', 'utf-8//IGNORE', print_r($data, TRUE)), ENT_QUOTES, 'UTF-8')));
-    watchdog('advagg', 'Debug info: !data', array('!data' => $data), WATCHDOG_DEBUG);
+
+  // Replace core's process function with our own.
+  $index = array_search('template_process_html', $theme_registry['html']['process functions']);
+  if ($index !== FALSE) {
+    $theme_registry['html']['process functions'][$index] = '_advagg_process_html';
   }
 }
 
+// Core CSS/JS override functions.
 /**
- * Implements hook_advagg_disable_processor().
- */
-function advagg_advagg_disable_processor() {
-  // Disable advagg on the configuration page; in case something bad happened.
-  if (isset($_GET['q']) && ($_GET['q'] == 'admin/config/development/performance' || $_GET['q'] == 'batch')) {
-    return TRUE;
-  }
-}
-
-/**
- * Send out a fast 404 and exit.
- */
-function advagg_missing_fast404($msg = '') {
-  global $base_path;
-  if (!headers_sent()) {
-    header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
-    header('X-AdvAgg: Failed Validation. ' . $msg);
-  }
-
-  print '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' . "\n";
-  print '<html>';
-  print '<head><title>404 Not Found</title></head>';
-  print '<body><h1>Not Found</h1>';
-  print '<p>The requested URL was not found on this server.</p>';
-  print '<p><a href="' . $base_path . '">Home</a></p>';
-  print '<!-- advagg_missing_fast404 -->';
-  print '</body></html>';
-  exit();
-}
-
-/**
- * Generate .htaccess rules and place them in advagg dir
+ * Default callback to aggregate CSS files and inline content.
  *
- * @param $dest
- *   destination of the file that just got saved.
- * @param $force
- *   force recreate the .htaccess file.
+ * Having the browser load fewer CSS files results in much faster page loads
+ * than when it loads many small files. This function aggregates files within
+ * the same group into a single file unless the site-wide setting to do so is
+ * disabled (commonly the case during site development). To optimize download,
+ * it also compresses the aggregate files by removing comments, whitespace, and
+ * other unnecessary content. Additionally, this functions aggregates inline
+ * content together, regardless of the site-wide aggregation setting.
+ *
+ * @param $css_groups
+ *   An array of CSS groups as returned by drupal_group_css(). This function
+ *   modifies the group's 'data' property for each group that is aggregated.
+ *
+ * @see drupal_aggregate_css()
+ * @see drupal_group_css()
+ * @see drupal_pre_render_styles()
+ * @see system_element_info()
  */
-function advagg_htaccess_check_generate($dest, $force = FALSE) {
-  global $base_path;
-  if (!$force && !variable_get('advagg_dir_htaccess', ADVAGG_DIR_HTACCESS)) {
+function _advagg_aggregate_css(&$css_groups) {
+  if (!advagg_enabled()) {
+    return drupal_aggregate_css($css_groups);
+  }
+  $preprocess_css = advagg_file_aggregation_enabled('css');
+
+  // Call hook_advagg_css_groups_alter().
+  drupal_alter('advagg_css_groups', $css_groups, $preprocess_css);
+
+  // For each group that needs aggregation, aggregate its items.
+  $files_to_aggregate = array();
+  // Allow for inline CSS to be between aggregated files.
+  $gap_counter = 0;
+  foreach ($css_groups as $key => $group) {
+    switch ($group['type']) {
+      // If a file group can be aggregated into a single file, do so, and set
+      // the group's data property to the file path of the aggregate file.
+      case 'file':
+        if ($group['preprocess'] && $preprocess_css) {
+          $files_to_aggregate[$gap_counter][] = $group;
+        }
+        break;
+      // Aggregate all inline CSS content into the group's data property.
+      case 'inline':
+        $gap_counter++;
+        $css_groups[$key]['data'] = '';
+        foreach ($group['items'] as $item) {
+          $css_groups[$key]['data'] .= drupal_load_stylesheet_content($item['data'], $item['preprocess']);
+        }
+        break;
+    }
+  }
+
+  if (!empty($files_to_aggregate)) {
+    $hooks_hash = advagg_get_hooks_hash();
+    $css_hash = drupal_hash_base64(serialize($files_to_aggregate));
+    $cache_id = 'advagg:css:' . $hooks_hash . ':' . $css_hash;
+    if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
+      $plans = $cache->data;
+    }
+    else {
+      module_load_include('inc', 'advagg', 'advagg');
+      $plans = advagg_build_aggregate_plans($files_to_aggregate, 'css');
+      if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+        cache_set($cache_id, $plans, 'cache_advagg_aggregates', CACHE_TEMPORARY);
+      }
+    }
+    $css_groups = advagg_merge_plans($css_groups, $plans);
+  }
+}
+
+/**
+ * Returns a themed presentation of all JavaScript code for the current page.
+ *
+ * References to JavaScript files are placed in a certain order: first, all
+ * 'core' files, then all 'module' and finally all 'theme' JavaScript files
+ * are added to the page. Then, all settings are output, followed by 'inline'
+ * JavaScript code. If running update.php, all preprocessing is disabled.
+ *
+ * @param $scope
+ *   (optional) The scope for which the JavaScript rules should be returned.
+ *   Defaults to 'header'.
+ * @param $javascript
+ *   (optional) An array with all JavaScript code. Defaults to the default
+ *   JavaScript array for the given scope.
+ *
+ * @return
+ *   All JavaScript code segments and includes for the scope as HTML tags.
+ */
+function advagg_get_js($scope, $javascript) {
+  $output = '';
+
+  // Filter out elements of the given scope.
+  $items = array();
+  foreach ($javascript as $key => $item) {
+    if ($item['scope'] == $scope) {
+      $items[$key] = $item;
+    }
+  }
+  if (empty($items)) {
+    return $output;
+  }
+
+  // The index counter is used to keep aggregated and non-aggregated files in
+  // order by weight.
+  $index = 1;
+  $processed = array();
+  $files = array();
+  $preprocess_js = advagg_file_aggregation_enabled('js');
+
+  // A dummy query-string is added to filenames, to gain control over
+  // browser-caching. The string changes on every update or full cache
+  // flush, forcing browsers to load a new copy of the files, as the
+  // URL changed. Files that should not be cached (see drupal_add_js())
+  // get REQUEST_TIME as query-string instead, to enforce reload on every
+  // page request.
+  $default_query_string = variable_get('css_js_query_string', '0');
+
+  // For inline JavaScript to validate as XHTML, all JavaScript containing
+  // XHTML needs to be wrapped in CDATA. To make that backwards compatible
+  // with HTML 4, we need to comment out the CDATA-tag.
+  $embed_prefix = "\n<!--//--><![CDATA[//><!--\n";
+  $embed_suffix = "\n//--><!]]>\n";
+
+  // Since JavaScript may look for arguments in the URL and act on them, some
+  // third-party code might require the use of a different query string.
+  $js_version_string = variable_get('drupal_js_version_query_string', 'v=');
+
+  // Sort the JavaScript so that it appears in the correct order.
+  uasort($items, 'drupal_sort_css_js');
+
+  // Provide the page with information about the individual JavaScript files
+  // used, information not otherwise available when aggregation is enabled.
+  $setting['ajaxPageState']['js'] = array_fill_keys(array_keys($items), 1);
+  unset($setting['ajaxPageState']['js']['settings']);
+  drupal_add_js($setting, 'setting');
+
+  // If we're outputting the header scope, then this might be the final time
+  // that drupal_get_js() is running, so add the setting to this output as well
+  // as to the drupal_add_js() cache. If $items['settings'] doesn't exist, it's
+  // because drupal_get_js() was intentionally passed a $javascript argument
+  // stripped off settings, potentially in order to override how settings get
+  // output, so in this case, do not add the setting to this output.
+  if ($scope == 'header' && isset($items['settings'])) {
+    $items['settings']['data'][] = $setting;
+  }
+
+  // Loop through the JavaScript to construct the rendered output.
+  $element = array(
+    '#tag' => 'script',
+    '#value' => '',
+    '#attributes' => array(
+      'type' => 'text/javascript',
+    ),
+  );
+  foreach ($items as $item) {
+    $query_string =  empty($item['version']) ? $default_query_string : $js_version_string . $item['version'];
+
+    switch ($item['type']) {
+      case 'setting':
+        $js_element = $element;
+        $js_element['#value_prefix'] = $embed_prefix;
+        $js_element['#value'] = 'jQuery.extend(Drupal.settings, ' . drupal_json_encode(drupal_array_merge_deep_array($item['data'])) . ");";
+        $js_element['#value_suffix'] = $embed_suffix;
+        $output .= theme('html_tag', array('element' => $js_element));
+        break;
+
+      case 'inline':
+        $js_element = $element;
+        if ($item['defer']) {
+          $js_element['#attributes']['defer'] = 'defer';
+        }
+        $js_element['#value_prefix'] = $embed_prefix;
+        $js_element['#value'] = $item['data'];
+        $js_element['#value_suffix'] = $embed_suffix;
+        $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        break;
+
+      case 'file':
+        $js_element = $element;
+        if (!$item['preprocess'] || !$preprocess_js) {
+          if ($item['defer']) {
+            $js_element['#attributes']['defer'] = 'defer';
+          }
+          $query_string_separator = (strpos($item['data'], '?') !== FALSE) ? '&' : '?';
+          $js_element['#attributes']['src'] = file_create_url($item['data']) . $query_string_separator . ($item['cache'] ? $query_string : REQUEST_TIME);
+          $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        }
+        else {
+          // By increasing the index for each aggregated file, we maintain
+          // the relative ordering of JS by weight. We also set the key such
+          // that groups are split by items sharing the same 'group' value and
+          // 'every_page' flag. While this potentially results in more aggregate
+          // files, it helps make each one more reusable across a site visit,
+          // leading to better front-end performance of a website as a whole.
+          // See drupal_add_js() for details.
+          $key = 'aggregate_' . $item['group'] . '_' . $item['every_page'] . '_' . $index;
+          $processed[$key] = '';
+          $files[$key][$item['data']] = $item;
+        }
+        break;
+
+      case 'external':
+        $js_element = $element;
+        // Preprocessing for external JavaScript files is ignored.
+        if ($item['defer']) {
+          $js_element['#attributes']['defer'] = 'defer';
+        }
+        $js_element['#attributes']['src'] = $item['data'];
+        $processed[$index++] = theme('html_tag', array('element' => $js_element));
+        break;
+    }
+  }
+
+  // Aggregate any remaining JS files that haven't already been output.
+  // This is the only hunk of code change from drupal_get_js().
+  if ($preprocess_js && count($files) > 0) {
+    // See if the full cache has this.
+    $hooks_hash = advagg_get_hooks_hash();
+    $js_hash = drupal_hash_base64(serialize($files));
+    $cache_id = 'advagg:js:' . $hooks_hash . ':' . $js_hash;
+    if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
+      $processed = $cache->data;
+    }
+    else {
+      module_load_include('inc', 'advagg', 'advagg');
+      $new_structure = advagg_convert_js_structure($files);
+      $plans = advagg_build_aggregate_plans($new_structure, 'js');
+      foreach ($plans as $plan) {
+        $preprocess_file = file_create_url($plan['data']);
+        $js_element = $element;
+        $js_element['#attributes']['src'] = $preprocess_file;
+        $js_element['#browsers'] = $plan['browsers'];
+        $processed[] = theme('html_tag', array('element' => $js_element));
+      }
+      // Remove Blanks.
+      $processed = array_filter($processed);
+      if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+        cache_set($cache_id, $processed, 'cache_advagg_aggregates', CACHE_TEMPORARY);
+      }
+    }
+  }
+
+  // Keep the order of JS files consistent as some are preprocessed and others are not.
+  // Make sure any inline or JS setting variables appear last after libraries have loaded.
+  return implode('', $processed) . $output;
+}
+
+/**
+ * Replacement for template_process_html().
+ */
+function _advagg_process_html(&$variables) {
+  if (!advagg_enabled()) {
+    return template_process_html($variables);
+  }
+
+  // Render page_top and page_bottom into top level variables.
+  $variables['page_top'] = drupal_render($variables['page']['page_top']);
+  $variables['page_bottom'] = drupal_render($variables['page']['page_bottom']);
+  // Place the rendered HTML for the page body into a top level variable.
+  $variables['page'] = $variables['page']['#children'];
+
+  $variables['head'] = drupal_get_html_head();
+  // CSS has nice hooks so we don't need to work around it.
+  $variables['css'] = drupal_add_css();
+  $variables['styles'] = drupal_get_css();
+
+  // JS needs hacks.
+  $javascript = advagg_get_full_js();
+  if (!empty($javascript)) {
+    $scopes = advagg_get_js_scopes($javascript);
+
+    // Add JS to the header and footer of the page.
+    foreach ($scopes as $scope => $use) {
+      if (!$use) {
+        continue;
+      }
+      $scripts = advagg_get_js($scope, $javascript);
+      // Header scripts.
+      if ($scope == 'header') {
+        $variables['scripts'] = $scripts;
+      }
+      // Footer scripts
+      elseif ($scope == 'footer') {
+        $variables['page_bottom'] .= $scripts;
+      }
+      // Scripts in other places.
+      elseif (isset($variables[$scope]) && is_string($variables[$scope])) {
+        $variables[$scope] .= $scripts;
+      }
+    }
+  }
+}
+
+/**
+ * Get full JS array.
+ *
+ * Note that hook_js_alter(&$javascript) is called during this function call
+ * to allow alterations of the JavaScript during its presentation. Calls to
+ * drupal_add_js() from hook_js_alter() will not be added to the output
+ * presentation. The correct way to add JavaScript during hook_js_alter()
+ * is to add another element to the $javascript array, deriving from
+ * drupal_js_defaults(). See locale_js_alter() for an example of this.
+ *
+ * @param $javascript
+ *   (optional) An array with all JavaScript code. Defaults to the default
+ *   JavaScript array for the given scope.
+ * @param $skip_alter
+ *   (optional) If set to TRUE, this function skips calling drupal_alter() on
+ *   $javascript, useful when the calling function passes a $javascript array
+ *   that has already been altered.
+ *
+ * @return
+ *   The raw JavaScript array.
+ *
+ * @see drupal_add_js()
+ * @see locale_js_alter()
+ * @see drupal_js_defaults()
+ */
+function advagg_get_full_js($javascript = NULL, $skip_alter = FALSE) {
+  if (!isset($javascript)) {
+    $javascript = drupal_add_js();
+  }
+  if (empty($javascript)) {
+    return FALSE;
+  }
+
+  // Allow modules to alter the JavaScript.
+  if (!$skip_alter) {
+    // Call hook_js_alter().
+    drupal_alter('js', $javascript);
+  }
+  return $javascript;
+}
+
+/**
+ * Get all javascript scopes set in the $javascript array.
+ *
+ * @param $javascript
+ *   An array with all JavaScript code.
+ *
+ * @return
+ *   Array of scopes that are currently being used.
+ */
+function advagg_get_js_scopes($javascript) {
+  // Return if nothing given to us.
+  if (empty($javascript) || !is_array($javascript)) {
+    return FALSE;
+  }
+
+  // Filter out elements of the given scope.
+  $scopes = array();
+  foreach ($javascript as $key => $item) {
+    // skip if the scope is not set.
+    if (!is_array($item) || empty($item['scope'])) {
+      continue;
+    }
+    if (!isset($scopes[$item['scope']])) {
+      $scopes[$item['scope']] = TRUE;
+    }
+  }
+  return $scopes;
+}
+
+/**
+ * Apply the advagg changes to the $css_groups array.
+ *
+ * @param $css_groups
+ *   An array of CSS groups as returned by drupal_group_css().
+ * @param $plans
+ *   An array of changes to do to the $css_groups array.
+ * @return array
+ *   New version of $css_groups.
+ */
+function advagg_merge_plans($css_groups, $plans) {
+  foreach ($plans as $plan) {
+    $plan_added = FALSE;
+    foreach ($css_groups as $key => $group) {
+      // Remove files from the old css array.
+      $file_removed = FALSE;
+      foreach ($css_groups[$key]['items'] as $k => $values) {
+        if (   is_array($values)
+            && array_key_exists('data', $values)
+            && is_array($plan['items']['files'])
+            && array_key_exists($values['data'], $plan['items']['files'])
+              ) {
+          unset($css_groups[$key]['items'][$k]);
+          $file_removed = TRUE;
+        }
+      }
+
+      // Replace first file of the old css array with one from advagg.
+      if ($file_removed && !$plan_added) {
+        $step = 0;
+        do {
+          $step++;
+          $insert_key = '' . intval($key) . '.' . $step;
+        } while (array_key_exists($insert_key, $css_groups));
+        $css_groups[$insert_key] = $plan;
+        $plan_added = TRUE;
+      }
+    }
+
+    // Remove old css grouping if no files are left in it.
+    foreach ($css_groups as $key => $group) {
+      if (empty($css_groups[$key]['items'])) {
+        unset($css_groups[$key]);
+      }
+    }
+  }
+
+  // Key sort and normalize the array before returning it.
+  ksort($css_groups);
+  return array_values($css_groups);
+}
+
+// Helper functions.
+/**
+ * Function used to see if aggregation is enabled.
+ *
+ * @return bool
+ *   The value of the advagg_enabled variable.
+ */
+function advagg_enabled() {
+  // Only run code below if advagg is enabled.
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+    // Do not use the cache if the disable cookie is set.
+    $cookie_name = 'AdvAggDisabled';
+    $key = drupal_hash_base64(drupal_get_private_key());
+    if (!empty($_COOKIE[$cookie_name]) && $_COOKIE[$cookie_name] == $key) {
+      $GLOBALS['conf']['advagg_enabled'] = FALSE;
+      $GLOBALS['conf']['preprocess_css'] = FALSE;
+      $GLOBALS['conf']['preprocess_js'] = FALSE;
+    }
+    // Disable advagg if requested.
+    if (isset($_GET['advagg']) && $_GET['advagg'] == -1 && user_access('bypass advanced aggregation')) {
+      $GLOBALS['conf']['advagg_enabled'] = FALSE;
+      $GLOBALS['conf']['preprocess_css'] = FALSE;
+      $GLOBALS['conf']['preprocess_js'] = FALSE;
+    }
+    // Enable core preprocessing if requested.
+    if (isset($_GET['advagg-core']) && $_GET['advagg-core'] == 1 && user_access('bypass advanced aggregation')) {
+      $GLOBALS['conf']['preprocess_css'] = TRUE;
+      $GLOBALS['conf']['preprocess_js'] = TRUE;
+    }
+    // Enable debugging if requested.
+    if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
+      $conf['advagg_debug'] = TRUE;
+    }
+
+  }
+
+  return variable_get('advagg_enabled', ADVAGG_ENABLED);
+}
+
+/**
+ * Get an array of all hooks and settings that affect aggregated files contents.
+ *
+ * @return
+ *   array('variables' => array(...), 'hooks' => array(...))
+ */
+function advagg_generate_hooks_variables_array() {
+  // Put all enabled hooks and settings into a big array.
+  $advagg_hash = array(
+    'variables' => array(
+      'advagg_gzip' => variable_get('advagg_gzip', ADVAGG_GZIP),
+      'is_https' => $GLOBALS['is_https'],
+      'advagg_global_counter' => advagg_get_global_counter(),
+    ),
+    'hooks' => advagg_hooks_implemented(FALSE),
+  );
+
+  // Allow other modules to add in their own settings and hooks.
+  // Call hook_advagg_get_hooks_hash_alter().
+  drupal_alter('advagg_get_hooks_hash', $advagg_hash);
+
+  return $advagg_hash;
+}
+
+/**
+ * Get the hash of all hooks & settings that affect aggregated files contents.
+ *
+ * @return string
+ *   hash value.
+ */
+function advagg_get_hooks_hash() {
+  $hash = &drupal_static(__FUNCTION__);
+  if (!isset($hash)) {
+    // Get all advagg hooks and variables in use.
+    $advagg_hooks_variables = advagg_generate_hooks_variables_array();
+
+    // Generate the hash.
+    $hash = drupal_hash_base64(serialize($advagg_hooks_variables));
+
+    // Save into variables for verification purposes later on if not found.
+    if (!advagg_in_hooks_hashes($hash) && lock_acquire(__FUNCTION__, 5)) {
+      // Get variable from the database.
+      $all_hashes = advagg_variable_get_db('advagg_all_hooks_hashes', array());
+
+      // Save new hash into
+      $all_hashes[] = $hash;
+      variable_set('advagg_all_hooks_hashes', $all_hashes);
+
+      // Release lock
+      lock_release(__FUNCTION__);
+    }
+  }
+
+  return $hash;
+}
+
+/**
+ * Get back what hooks are implemented.
+ *
+ * @param $all
+ *   If TRUE get all hooks related to css/js files.
+ *   if FALSE get only the subset of hooks that alter the filename/contents.
+ * @return array
+ *   List of hooks and what modules have implemented them.
+ */
+function advagg_hooks_implemented($all = TRUE) {
+  // Get hooks in use.
+  $hooks = array(
+    'advagg_get_css_file_contents_alter' => array(),
+    'advagg_get_css_aggregate_contents_alter' => array(),
+    'advagg_get_js_file_contents_alter' => array(),
+    'advagg_get_js_aggregate_contents_alter' => array(),
+    'advagg_save_aggregate_alter' => array(),
+    'advagg_get_hooks_hash_alter' => array(),
+  );
+  if ($all) {
+    $hooks += array(
+      'advagg_build_aggregate_plans_alter' => array(),
+      'js_alter' => array(),
+      'css_alter' => array(),
+    );
+  }
+  // Call hook_advagg_hooks_implemented_alter().
+  drupal_alter('advagg_hooks_implemented', $hooks, $all);
+
+  foreach ($hooks as $hook => $values) {
+    $hooks[$hook] = module_implements($hook);
+  }
+  return $hooks;
+}
+
+/**
+ * Checks if this hash is in the advagg_all_hooks_hashes variable.
+ *
+ * Will read directly from the database if not found in the variables cache.
+ *
+ * @param $hash
+ *   The hash string.
+ *
+ * @return
+ *   TRUE if the hash is in the variables table. FALSE if not.
+ */
+function advagg_in_hooks_hashes($hash) {
+  $all_hashes = variable_get('advagg_all_hooks_hashes', array());
+  if (in_array($hash, $all_hashes)) {
     return TRUE;
-  }
-
-  $dir = dirname($dest);
-  $htaccess_file = $dir . '/.htaccess';
-  advagg_clearstatcache(TRUE, $htaccess_file);
-  if (!$force && file_exists($htaccess_file)) {
-    return TRUE;
-  }
-
-  list($css_path, $js_path) = advagg_get_root_files_dir();
-
-  $type = '';
-  if ($dir == $js_path[1]) {
-    $ext = 'js';
-    $path = $js_path[1];
-    $type = 'text/javascript';
-  }
-  elseif ($dir == $css_path[1]) {
-    $ext = 'css';
-    $path = $css_path[1];
-    $type = 'text/css';
   }
   else {
-    return FALSE;
+    // Try the database.
+    $all_hashes = advagg_variable_get_db('advagg_all_hooks_hashes', array());
+    return in_array($hash, $all_hashes);
   }
-
-  $data = "\n";
-  if (variable_get('advagg_gzip_compression', ADVAGG_GZIP_COMPRESSION)) {
-    $data .= "<IfModule mod_rewrite.c>\n";
-    $data .= "  RewriteEngine on\n";
-    $data .= "  RewriteBase ${base_path}${path}\n";
-    $data .= "\n";
-    $data .= "  # Send 404's back to index.php\n";
-    $data .= "  RewriteCond %{REQUEST_FILENAME} !-s\n";
-    $data .= "  RewriteRule ^(.*)$ ${base_path}index.php?q=$path/$1 [L]\n";
-    $data .= "\n";
-    $data .= "  # Rules to correctly serve gzip compressed $ext files.\n";
-    $data .= "  # Requires both mod_rewrite and mod_headers to be enabled.\n";
-    $data .= "  <IfModule mod_headers.c>\n";
-    $data .= "    # Serve gzip compressed $ext files if they exist and client accepts gzip.\n";
-    $data .= "    RewriteCond %{HTTP:Accept-encoding} gzip\n";
-    $data .= "    RewriteCond %{REQUEST_FILENAME}\.gz -s\n";
-    $data .= "    RewriteRule ^(.*)\.$ext$ $1\.$ext\.gz [QSA]\n";
-    $data .= "\n";
-    $data .= "    # Serve correct content types, and prevent mod_deflate double gzip.\n";
-    $data .= "    RewriteRule \.$ext\.gz$ - [T=$type,E=no-gzip:1]\n";
-    $data .= "\n";
-    $data .= "    <FilesMatch \"\.$ext\.gz$\">\n";
-    $data .= "      # Serve correct encoding type.\n";
-    $data .= "      Header set Content-Encoding gzip\n";
-    $data .= "      # Force proxies to cache gzipped & non-gzipped $ext files separately.\n";
-    $data .= "      Header append Vary Accept-Encoding\n";
-    $data .= "    </FilesMatch>\n";
-    $data .= "  </IfModule>\n";
-    $data .= "</IfModule>\n";
-    $data .= "\n";
-  }
-  $data .= "<FilesMatch \"^${ext}_[0-9a-f]{32}_.+\.$ext(\.gz)?\">\n";
-  $data .= "  # No mod_headers\n";
-  $data .= "  <IfModule !mod_headers.c>\n";
-  $data .= "    # No mod_expires\n";
-  $data .= "    <IfModule !mod_expires.c>\n";
-  $data .= "      # Use ETags.\n";
-  $data .= "      FileETag MTime Size\n";
-  $data .= "    </IfModule>\n";
-  $data .= "\n";
-  $data .= "    # Use Expires Directive.\n";
-  $data .= "    <IfModule mod_expires.c>\n";
-  $data .= "      # Do not use ETags.\n";
-  $data .= "      FileETag None\n";
-  $data .= "      # Enable expirations.\n";
-  $data .= "      ExpiresActive On\n";
-  $data .= "      # Cache all aggregated $ext files for 480 weeks after access (A).\n";
-  $data .= "      ExpiresDefault A290304000\n";
-  $data .= "    </IfModule>\n";
-  $data .= "  </IfModule>\n";
-  $data .= "\n";
-  $data .= "  <IfModule mod_headers.c>\n";
-  $data .= "    # Set a far future Cache-Control header to 480 weeks.\n";
-  $data .= "    Header set Cache-Control \"max-age=290304000, no-transform, public\"\n";
-  $data .= "    # Set a far future Expires header.\n";
-  $data .= "    Header set Expires \"Tue, 20 Jan 2037 04:20:42 GMT\"\n";
-  $data .= "    # Pretend the file was last modified a long time ago in the past.\n";
-  $data .= "    Header set Last-Modified \"Wed, 20 Jan 1988 04:20:42 GMT\"\n";
-  $data .= "    # Do not use etags for cache validation.\n";
-  $data .= "    Header unset ETag\n";
-  $data .= "  </IfModule>\n";
-  $data .= "</FilesMatch>\n";
-
-  if (!advagg_file_save_data($data, $htaccess_file, FILE_EXISTS_REPLACE)) {
-    return FALSE;
-  }
-  return TRUE;
 }
 
 /**
- * Return a large array of the CSS & JS files loaded on this page.
+ * Returns a persistent variable.
  *
- * @param $js_files_excluded
- *   array of js files to not include in the output array.
- * @param $css_files_excluded
- *   array of css files to not include in the output array.
+ * This version will read directly from the database.
+ *
+ * Case-sensitivity of the variable_* functions depends on the database
+ * collation used. To avoid problems, always use lower case for persistent
+ * variable names.
+ *
+ * @param $name
+ *   The name of the variable to return.
+ * @param $default
+ *   The default value to use if this variable has never been set.
  * @return
- *   array.
+ *   The value of the variable.
+ *
+ * @see variable_del(), variable_set()
  */
-function advagg_get_js_css_get_array($js_files_excluded = array(), $css_files_excluded = array()) {
-  global $conf, $_advagg;
+function advagg_variable_get_db($name, $default = NULL) {
+  $variable = db_select('variable', 'v')
+    ->fields('v', array('value'))
+    ->condition('name', $name)
+    ->execute()
+    ->fetchField();
 
-  // Setup variables.
-  $variables = array(
-    'css' => array(),
-    'js' => array(),
-  );
-  // Setup render functions.
-  $css_function = variable_get('advagg_css_render_function', ADVAGG_CSS_RENDER_FUNCTION);
-  $js_function = variable_get('advagg_js_render_function', ADVAGG_JS_RENDER_FUNCTION);
-  $conf['advagg_css_render_function'] = 'advagg_css_array';
-  $conf['advagg_js_render_function'] = 'advagg_js_array';
-
-  // Run CSS code.
-  $css_array = array();
-  $variables['css'] = drupal_add_css(CSS_DEFAULT);
-  if (module_exists('less')) {
-    less_preprocess_page($variables, NULL);
-  }
-  $css_func_inline = advagg_add_css_inline();
-  if (!empty($css_func_inline)) {
-    $variables['css'] = advagg_merge_inline_css($variables['css'], $css_func_inline);
-  }
-  // Remove excluded CSS files.
-  foreach ($variables['css'] as $media => $types) {
-    foreach ($types as $type => $values) {
-      foreach ($values as $filename => $preprocess) {
-        if (in_array($filename, $css_files_excluded)) {
-          unset($variables['css'][$media][$type][$filename]);
-        }
-      }
-    }
-  }
-  $css_array = advagg_process_css($variables['css']);
-
-  // Run JS code.
-  $js_array = array();
-  $variables['js']['header'] = drupal_add_js(NULL, array('type' => NULL));
-  if (variable_get('advagg_closure', ADVAGG_CLOSURE) && !empty($_advagg['closure'])) {
-    $variables['js']['footer'] = drupal_add_js(NULL, array('type' => NULL, 'scope' => 'footer'));
-  }
-  advagg_jquery_updater($variables['js']['header']);
-  // Remove excluded JS files.
-  foreach ($variables['js'] as $scope => $values) {
-    foreach ($values as $type => $data) {
-      foreach ($data as $filename => $info) {
-        if (in_array($filename, $js_files_excluded)) {
-          unset($variables['js'][$scope][$type][$filename]);
-        }
-      }
-    }
-  }
-  $js_array = advagg_process_js($variables['js']);
-
-  // Set render functions back to defaults.
-  $conf['advagg_css_render_function'] = $css_function;
-  $conf['advagg_js_render_function'] = $js_function;
-
-  // Return arrays.
-  return array(
-    'js' => $js_array,
-    'css' => $css_array,
-  );
+  // Use the default if need be.
+  return !empty($variable) ? unserialize($variable) : $default;
 }
 
 /**
- * Implements hook_file_download().
+ * Get the CSS & JS path for advagg.
  *
- * Return the correct headers for advagg bundles.
+ * @return
+ *   Example below:
+ *   array(
+ *     array(
+ *       public://advagg_css,
+ *       sites/default/files/advagg_css,
+ *     ),
+ *     array(
+ *       public://advagg_js,
+ *       sites/default/files/advagg_js,
+ *     ),
+ *   )
  */
-function advagg_file_download($file, $type = '') {
-  // Do nothing if not an AdvAgg File.
-  if (strpos($file, '/advagg_') === FALSE || empty($type)) {
-    return;
+function advagg_get_root_files_dir() {
+  static $css_paths;
+  static $js_paths;
+
+  // Make sure directories are available and writable.
+  if (empty($css_paths) || empty($js_paths)) {
+    $css_paths[0] = 'public://advagg_css';
+    $js_paths[0] = 'public://advagg_js';
+
+    file_prepare_directory($css_paths[0], FILE_CREATE_DIRECTORY);
+    file_prepare_directory($js_paths[0], FILE_CREATE_DIRECTORY);
+
+    // Get the URI of the directory.
+    $css_paths[1] = parse_url(file_create_url($css_paths[0]));
+    $css_paths[1] = ltrim($css_paths[1]['path'], $GLOBALS['base_path']);
+    $js_paths[1] = parse_url(file_create_url($js_paths[0]));
+    $js_paths[1] = ltrim($js_paths[1]['path'], $GLOBALS['base_path']);
   }
 
-  // Set the headers.
-  $return = array();
-  $return[] = 'Content-Length: ' . filesize($file);
-  // Set a far future Cache-Control header (480 weeks), which prevents
-  // intermediate caches from transforming the data and allows any
-  // intermediate cache to cache it, since it's marked as a public resource.
-  $return[] = "Cache-Control: max-age=290304000, no-transform, public";
-  // Set a far future Expires header. The maximum UNIX timestamp is somewhere
-  // in 2038. Set it to a date in 2037, just to be safe.
-  $return[] = 'Expires: Tue, 20 Jan 2037 04:20:42 GMT';
-  // Pretend the file was last modified a long time ago in the past, this will
-  // prevent browsers that don't support Cache-Control nor Expires headers to
-  // still request a new version too soon (these browsers calculate a
-  // heuristic to determine when to request a new version, based on the last
-  // time the resource has been modified).
-  // Also see http://code.google.com/speed/page-speed/docs/caching.html.
-  $return[] = 'Last-Modified: Wed, 20 Jan 1988 04:20:42 GMT';
+  return array($css_paths, $js_paths);
+}
 
+/**
+ * Given the type lets us know if advagg is enabled or disabled.
+ *
+ * @param $type
+ *   css or js.
+ *
+ * @return
+ *   TRUE or FALSE
+ */
+function advagg_file_aggregation_enabled($type) {
+  if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE == 'update') {
+    return FALSE;
+  }
+  if (isset($_GET['advagg']) && $_GET['advagg'] == 0 && user_access('bypass advanced aggregation')) {
+    return FALSE;
+  }
   if ($type == 'css') {
-    $return[] = 'Content-Type: text/css';
+    return variable_get('preprocess_css', FALSE);
   }
   if ($type == 'js') {
-    $return[] = 'Content-Type: text/javascript';
+    return variable_get('preprocess_js', FALSE);
   }
-  return $return;
+}
+
+/**
+ * Update the atime value in the advagg_aggregates_versions table.
+ *
+ * @param $aggregate_filenames_hash
+ *   Hash of the groupings of files.
+ * @param $aggregate_contents_hash
+ *   Hash of the files contents.
+ *
+ * @return
+ *   TRUE if a write to the DB was done.
+ */
+function advagg_update_atime($aggregate_filenames_hash, $aggregate_contents_hash) {
+  $write_done = FALSE;
+  // Set the cache id.
+  $cache_id = 'advagg:db:' . $aggregate_filenames_hash . ADVAGG_SPACE . $aggregate_contents_hash;
+  // Set db record.
+  $record = array(
+    'aggregate_filenames_hash' => $aggregate_filenames_hash,
+    'aggregate_contents_hash' => $aggregate_contents_hash,
+    'atime' => REQUEST_TIME,
+  );
+
+  // Use the cache to avoid hitting the database.
+  if ($cache = cache_get($cache_id, 'cache_advagg_info')) {
+    // See if the atime value needs to be updated;
+    if (!empty($cache->data['atime']) && $cache->data['atime'] > REQUEST_TIME - (12*60*60)) {
+      // If atime is less than 12 hours old, do nothing.
+      return $write_done;
+    }
+  }
+
+  // If lock is already acquired, return here.
+  if (!lock_acquire($cache_id, 5)) {
+    return $write_done;
+  }
+
+  // Update atime in DB.
+  if (drupal_write_record('advagg_aggregates_versions', $record, array('aggregate_filenames_hash', 'aggregate_contents_hash'))) {
+    $write_done = TRUE;
+  }
+
+  // Update the atime in the cache.
+  // Get fresh copy of the cache now that we are in a lock.
+  $cache = cache_get($cache_id, 'cache_advagg_info');
+  // Set the atime.
+  if (empty($cache->data)) {
+    $cache = new stdClass();
+  }
+  $cache->data['atime'] = REQUEST_TIME;
+
+  // Write to the cache.
+  cache_set($cache_id, $cache->data, 'cache_advagg_info', CACHE_PERMANENT);
+
+  // Release Lock.
+  lock_release($cache_id);
+
+  // Return if a write was done.
+  return $write_done;
+}
+
+/**
+ * Return the advagg_global_counter variable.
+ *
+ * @todo Allow this value to be kept in sync across a multisite.
+ *
+ * @return
+ *   Int value.
+ */
+function advagg_get_global_counter() {
+  $global_counter = variable_get('advagg_global_counter', ADVAGG_GLOBAL_COUNTER);
+
+  return $global_counter;
 }

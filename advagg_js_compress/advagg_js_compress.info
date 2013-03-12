@@ -3,4 +3,3 @@ description = Compress Javascript with a 3rd party compressor, JSMin+ currently.
 package = Advanced CSS/JS Aggregation
 core = 7.x
 dependencies[] = advagg
-

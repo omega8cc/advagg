@@ -1,6 +1,14 @@
 
 /**
+ * @file
+ * Used to toggle the AdvAgg Bypass Cookie client side.
+ */
+
+/**
  * Toggle the advagg cookie
+ *
+ * @return
+ *   FALSE so the form does not get submitted.
  */
 function advagg_toggle_cookie() {
   var cookie_name = 'AdvAggDisabled';
@@ -16,7 +24,7 @@ function advagg_toggle_cookie() {
       + ' domain=.' + document.location.hostname + ';';
     alert(Drupal.t('AdvAgg Bypass Cookie Removed'));
   }
-  // If the cookie does not exsit then set it.
+  // If the cookie does not exist then set it.
   else {
     document.cookie = cookie_name + '=' + Drupal.settings.advagg.key + ';'
       + ' path=' + Drupal.settings.basePath + ';'

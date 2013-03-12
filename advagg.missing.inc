@@ -1,0 +1,440 @@
+<?php
+
+/**
+ * @file
+ * Advanced CSS/JS aggregation module.
+ *
+ * Functions used to generate a file given the filename.
+ */
+
+/**
+ * Menu Callback; generates a missing CSS/JS file.
+ */
+function advagg_missing_aggregate() {
+  // Do not stop processing this request.
+  ignore_user_abort(TRUE);
+
+  // Generate missing file
+  $msg = advagg_missing_generate();
+
+  // If here send out fast 404.
+  advagg_missing_fast404($msg);
+}
+
+/**
+ * Generates a missing CSS/JS file.
+ *
+ * @param $filename
+ *   filename
+ * @param $type
+ *   css or js
+ * @return
+ *   false if bundle couldn't be generated.
+ */
+function advagg_missing_generate() {
+  // Make sure we are not in a redirect loop.
+  $redirect_counter = isset($_GET['redirect_counter']) ? intval($_GET['redirect_counter']) : 0;
+  if ($redirect_counter > 5) {
+    watchdog('advagg', 'This request could not generate correctly. Loop detected. Request data: %info', array('%info' => $_GET['q']));
+    return t('In a loop.');
+  }
+
+  // Get filename from request.
+  $arg = arg();
+  $filename = array_pop($arg);
+  $filename = explode('?', $filename);
+  $filename = array_shift($filename);
+
+  $lock_name = 'advagg_' . $filename;
+  if (lock_acquire($lock_name, 10)) {
+    $created = advagg_missing_create_file($filename);
+    if ($created !== TRUE) {
+      lock_release($lock_name);
+      return $created;
+    }
+  }
+  else {
+    // Wait for another request that is already doing this work.
+    // We choose to block here since otherwise the router item may not
+    // be available in menu_execute_active_handler() resulting in a 404.
+    lock_wait($lock_name, 10);
+  }
+  lock_release($lock_name);
+
+  // Redirect to file.
+  $redirect_counter++;
+  $uri = $GLOBALS['base_path'] . $_GET['q'] . '?redirect_counter=' . $redirect_counter;
+  header('Location: ' . $uri, TRUE, 307);
+
+  drupal_exit();
+}
+
+/**
+ * Given a filename create that file.
+ *
+ * @param $filename
+ *   Just the filename no path information.
+ *
+ * @return
+ *   On failure a string saying why it failed.
+ *   On success TRUE.
+ */
+function advagg_missing_create_file($filename) {
+  $data = advagg_get_hashes_from_filename($filename);
+  if (is_array($data)) {
+    list($type, $aggregate_filenames_hash, $aggregate_contents_hash) = $data;
+  }
+  else {
+    return $data;
+  }
+
+  // Get a list of files.
+  $files = advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggregate_contents_hash);
+  if (empty($files)) {
+    return t('Hashes do not match database.');
+  }
+
+  // Save aggregate file.
+  advagg_save_aggregate($filename, $files, $type);
+  // Update atime
+  advagg_update_atime($aggregate_filenames_hash, $aggregate_contents_hash);
+  return TRUE;
+}
+
+// Lookup functions.
+/**
+ * Given a filename return the type and 2 hashes.
+ *
+ * @param $filename
+ *   Just the filename no path information.
+ *
+ * @return
+ *   On failure a string saying why it failed.
+ *   On success array($ext, $aggregate_hash, $files_hash).
+ */
+function advagg_get_hashes_from_filename($filename) {
+  // Verify requested filename has the correct pattern.
+  if (!preg_match('/^(j|cs)s' . ADVAGG_SPACE . '[A-Za-z0-9-_]{43}' . ADVAGG_SPACE . '[A-Za-z0-9-_]{43}' . ADVAGG_SPACE . '[A-Za-z0-9-_]{43}\.(j|cs)s$/', $filename)) {
+    return t('Wrong pattern.');
+  }
+
+  // Get the extension.
+  $ext = substr($filename, strpos($filename, '.', 131 + strlen(ADVAGG_SPACE)*3) + 1);
+
+  // Set extraction points.
+  if ($ext == 'css') {
+    $aggregate_filenames_start = 3 + strlen(ADVAGG_SPACE);
+    $aggregate_contents_start = 46 + strlen(ADVAGG_SPACE)*2;
+    $hooks_hashes_start = 89 + strlen(ADVAGG_SPACE)*3;
+  }
+  elseif ($ext == 'js') {
+    $aggregate_filenames_start = 2 + strlen(ADVAGG_SPACE);
+    $aggregate_contents_start = 45 + strlen(ADVAGG_SPACE)*2;
+    $hooks_hashes_start = 88 + strlen(ADVAGG_SPACE)*3;
+  }
+  else {
+    return t('Wrong file type.');
+  }
+
+  // Extract info from wanted filename.
+  $aggregate_filenames_hash = substr($filename, $aggregate_filenames_start, 43);
+  $aggregate_contents_hash = substr($filename, $aggregate_contents_start, 43);
+  $hooks_hashes_value = substr($filename, $hooks_hashes_start, 43);
+
+  // Verify that the hooks hashes is valid.
+  if (!advagg_in_hooks_hashes($hooks_hashes_value)) {
+    return t('Bad hooks hashes value.');
+  }
+
+  return array($ext, $aggregate_filenames_hash, $aggregate_contents_hash);
+}
+
+/**
+ * Get the files that belong inside of this aggregate.
+ *
+ * @param $filetype
+ *   css or js.
+ * @param $aggregate_filenames_hash
+ *   Hash of the groupings of files.
+ * @param $aggregate_contents_hash
+ *   Hash of the files contents.
+ *
+ * @return array
+ *   List of files in the order they should be included.
+ */
+function advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggregate_contents_hash) {
+  // Create join query for the advagg_files table.
+  $subquery_files = db_select('advagg_files', 'af')
+    ->fields('af')
+    ->condition('af.filetype', $type);
+  // Create join query for the advagg_aggregates table.
+  $subquery_aggregates = db_select('advagg_aggregates', 'aa')
+    ->fields('aa');
+
+  // Create main query for the advagg_aggregates_versions table.
+  $query = db_select('advagg_aggregates_versions', 'aav')
+    ->condition('aav.aggregate_filenames_hash', $aggregate_filenames_hash)
+    ->condition('aav.aggregate_contents_hash', $aggregate_contents_hash);
+  $query->join($subquery_aggregates, 'aa', 'aa.aggregate_filenames_hash=aav.aggregate_filenames_hash');
+  $query->join($subquery_files, 'af', 'af.filename_hash=aa.filename_hash');
+  $query = $query->fields('af', array('filename'))
+    ->orderBy('porder', 'ASC')
+    ->execute();
+
+  // Add in files that are included in this aggregate.
+  $files = array();
+  while ($file = $query->fetchField()) {
+    $files[] = $file;
+  }
+  return $files;
+}
+
+// Read CSS/JS files.
+/**
+ * Given a list of files, grab their contents and glue it into one big string.
+ *
+ * @param $files
+ *   array of filenames.
+ * @return
+ *   string containing all the files.
+ */
+function advagg_get_css_aggregate_contents($files) {
+  // Check if CSS compression is enabled.
+  $optimize = TRUE;
+
+  $data = '';
+  if (!empty($files)) {
+    foreach ($files as $file) {
+      $contents = drupal_load_stylesheet($file, $optimize);
+
+      // Build the base URL of this CSS file: start with the full URL.
+      $css_base_url = file_create_url($file);
+      // Move to the parent.
+      $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
+      // Simplify to a relative URL if the stylesheet URL starts with the
+      // base URL of the website.
+      if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
+        $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
+      }
+
+      _drupal_build_css_path(NULL, $css_base_url . '/');
+      // Anchor all paths in the CSS with its base URL, ignoring external and absolute paths.
+      $contents = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+
+      // Allow other modules to modify this files contents.
+      // Call hook_advagg_get_css_file_contents_alter().
+      drupal_alter('advagg_get_css_file_contents', $contents, $file, $optimize);
+      $data .= $contents;
+    }
+
+    // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
+    // @import rules must proceed any other style, so we move those to the top.
+    $regexp = '/@import[^;]+;/i';
+    preg_match_all($regexp, $data, $matches);
+    $data = preg_replace($regexp, '', $data);
+    $data = implode('', $matches[0]) . $data;
+  }
+
+  // Allow other modules to modify this aggregates contents.
+  // Call hook_advagg_get_css_aggregate_contents_alter().
+  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $optimize);
+  return $data;
+}
+
+/**
+ * Given a list of files, grab their contents and glue it into one big string.
+ *
+ * @param $files
+ *   array of filenames.
+ * @return
+ *   string containing all the files.
+ */
+function advagg_get_js_aggregate_contents($files) {
+  $data = '';
+
+  if (!empty($files)) {
+    // Build aggregate JS file.
+    foreach ($files as $filename) {
+      $contents = '';
+      // Append a ';' and a newline after each JS file to prevent them from running together.
+      if (file_exists($filename)) {
+        $contents .= file_get_contents($filename) . ";\n";
+      }
+      // Allow other modules to modify this files contents.
+      // Call hook_advagg_get_js_file_contents_alter().
+      drupal_alter('advagg_get_js_file_contents', $contents, $filename);
+      $data .= $contents;
+    }
+  }
+
+  // Allow other modules to modify this aggregates contents.
+  // Call hook_advagg_get_js_aggregate_contents_alter().
+  drupal_alter('advagg_get_js_aggregate_contents', $data, $files);
+  return $data;
+}
+
+// File save functions.
+/**
+ * Save an aggregate given a filename, the files included in it, and the type.
+ *
+ * @param $filename
+ *   Just the filename no path information.
+ * @param $files
+ *   array of filenames.
+ * @param $type
+ *   css or js
+ *
+ * @return bool
+ *   TRUE if any files were created.
+ *   FALSE if no files were created.
+ */
+function advagg_save_aggregate($filename, $files, $type) {
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+
+  // Build the aggregates contents.
+  $contents = '';
+  if ($type == 'css') {
+    $contents = advagg_get_css_aggregate_contents($files);
+    $uri = $css_path[0] . '/' . $filename;
+  }
+  elseif ($type == 'js') {
+    $contents = advagg_get_js_aggregate_contents($files);
+    $uri = $js_path[0] . '/' . $filename;
+  }
+
+  // List of files to save.
+  $files_to_save = array(
+    $uri => $contents,
+  );
+
+  // Allow other modules to alter the contents and add new files to save.
+  // Call hook_advagg_save_aggregate_alter().
+  drupal_alter('advagg_save_aggregate', $files_to_save);
+
+  $file_written = FALSE;
+  foreach ($files_to_save as $uri => $data) {
+    if (advagg_save_data($uri, $data)) {
+      $file_written = TRUE;
+    }
+  }
+  return $file_written;
+}
+
+/**
+ * Save data to a file.
+ *
+ * This will use the rename operation ensuring atomic file operations.
+ *
+ * @param $uri
+ *   A string containing the destination location. This must be a stream wrapper
+ *   URI.
+ * @param $data
+ *   A string containing the contents of the file.
+ *
+ * @return boolean
+ *   TRUE if the file exists.
+ *   FALSE if the file does not exist.
+ */
+function advagg_save_data($uri, $data) {
+  // File already exists.
+  if (file_exists($uri) && filesize($uri) > 0) {
+    return TRUE;
+  }
+
+  // Perform the replace operation. Since there could be multiple processes
+  // writing to the same file, the best option is to create a temporary file in
+  // the same directory and then rename it to the destination. A temporary file
+  // is needed if the directory is mounted on a separate machine; thus ensuring
+  // the rename command stays local.
+
+  // Get a temporary filename in the destination directory.
+  $temporary_file = drupal_tempnam(drupal_dirname($uri), 'file');
+  // Save to temporary filename in the destination directory.
+  $filepath = file_unmanaged_save_data($data, $temporary_file, FILE_EXISTS_REPLACE);
+
+  // Preform the rename operation.
+  $result = @rename($temporary_file, $uri);
+  if (!$result) {
+    // Unlink and try again for windows. Rename on windows does not replace
+    // the file if it already exists.
+    @unlink($uri);
+    $result = @rename($temporary_file, $uri);
+    // Remove temporary_file if rename failed.
+    if (!$result) {
+      @unlink($temporary_file);
+    }
+  }
+
+  return file_exists($uri);
+}
+
+// Helper functions.
+/**
+ * Send out a fast 404 and exit.
+ *
+ * @param $msg
+ *   Small message reporting why the file didn't get created.
+ */
+function advagg_missing_fast404($msg = '') {
+  // Strip new lines and limit header message to 512 characters.
+  $msg = substr(str_replace(array("\n", "\r"), '', $msg), 0, 512);
+
+  // Add in headers if possible.
+  if (!headers_sent()) {
+    header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+    header('X-AdvAgg: Failed validation. ' . $msg);
+  }
+
+  // Output fast 404 message and exit.
+  print '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' . "\n";
+  print '<html>';
+  print '<head><title>404 Not Found</title></head>';
+  print '<body><h1>Not Found</h1>';
+  print '<p>The requested URL was not found on this server.</p>';
+  print '<p><a href="' . $GLOBALS['base_path'] . '">Home</a></p>';
+  print '<!-- advagg_missing_fast404 -->';
+  print '</body></html>';
+  exit();
+}
+
+/**
+ * Read the atime value for the given aggregrate.
+ *
+ * @param $aggregate_filenames_hash
+ *   Hash of the groupings of files.
+ * @param $aggregate_contents_hash
+ *   Hash of the files contents.
+ * @param $uri
+ *   URI pointing to the aggregate file.
+ *
+ * @return
+ *   drupal_write_record().
+ */
+function advagg_get_atime($aggregate_filenames_hash, $aggregate_contents_hash, $uri) {
+  // Try to use the cache to avoid hitting the database with a select query.
+  $cache_id = 'advagg:db:' . $aggregate_filenames_hash . ADVAGG_SPACE . $aggregate_contents_hash;
+  if ($cache = cache_get($cache_id, 'cache_advagg_info')) {
+    // If the atime in the cache is less than 12 hours old, use that.
+    if (!empty($cache->data['atime']) && $cache->data['atime'] > REQUEST_TIME - (12*60*60)) {
+      return $cache->data['atime'];
+    }
+  }
+
+  // Try to get the atime from the DB.
+  $atime = db_select('advagg_aggregates_versions', 'aav')
+    ->fields('aav', array('atime'))
+    ->condition('aav.aggregate_filenames_hash', $aggregate_filenames_hash)
+    ->condition('aav.aggregate_contents_hash', $aggregate_contents_hash)
+    ->execute()
+    ->fetchField();
+  if (!empty($atime)) {
+    return $atime;
+  }
+
+  // Return the atime from disk as a last resort.
+  if (file_exists($uri)) {
+    return fileatime($uri);
+  }
+  // No atime was found, return FALSE.
+  return FALSE;
+}

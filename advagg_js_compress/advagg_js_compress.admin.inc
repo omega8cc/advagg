@@ -6,31 +6,18 @@
  */
 
 /**
- * Page generation function for admin/settings/js-compress
- */
-function advagg_js_compress_admin_page() {
-  $output = '';
-  return $output . drupal_get_form('advagg_js_compress_admin_settings_form');
-}
-
-/**
  * Form builder; Configure advagg settings.
  *
  * @ingroup forms
  * @see system_settings_form()
  */
-function advagg_js_compress_admin_settings_form($form) {
+function advagg_js_compress_admin_settings_form($form, $form_state) {
   $form = array();
 
   $form['advagg_js_compress_agg_files'] = array(
     '#type' => 'checkbox',
     '#title' => t('Compress JS Files'),
     '#default_value' => variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES),
-  );
-  $form['advagg_js_compress_inline'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Compress Inline JS'),
-    '#default_value' => variable_get('advagg_js_compress_inline', ADVAGG_JS_COMPRESS_INLINE),
   );
 
   $description = '';
@@ -50,12 +37,26 @@ function advagg_js_compress_admin_settings_form($form) {
     '#description' => filter_xss($description),
   );
 
-  $form['advagg_js_compress_packer_enable'] = array(
+  $form['advagg_js_compress_packer'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable Packer'),
-    '#default_value' => variable_get('advagg_js_compress_packer_enable', ADVAGG_JS_COMPRESS_PACKER_ENABLE),
+    '#default_value' => variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER),
     '#description' => t('If enabled the non gzip version of JS files will be compressed using the JS Packer. WARNING: This has a high chance of breaking your JS. Only Enable on production after testing the non gzipped version locally.'),
   );
 
+  // Clear the cache bins on submit.
+  $form['#submit'][] = 'advagg_js_compress_admin_settings_form_submit';
+
   return system_settings_form($form);
+}
+
+// Submit callback.
+/**
+ * Clear out the advagg cache bin when the save configuration button is pressed.
+ */
+function advagg_js_compress_admin_settings_form_submit($form, &$form_state) {
+  $cache_bins = advagg_flush_caches();
+  foreach ($cache_bins as $bin) {
+    cache_clear_all('*', $bin, TRUE);
+  }
 }

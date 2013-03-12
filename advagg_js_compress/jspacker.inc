@@ -761,7 +761,7 @@ class ParseMaster {
   }
   private function _unescapeBis() {
     if (isset($this->_escaped[$this->buffer['i']])
-			  && $this->_escaped[$this->buffer['i']] != '') {
+			 && $this->_escaped[$this->buffer['i']] != '') {
       $temp = $this->_escaped[$this->buffer['i']];
     }
     else {
