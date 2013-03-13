@@ -17,9 +17,9 @@ define('ADVAGG_CSS_COMPRESS_AGG_FILES', TRUE);
 define('ADVAGG_CSS_COMPRESSOR', 2);
 
 /**
- * Implement hook_advagg_get_hooks_hash_alter.
+ * Implement hook_advagg_current_hooks_hash_array_alter.
  */
-function advagg_css_compress_advagg_get_hooks_hash_alter(&$advagg_hash) {
+function advagg_css_compress_advagg_current_hooks_hash_array_alter(&$advagg_hash) {
   $advagg_hash['variables']['advagg_css_compressor'] = variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR);
   $advagg_hash['variables']['advagg_css_compress_agg_files'] = variable_get('advagg_css_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES);
 }

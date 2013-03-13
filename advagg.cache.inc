@@ -172,7 +172,7 @@ function advagg_delete_files_if_stale($files) {
     $filename = $file->filename;
     $data = advagg_get_hashes_from_filename($filename);
     if (is_array($data)) {
-      list($type, $aggregate_filenames_hash, $aggregate_contents_hash) = $data;
+      list($type, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings) = $data;
     }
 
     // Can not get data on file, remove it.

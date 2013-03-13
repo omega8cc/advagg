@@ -379,7 +379,7 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
  *   Hash of the files contents.
  */
 function advagg_build_filename($type, $aggregate_filenames_hash, $aggregate_contents_hash) {
-  $hooks_hash = advagg_get_hooks_hash();
+  $hooks_hash = advagg_get_current_hooks_hash();
   return $type . ADVAGG_SPACE .
     $aggregate_filenames_hash . ADVAGG_SPACE .
     $aggregate_contents_hash . ADVAGG_SPACE .

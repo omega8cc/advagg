@@ -267,7 +267,7 @@ function _advagg_aggregate_css(&$css_groups) {
   }
 
   if (!empty($files_to_aggregate)) {
-    $hooks_hash = advagg_get_hooks_hash();
+    $hooks_hash = advagg_get_current_hooks_hash();
     $css_hash = drupal_hash_base64(serialize($files_to_aggregate));
     $cache_id = 'advagg:css:' . $hooks_hash . ':' . $css_hash;
     if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
@@ -431,7 +431,7 @@ function advagg_get_js($scope, $javascript) {
   // This is the only hunk of code change from drupal_get_js().
   if ($preprocess_js && count($files) > 0) {
     // See if the full cache has this.
-    $hooks_hash = advagg_get_hooks_hash();
+    $hooks_hash = advagg_get_current_hooks_hash();
     $js_hash = drupal_hash_base64(serialize($files));
     $cache_id = 'advagg:js:' . $hooks_hash . ':' . $js_hash;
     if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
@@ -674,7 +674,7 @@ function advagg_enabled() {
  * @return
  *   array('variables' => array(...), 'hooks' => array(...))
  */
-function advagg_generate_hooks_variables_array() {
+function advagg_current_hooks_hash_array() {
   // Put all enabled hooks and settings into a big array.
   $advagg_hash = array(
     'variables' => array(
@@ -686,8 +686,8 @@ function advagg_generate_hooks_variables_array() {
   );
 
   // Allow other modules to add in their own settings and hooks.
-  // Call hook_advagg_get_hooks_hash_alter().
-  drupal_alter('advagg_get_hooks_hash', $advagg_hash);
+  // Call hook_advagg_current_hooks_hash_array_alter().
+  drupal_alter('advagg_current_hooks_hash_array', $advagg_hash);
 
   return $advagg_hash;
 }
@@ -698,30 +698,41 @@ function advagg_generate_hooks_variables_array() {
  * @return string
  *   hash value.
  */
-function advagg_get_hooks_hash() {
-  $hash = &drupal_static(__FUNCTION__);
-  if (!isset($hash)) {
+function advagg_get_current_hooks_hash() {
+  $current_hash = &drupal_static(__FUNCTION__);
+
+  if (!isset($current_hash)) {
     // Get all advagg hooks and variables in use.
-    $advagg_hooks_variables = advagg_generate_hooks_variables_array();
+    $current_hash_array = advagg_current_hooks_hash_array();
 
     // Generate the hash.
-    $hash = drupal_hash_base64(serialize($advagg_hooks_variables));
+    $current_hash = drupal_hash_base64(serialize($current_hash_array));
 
     // Save into variables for verification purposes later on if not found.
-    if (!advagg_in_hooks_hashes($hash) && lock_acquire(__FUNCTION__, 5)) {
-      // Get variable from the database.
-      $all_hashes = advagg_variable_get_db('advagg_all_hooks_hashes', array());
-
+    $settings = advagg_get_hooks_hash_settings($current_hash);
+    if (empty($settings) && lock_acquire(__FUNCTION__, 5)) {
       // Save new hash into
-      $all_hashes[] = $hash;
-      variable_set('advagg_all_hooks_hashes', $all_hashes);
+      advagg_set_hooks_hash($current_hash, $current_hash_array);
 
       // Release lock
       lock_release(__FUNCTION__);
     }
   }
 
-  return $hash;
+  return $current_hash;
+}
+
+/**
+ * Store settings assoceated with hash.
+ *
+ * @return
+ *   value from db_merge
+ */
+function advagg_set_hooks_hash($hash, $settings) {
+  return db_merge('advagg_aggregates_hashes')
+    ->key(array('hash' => $hash))
+    ->fields(array('settings' => serialize($settings)))
+    ->execute();
 }
 
 /**
@@ -741,7 +752,7 @@ function advagg_hooks_implemented($all = TRUE) {
     'advagg_get_js_file_contents_alter' => array(),
     'advagg_get_js_aggregate_contents_alter' => array(),
     'advagg_save_aggregate_alter' => array(),
-    'advagg_get_hooks_hash_alter' => array(),
+    'advagg_current_hooks_hash_array' => array(),
   );
   if ($all) {
     $hooks += array(
@@ -760,55 +771,21 @@ function advagg_hooks_implemented($all = TRUE) {
 }
 
 /**
- * Checks if this hash is in the advagg_all_hooks_hashes variable.
- *
- * Will read directly from the database if not found in the variables cache.
- *
- * @param $hash
- *   The hash string.
- *
- * @return
- *   TRUE if the hash is in the variables table. FALSE if not.
- */
-function advagg_in_hooks_hashes($hash) {
-  $all_hashes = variable_get('advagg_all_hooks_hashes', array());
-  if (in_array($hash, $all_hashes)) {
-    return TRUE;
-  }
-  else {
-    // Try the database.
-    $all_hashes = advagg_variable_get_db('advagg_all_hooks_hashes', array());
-    return in_array($hash, $all_hashes);
-  }
-}
-
-/**
- * Returns a persistent variable.
- *
- * This version will read directly from the database.
- *
- * Case-sensitivity of the variable_* functions depends on the database
- * collation used. To avoid problems, always use lower case for persistent
- * variable names.
+ * Returns the hashes settings.
  *
  * @param $name
  *   The name of the variable to return.
- * @param $default
- *   The default value to use if this variable has never been set.
  * @return
- *   The value of the variable.
- *
- * @see variable_del(), variable_set()
+ *   The settings array or FALSE if not found.
  */
-function advagg_variable_get_db($name, $default = NULL) {
-  $variable = db_select('variable', 'v')
-    ->fields('v', array('value'))
-    ->condition('name', $name)
+function advagg_get_hooks_hash_settings($hash) {
+  $settings = db_select('advagg_aggregates_hashes', 'aah')
+    ->fields('aah', array('settings'))
+    ->condition('hash', $hash)
     ->execute()
     ->fetchField();
 
-  // Use the default if need be.
-  return !empty($variable) ? unserialize($variable) : $default;
+  return !empty($settings) ? unserialize($settings) : FALSE;
 }
 
 /**

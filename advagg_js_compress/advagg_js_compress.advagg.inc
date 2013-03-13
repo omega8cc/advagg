@@ -8,12 +8,63 @@
 /**
  * Implement hook_advagg_get_js_file_contents_alter().
  */
-function advagg_js_compress_advagg_get_js_file_contents_alter(&$contents, $filename) {
-  if (!variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES)) {
+function advagg_js_compress_advagg_get_js_file_contents_alter(&$contents, $filename, $aggregate_settings) {
+  if (empty($aggregate_settings['variables']['advagg_js_compress_agg_files'])) {
     return;
   }
 
-  advagg_js_compress_prep($contents, $filename);
+  advagg_js_compress_prep($contents, $filename, $aggregate_settings);
+}
+
+/**
+ * Implements hook_advagg_save_aggregate_alter().
+ *
+ * Used to add in a .gz file if none exits.
+ *
+ * @param $files_to_save
+ *   array($uri => $contents)
+ * @param $aggregate_settings
+ *   array of settings.
+ */
+function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggregate_settings) {
+  // Return if gzip is disabled.
+  if (empty($aggregate_settings['variables']['advagg_gzip'])) {
+    return;
+  }
+  // Return if packer is disabled.
+  if (empty($aggregate_settings['variables']['advagg_js_compress_packer'])) {
+    return;
+  }
+
+  // See if a .gz file already exists.
+  $gzip_exists = FALSE;
+  foreach ($files_to_save as $uri => $contents) {
+    // See if this uri contains .gz near the end of it.
+    $pos = strripos($uri, '.gz', 91 + strlen(ADVAGG_SPACE)*3);
+    if (!empty($pos)) {
+      $len = strlen($uri);
+      // .gz file exists, exit loop.
+      if ($pos == $len-3) {
+        $gzip_exists = TRUE;
+        break;
+      }
+    }
+  }
+
+  // Use the first file in the array.
+  $data = reset($files_to_save);
+  $uri = key($files_to_save);
+
+  // If a .gz file does not exist, create one.
+  if (!$gzip_exists) {
+    // Compress it and add it to the $files_to_save array.
+    $compressed = gzencode($data, 9, FORCE_GZIP);
+    $files_to_save[$uri . '.gz'] = $compressed;
+  }
+
+  // Use packer on non gzip JS data.
+  advagg_js_compress_jspacker($data);
+  $files_to_save[$uri] = $data;
 }
 
 /**
@@ -24,13 +75,13 @@ function advagg_js_compress_advagg_get_js_file_contents_alter(&$contents, $filen
  * @param $filename
  *   filename.
  */
-function advagg_js_compress_prep(&$contents, $filename) {
+function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings) {
   // Get the JS string length before the compression operation.
   $contents_before = $contents;
   $before = strlen($contents);
 
   // Use the compressor.
-  $compressor = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
+  $compressor = $aggregate_settings['variables']['advagg_js_compressor'];
   if ($compressor == 0) {
     advagg_js_compress_jsminplus($contents);
   }
@@ -46,7 +97,7 @@ function advagg_js_compress_prep(&$contents, $filename) {
   }
   // Make sure the returned string is not empty or has a VERY high
   // compression ratio.
-  if (empty($contents) || empty($ratio) || $ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+  if (empty($contents) || empty($ratio) || $ratio > $aggregate_settings['variables']['advagg_js_max_compress_ratio']) {
     $contents = $contents_before;
   }
   else {
@@ -88,55 +139,6 @@ function advagg_js_compress_jsminplus(&$contents) {
     $after = $before;
   }
   ob_end_clean();
-}
-
-/**
- * Implements hook_advagg_save_aggregate_alter().
- *
- * Used to add in a .gz file if none exits.
- *
- * @param $files_to_save
- *   array($uri => $contents)
- */
-function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save) {
-  // Return if gzip is disabled.
-  if (!variable_get('advagg_gzip', ADVAGG_GZIP)) {
-    return;
-  }
-  // Return if packer is disabled.
-  if (!variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER)) {
-    return;
-  }
-
-  // See if a .gz file already exists.
-  $gzip_exists = FALSE;
-  foreach ($files_to_save as $uri => $contents) {
-    // See if this uri contains .gz near the end of it.
-    $pos = strripos($uri, '.gz', 91 + strlen(ADVAGG_SPACE)*3);
-    if (!empty($pos)) {
-      $len = strlen($uri);
-      // .gz file exists, exit loop.
-      if ($pos == $len-3) {
-        $gzip_exists = TRUE;
-        break;
-      }
-    }
-  }
-
-  // Use the first file in the array.
-  $data = reset($files_to_save);
-  $uri = key($files_to_save);
-
-  // If a .gz file does not exist, create one.
-  if (!$gzip_exists) {
-    // Compress it and add it to the $files_to_save array.
-    $compressed = gzencode($data, 9, FORCE_GZIP);
-    $files_to_save[$uri . '.gz'] = $compressed;
-  }
-
-  // Use packer on non gzip JS data.
-  advagg_js_compress_jspacker($data);
-  $files_to_save[$uri] = $data;
 }
 
 /**

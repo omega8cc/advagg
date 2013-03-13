@@ -14,10 +14,12 @@
  *
  * @param $files_to_save
  *   array($uri => $contents)
+ * @param $aggregate_settings
+ *   array of settings.
  */
-function advagg_advagg_save_aggregate_alter(&$files_to_save) {
+function advagg_advagg_save_aggregate_alter(&$files_to_save, $aggregate_settings) {
   // Return if gzip is disabled.
-  if (!variable_get('advagg_gzip', ADVAGG_GZIP)) {
+  if (empty($aggregate_settings['variables']['advagg_gzip'])) {
     return;
   }
 

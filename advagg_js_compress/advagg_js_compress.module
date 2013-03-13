@@ -54,10 +54,11 @@ function advagg_js_compress_menu() {
 }
 
 /**
- * Implement hook_advagg_get_hooks_hash_alter.
+ * Implement hook_advagg_current_hooks_hash_array_alter.
  */
-function advagg_js_compress_advagg_get_hooks_hash_alter(&$advagg_hash) {
+function advagg_js_compress_advagg_current_hooks_hash_array_alter(&$advagg_hash) {
   $advagg_hash['variables']['advagg_js_compressor'] = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
   $advagg_hash['variables']['advagg_js_compress_agg_files'] = variable_get('advagg_js_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES);
   $advagg_hash['variables']['advagg_js_compress_packer'] = variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER);
+  $advagg_hash['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);
 }

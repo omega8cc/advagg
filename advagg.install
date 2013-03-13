@@ -188,6 +188,17 @@ function advagg_schema() {
     'primary key' => array('aggregate_filenames_hash', 'aggregate_contents_hash'),
   );
 
+  // Copy the variable table & change a couple of things.
+  $schema['advagg_aggregates_hashes'] = drupal_get_schema_unprocessed('system', 'variable');
+  $schema['advagg_aggregates_hashes']['fields']['hash'] = $schema['advagg_aggregates_hashes']['fields']['name'];
+  $schema['advagg_aggregates_hashes']['fields']['settings'] = $schema['advagg_aggregates_hashes']['fields']['value'];
+  unset($schema['advagg_aggregates_hashes']['fields']['name'], $schema['advagg_aggregates_hashes']['fields']['value']);
+  $schema['advagg_aggregates_hashes']['fields']['hash']['length'] = 43;
+  $schema['advagg_aggregates_hashes']['fields']['hash']['description'] = t('The name of the hash.');
+  $schema['advagg_aggregates_hashes']['fields']['settings']['description'] = t('The settings associated with this hash.');
+  $schema['advagg_aggregates_hashes']['description'] = t('Key value pairs created by AdvAgg. Stores settings used at the time that the aggregate was created.');
+  $schema['advagg_aggregates_hashes']['primary key'][0] = 'hash';
+
   return $schema;
 }
 

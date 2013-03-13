@@ -82,7 +82,7 @@ function advagg_missing_generate() {
 function advagg_missing_create_file($filename) {
   $data = advagg_get_hashes_from_filename($filename);
   if (is_array($data)) {
-    list($type, $aggregate_filenames_hash, $aggregate_contents_hash) = $data;
+    list($type, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings) = $data;
   }
   else {
     return $data;
@@ -95,7 +95,7 @@ function advagg_missing_create_file($filename) {
   }
 
   // Save aggregate file.
-  advagg_save_aggregate($filename, $files, $type);
+  advagg_save_aggregate($filename, $files, $type, $aggregate_settings);
   // Update atime
   advagg_update_atime($aggregate_filenames_hash, $aggregate_contents_hash);
   return TRUE;
@@ -142,11 +142,12 @@ function advagg_get_hashes_from_filename($filename) {
   $hooks_hashes_value = substr($filename, $hooks_hashes_start, 43);
 
   // Verify that the hooks hashes is valid.
-  if (!advagg_in_hooks_hashes($hooks_hashes_value)) {
+  $aggregate_settings = advagg_get_hooks_hash_settings($hooks_hashes_value);
+  if (empty($aggregate_settings)) {
     return t('Bad hooks hashes value.');
   }
 
-  return array($ext, $aggregate_filenames_hash, $aggregate_contents_hash);
+  return array($ext, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings);
 }
 
 /**
@@ -195,10 +196,12 @@ function advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggrega
  *
  * @param $files
  *   array of filenames.
+ * @param $aggregate_settings
+ *   array of settings.
  * @return
  *   string containing all the files.
  */
-function advagg_get_css_aggregate_contents($files) {
+function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
   // Check if CSS compression is enabled.
   $optimize = TRUE;
 
@@ -223,7 +226,7 @@ function advagg_get_css_aggregate_contents($files) {
 
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().
-      drupal_alter('advagg_get_css_file_contents', $contents, $file, $optimize);
+      drupal_alter('advagg_get_css_file_contents', $contents, $file, $optimize, $aggregate_settings);
       $data .= $contents;
     }
 
@@ -237,7 +240,7 @@ function advagg_get_css_aggregate_contents($files) {
 
   // Allow other modules to modify this aggregates contents.
   // Call hook_advagg_get_css_aggregate_contents_alter().
-  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $optimize);
+  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $optimize, $aggregate_settings);
   return $data;
 }
 
@@ -246,10 +249,12 @@ function advagg_get_css_aggregate_contents($files) {
  *
  * @param $files
  *   array of filenames.
+ * @param $aggregate_settings
+ *   array of settings.
  * @return
  *   string containing all the files.
  */
-function advagg_get_js_aggregate_contents($files) {
+function advagg_get_js_aggregate_contents($files, $aggregate_settings) {
   $data = '';
 
   if (!empty($files)) {
@@ -262,14 +267,14 @@ function advagg_get_js_aggregate_contents($files) {
       }
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_js_file_contents_alter().
-      drupal_alter('advagg_get_js_file_contents', $contents, $filename);
+      drupal_alter('advagg_get_js_file_contents', $contents, $filename, $aggregate_settings);
       $data .= $contents;
     }
   }
 
   // Allow other modules to modify this aggregates contents.
   // Call hook_advagg_get_js_aggregate_contents_alter().
-  drupal_alter('advagg_get_js_aggregate_contents', $data, $files);
+  drupal_alter('advagg_get_js_aggregate_contents', $data, $files, $aggregate_settings);
   return $data;
 }
 
@@ -283,22 +288,24 @@ function advagg_get_js_aggregate_contents($files) {
  *   array of filenames.
  * @param $type
  *   css or js
+ * @param $aggregate_settings
+ *   array of settings.
  *
  * @return bool
  *   TRUE if any files were created.
  *   FALSE if no files were created.
  */
-function advagg_save_aggregate($filename, $files, $type) {
+function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
   list($css_path, $js_path) = advagg_get_root_files_dir();
 
   // Build the aggregates contents.
   $contents = '';
   if ($type == 'css') {
-    $contents = advagg_get_css_aggregate_contents($files);
+    $contents = advagg_get_css_aggregate_contents($files, $aggregate_settings);
     $uri = $css_path[0] . '/' . $filename;
   }
   elseif ($type == 'js') {
-    $contents = advagg_get_js_aggregate_contents($files);
+    $contents = advagg_get_js_aggregate_contents($files, $aggregate_settings);
     $uri = $js_path[0] . '/' . $filename;
   }
 
@@ -309,7 +316,7 @@ function advagg_save_aggregate($filename, $files, $type) {
 
   // Allow other modules to alter the contents and add new files to save.
   // Call hook_advagg_save_aggregate_alter().
-  drupal_alter('advagg_save_aggregate', $files_to_save);
+  drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings);
 
   $file_written = FALSE;
   foreach ($files_to_save as $uri => $data) {

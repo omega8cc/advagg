@@ -237,7 +237,7 @@ function advagg_admin_info_form($form, $form_state) {
     '#title' => t('Modules implementing advagg css/js hooks'),
   );
 
-  // Output what is used inside of the advagg_get_hooks_hash() function.
+  // Output what is used inside of the advagg_get_current_hooks_hash() function.
   $form['hooks_variables_hash'] = array(
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
@@ -245,10 +245,10 @@ function advagg_admin_info_form($form, $form_state) {
     '#title' => t('Hooks And Variables Used In Hash'),
   );
   $form['hooks_variables_hash']['description'] = array(
-    '#markup' => t('Current Value: %value. Below is the listing of variables and hooks used to generate the 3rd hash of an aggregates filename.', array('%value' => advagg_get_hooks_hash())),
+    '#markup' => t('Current Value: %value. Below is the listing of variables and hooks used to generate the 3rd hash of an aggregates filename.', array('%value' => advagg_get_current_hooks_hash())),
   );
   $form['hooks_variables_hash']['output'] = array(
-    '#markup' => '<pre>' . print_r(advagg_generate_hooks_variables_array(), TRUE) . '</pre>'
+    '#markup' => '<pre>' . print_r(advagg_current_hooks_hash_array(), TRUE) . '</pre>'
   );
 
   return $form;

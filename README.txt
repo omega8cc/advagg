@@ -126,8 +126,8 @@ Modify file contents.
    create multiple files from one base file. Useful for gzip compression.
 
 Modify file names and aggregate bundles.
- * advagg_get_hooks_hash_alter. Add in your own settings and hooks allowing one
-   to modify the 3rd base64 hash in a filename.
+ * advagg_current_hooks_hash_array_alter. Add in your own settings and hooks
+   allowing one to modify the 3rd base64 hash in a filename.
  * advagg_build_aggregate_plans_alter. Regroup files into different aggregates.
 
 Others.

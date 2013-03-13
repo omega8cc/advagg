@@ -8,13 +8,14 @@
 /**
  * Implement hook_advagg_get_css_aggregate_contents_alter().
  */
-function advagg_css_compress_advagg_get_css_aggregate_contents_alter(&$data, $files, $optimize) {
-  if (!variable_get('advagg_css_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES)) {
+function advagg_css_compress_advagg_get_css_aggregate_contents_alter(&$data, $files, $optimize, $aggregate_settings) {
+  if (   empty($aggregate_settings['variables']['advagg_css_compress_agg_files'])
+      || !isset($aggregate_settings['variables']['advagg_css_compressor'])
+        ) {
     return;
   }
 
-  $compressor = variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR);
-  if ($compressor == 2) {
+  if ($aggregate_settings['variables']['advagg_css_compressor'] == 2) {
     advagg_css_compress_yui_cssmin($data);
   }
 }
