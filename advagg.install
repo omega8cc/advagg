@@ -237,7 +237,7 @@ function advagg_requirements($phase) {
       $requirements['advagg_core_off'] = array(
         'title' => $t('Adv CSS/JS Agg - Core Variables'),
         'severity' => REQUIREMENT_ERROR,
-        'value' => $t('Cores CSS and/or JS aggregation is enabled'),
+        'value' => $t('Cores CSS and/or JS aggregation is disabled.'),
         'description' => $t('"Optimize CSS files" and "Optimize JavaScript files" on the <a href="@performance">performance page</a> should be enabled.', array('@performance' => url('admin/config/development/performance'))),
       );
     }
@@ -245,7 +245,7 @@ function advagg_requirements($phase) {
       $requirements['advagg_not_on'] = array(
         'title' => $t('Adv CSS/JS Agg - Enabled'),
         'severity' => REQUIREMENT_WARNING,
-        'value' => $t('Advanced CSS/JS aggregation is not currently enabled.'),
+        'value' => $t('Advanced CSS/JS aggregation is disabled.'),
         'description' => $t('Go to the Advanced CSS/JS aggregation <a href="@settings">settings page</a> and enable it.', array('@settings' => url('admin/settings/advagg'))),
       );
     }
@@ -258,7 +258,7 @@ function advagg_requirements($phase) {
         'title' => $t('Adv CSS/JS Agg - Async Mode'),
         'severity' => REQUIREMENT_WARNING,
         'value' => $t('Flush your caches'),
-        'description' => $t('You need to flush your menu cache. This can be done near the bottom of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br /> !info', array(
+        'description' => $t('You need to flush your menu cache. This can be done at the top of the <a href="@performance">performance page</a>. If this does not fix the issue copy this info below when opening up an <a href="http://drupal.org/node/add/project-issue/advagg">issue for advagg</a>: <br /> !info', array(
           '@performance' => url('admin/config/development/performance'),
           '!info' => $item,
         )),
@@ -287,7 +287,7 @@ function advagg_requirements($phase) {
         'title' => $t('Adv CSS/JS Agg'),
         'severity' => REQUIREMENT_OK,
         'value' => $t('OK'),
-        'description' => $t('Advanced CSS/JS Aggregrator should be working correctly.'),
+        'description' => $t('Advanced CSS/JS Aggregator should be working correctly.'),
       );
     }
   }
