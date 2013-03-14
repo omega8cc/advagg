@@ -212,6 +212,33 @@ function advagg_theme_registry_alter(&$theme_registry) {
   }
 }
 
+/**
+ * Implements hook_admin_menu_cache_info().
+ *
+ * Add in a cache flush for advagg.
+ */
+function advagg_admin_menu_cache_info() {
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+    $caches['advagg'] = array(
+      'title' => t('Adv CSS/JS Agg'),
+      'callback' => 'advagg_admin_flush_cache',
+    );
+    return $caches;
+  }
+}
+
+/**
+ * Implements hook_admin_menu_output_alter().
+ *
+ * Add in a cache flush for advagg.
+ */
+function advagg_admin_menu_output_alter(&$content) {
+  if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
+    // Remove default core aggregation link.
+    unset($content['icon']['icon']['flush-cache']['assets']);
+  }
+}
+
 // Core CSS/JS override functions.
 /**
  * Default callback to aggregate CSS files and inline content.
@@ -922,4 +949,13 @@ function advagg_get_global_counter() {
   $global_counter = variable_get('advagg_global_counter', ADVAGG_GLOBAL_COUNTER);
 
   return $global_counter;
+}
+
+
+/**
+ * Cache clear callback for admin_menu/flush-cache/advagg.
+ */
+function advagg_admin_flush_cache() {
+  module_load_include('inc', 'advagg', 'advagg.admin');
+  advagg_admin_flush_cache_button();
 }
