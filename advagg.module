@@ -703,7 +703,7 @@ function advagg_enabled() {
  */
 function advagg_current_hooks_hash_array() {
   // Put all enabled hooks and settings into a big array.
-  $advagg_hash = array(
+  $aggregate_settings = array(
     'variables' => array(
       'advagg_gzip' => variable_get('advagg_gzip', ADVAGG_GZIP),
       'is_https' => $GLOBALS['is_https'],
@@ -714,9 +714,9 @@ function advagg_current_hooks_hash_array() {
 
   // Allow other modules to add in their own settings and hooks.
   // Call hook_advagg_current_hooks_hash_array_alter().
-  drupal_alter('advagg_current_hooks_hash_array', $advagg_hash);
+  drupal_alter('advagg_current_hooks_hash_array', $aggregate_settings);
 
-  return $advagg_hash;
+  return $aggregate_settings;
 }
 
 /**
@@ -730,16 +730,16 @@ function advagg_get_current_hooks_hash() {
 
   if (!isset($current_hash)) {
     // Get all advagg hooks and variables in use.
-    $current_hash_array = advagg_current_hooks_hash_array();
+    $aggregate_settings = advagg_current_hooks_hash_array();
 
     // Generate the hash.
-    $current_hash = drupal_hash_base64(serialize($current_hash_array));
+    $current_hash = drupal_hash_base64(serialize($aggregate_settings));
 
     // Save into variables for verification purposes later on if not found.
     $settings = advagg_get_hooks_hash_settings($current_hash);
     if (empty($settings) && lock_acquire(__FUNCTION__, 5)) {
       // Save new hash into
-      advagg_set_hooks_hash($current_hash, $current_hash_array);
+      advagg_set_hooks_hash($current_hash, $aggregate_settings);
 
       // Release lock
       lock_release(__FUNCTION__);
@@ -950,7 +950,6 @@ function advagg_get_global_counter() {
 
   return $global_counter;
 }
-
 
 /**
  * Cache clear callback for admin_menu/flush-cache/advagg.
