@@ -226,7 +226,7 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
 
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().
-      drupal_alter('advagg_get_css_file_contents', $contents, $file, $optimize, $aggregate_settings);
+      drupal_alter('advagg_get_css_file_contents', $contents, $file, $aggregate_settings);
       $data .= $contents;
     }
 
@@ -240,7 +240,7 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
 
   // Allow other modules to modify this aggregates contents.
   // Call hook_advagg_get_css_aggregate_contents_alter().
-  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $optimize, $aggregate_settings);
+  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $aggregate_settings);
   return $data;
 }
 

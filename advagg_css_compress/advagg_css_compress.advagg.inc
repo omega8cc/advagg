@@ -8,7 +8,7 @@
 /**
  * Implement hook_advagg_get_css_aggregate_contents_alter().
  */
-function advagg_css_compress_advagg_get_css_aggregate_contents_alter(&$data, $files, $optimize, $aggregate_settings) {
+function advagg_css_compress_advagg_get_css_aggregate_contents_alter(&$data, $files, $aggregate_settings) {
   if (   empty($aggregate_settings['variables']['advagg_css_compress_agg_files'])
       || !isset($aggregate_settings['variables']['advagg_css_compressor'])
         ) {
