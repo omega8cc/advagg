@@ -386,5 +386,5 @@ function advagg_remove_old_unused_aggregates() {
   }
 
   // Return the total count of entires removed from the database.
-  return $deleted + $advagg_aggregates_del;
+  return $advagg_aggregates_versions_del + $advagg_aggregates_del;
 }
