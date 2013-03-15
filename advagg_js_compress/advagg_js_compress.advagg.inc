@@ -127,6 +127,8 @@ function advagg_js_compress_jsminplus(&$contents) {
     $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
     // JSMin+ the contents of the aggregated file.
     $contents = JSMinPlus::minify($contents);
+
+    // Capture any output from JSMinPlus.
     $error = trim(ob_get_contents());
     if (!empty($error)) {
       throw new Exception($error);
@@ -134,9 +136,8 @@ function advagg_js_compress_jsminplus(&$contents) {
   }
   catch (Exception $e) {
     // Log the exception thrown by JSMin+ and roll back to uncompressed content.
-    watchdog('advagg', $e->getMessage() . '<pre>' . $contents_before . '</pre>', NULL, WATCHDOG_WARNING);
+    watchdog('advagg_js_compress', $e->getMessage() . '<pre>' . $contents_before . '</pre>', NULL, WATCHDOG_WARNING);
     $contents = $contents_before;
-    $after = $before;
   }
   ob_end_clean();
 }
