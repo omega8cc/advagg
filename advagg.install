@@ -343,6 +343,7 @@ function advagg_install_check_via_http(&$requirements) {
         'title' => $t('Adv CSS/JS Agg - HTTP Request'),
         'severity' => REQUIREMENT_ERROR,
         'value' => $t('HTTP requests to advagg for ' . $type . ' files are not getting though.'),
+        'description' => $t('Raw request info: <pre>@request</pre>', array('@request' => print_r($request, TRUE)))
       );
     }
   }
