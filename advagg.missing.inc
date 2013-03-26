@@ -11,6 +11,15 @@
  * Menu Callback; generates a missing CSS/JS file.
  */
 function advagg_missing_aggregate() {
+  // Conditional GET requests (i.e. with If-Modified-Since header).
+  if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+    // All files served by this function are designed to expire in the far
+    // future. Hence we can simply always tell the client the requested file
+    // was not modified.
+    header("HTTP/1.1 304 Not Modified");
+    exit();
+  }
+
   // Do not stop processing this request.
   ignore_user_abort(TRUE);
 
@@ -22,14 +31,10 @@ function advagg_missing_aggregate() {
 }
 
 /**
- * Generates a missing CSS/JS file.
+ * Generates a missing CSS/JS file and send it to client.
  *
- * @param $filename
- *   filename
- * @param $type
- *   css or js
  * @return
- *   false if bundle couldn't be generated.
+ *   text if bundle couldn't be generated.
  */
 function advagg_missing_generate() {
   // Make sure we are not in a redirect loop.
@@ -46,11 +51,17 @@ function advagg_missing_generate() {
   $filename = array_shift($filename);
 
   $lock_name = 'advagg_' . $filename;
+  $uri = $GLOBALS['base_path'] . $_GET['q'];
+  $created = FALSE;
+  $files_to_save = array();
   if (lock_acquire($lock_name, 10)) {
-    $created = advagg_missing_create_file($filename);
-    if ($created !== TRUE) {
-      lock_release($lock_name);
-      return $created;
+    $return = advagg_missing_create_file($filename);
+    lock_release($lock_name);
+    if (!is_array($return)) {
+      return $return;
+    }
+    else {
+      list($files_to_save, $type) = $return;
     }
   }
   else {
@@ -58,15 +69,129 @@ function advagg_missing_generate() {
     // We choose to block here since otherwise the router item may not
     // be available in menu_execute_active_handler() resulting in a 404.
     lock_wait($lock_name, 10);
+    if (file_exists($uri) && filesize($uri) > 0) {
+      $created = TRUE;
+    }
   }
-  lock_release($lock_name);
 
-  // Redirect to file.
-  $redirect_counter++;
-  $uri = $GLOBALS['base_path'] . $_GET['q'] . '?redirect_counter=' . $redirect_counter;
-  header('Location: ' . $uri, TRUE, 307);
+  // Redirect and try again on failure.
+  if (empty($files_to_save) && empty($created)) {
+    $redirect_counter++;
+    $uri .= '?redirect_counter=' . $redirect_counter;
+    header('Location: ' . $uri, TRUE, 307);
+    exit();
+  }
 
-  drupal_exit();
+  // Output file's contents if createing the file was sucessfull.
+  // This function will call exit.
+  advagg_missing_send_saved_file($files_to_save, $uri, $created, $type);
+}
+
+/**
+ * Send the css/js file to the client.
+ *
+ * @param $files_to_save
+ *   Array of filenames and data.
+ * @param $uri
+ *   Requested filename.
+ * @param $created
+ *   If file was created in a different thread.
+ * @param $type
+ *   css or js
+ */
+function advagg_missing_send_saved_file($files_to_save, $uri, $created, $type) {
+  // Negotiate whether to use gzip compression.
+  $return_compressed = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE;
+  header('Vary: Accept-Encoding', FALSE);
+
+  if (!empty($created)) {
+    if ($return_compressed && file_exists($uri . '.gz') && filesize($uri . '.gz') > 0) {
+      $uri .= '.gz';
+    }
+    $files_to_save[$uri] = file_get_contents($uri);
+  }
+
+  // Make sure zlib.output_compression does not compress the output.
+  ini_set('zlib.output_compression', '0');
+  header('Vary: Accept-Encoding', FALSE);
+  // Clear the output buffer.
+  if (ob_get_level()) {
+    ob_end_clean();
+  }
+  // Set far future headers.
+  advagg_missing_set_farfuture_headers();
+  // Return compressed content if we can.
+  if ($return_compressed) {
+    foreach ($files_to_save as $uri => $data) {
+      // See if this uri contains .gz near the end of it.
+      $pos = strripos($uri, '.gz', 91 + strlen(ADVAGG_SPACE)*3);
+      if (!empty($pos)) {
+        $len = strlen($uri);
+        if ($pos == $len-3) {
+          // .gz file exists, send it out.
+          header('Content-Encoding: gzip');
+          break;
+        }
+      }
+    }
+  }
+  else {
+    $data = reset($files_to_save);
+  }
+  if ($type == 'css') {
+    header("Content-Type: text/css");
+  }
+  elseif ($type == 'js') {
+    header("Content-Type: text/javascript; charset=UTF-8");
+  }
+
+  // Output file and exit.
+  print $data;
+  exit();
+}
+
+/**
+ * Set various headers so the browser will cache the file for a long time.
+ */
+function advagg_missing_set_farfuture_headers() {
+  // Hat tip to the CDN module for the far future headers.
+
+  // Browsers that implement the W3C Access Control specification might refuse
+  // to use certain resources such as fonts if those resources violate the
+  // same-origin policy. Send a header to explicitly allow cross-domain use of
+  // those resources. (This is called Cross-Origin Resource Sharing, or CORS.)
+  header("Access-Control-Allow-Origin: *");
+  // Remove all previously set Cache-Control headers, because we're going to
+  // override it. Since multiple Cache-Control headers might have been set,
+  // simply setting a new, overriding header isn't enough: that would only
+  // override the *last* Cache-Control header. Yay for PHP!
+  if (function_exists('header_remove')) {
+    header_remove('Cache-Control');
+    header_remove('ETag');
+    header_remove('Set-Cookie');
+  }
+  else {
+    header('Cache-Control:');
+    header('Cache-Control:');
+    header('ETag:');
+    header('ETag:');
+    header('Set-Cookie:');
+    header('Set-Cookie:');
+  }
+  // Set a far future Cache-Control header (480 weeks), which prevents
+  // intermediate caches from transforming the data and allows any
+  // intermediate cache to cache it, since it's marked as a public resource.
+  header('Cache-Control: max-age=290304000, no-transform, public');
+  // Set a far future Expires header. The maximum UNIX timestamp is somewhere
+  // in 2038. Set it to a date in 2037, just to be safe.
+  header("Expires: Tue, 20 Jan 2037 04:08:15 GMT");
+  // Pretend the file was last modified a long time ago in the past, this will
+  // prevent browsers that don't support Cache-Control nor Expires headers to
+  // still request a new version too soon (these browsers calculate a
+  // heuristic to determine when to request a new version, based on the last
+  // time the resource has been modified).
+  // Also see http://code.google.com/speed/page-speed/docs/caching.html.
+  header("Last-Modified: Fri, 14 Oct 1983 00:16:23 GMT");
 }
 
 /**
@@ -77,7 +202,7 @@ function advagg_missing_generate() {
  *
  * @return
  *   On failure a string saying why it failed.
- *   On success TRUE.
+ *   On success the $files_to_save array.
  */
 function advagg_missing_create_file($filename) {
   $data = advagg_get_hashes_from_filename($filename);
@@ -95,10 +220,10 @@ function advagg_missing_create_file($filename) {
   }
 
   // Save aggregate file.
-  advagg_save_aggregate($filename, $files, $type, $aggregate_settings);
+  $files_to_save = advagg_save_aggregate($filename, $files, $type, $aggregate_settings);
   // Update atime
   advagg_update_atime($aggregate_filenames_hash, $aggregate_contents_hash);
-  return TRUE;
+  return array($files_to_save, $type, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings, $files);
 }
 
 // Lookup functions.
@@ -291,9 +416,8 @@ function advagg_get_js_aggregate_contents($files, $aggregate_settings) {
  * @param $aggregate_settings
  *   array of settings.
  *
- * @return bool
- *   TRUE if any files were created.
- *   FALSE if no files were created.
+ * @return array
+ *   $files_to_save array.
  */
 function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
   list($css_path, $js_path) = advagg_get_root_files_dir();
@@ -318,13 +442,13 @@ function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
   // Call hook_advagg_save_aggregate_alter().
   drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings);
 
-  $file_written = FALSE;
   foreach ($files_to_save as $uri => $data) {
-    if (advagg_save_data($uri, $data)) {
-      $file_written = TRUE;
+    advagg_save_data($uri, $data);
+    if (!file_exists($uri) || filesize($uri) == 0) {
+      watchdog('advagg', 'Write to file system failed. %uri', array('%uri' => $uri), WATCHDOG_EMERGENCY);
     }
   }
-  return $file_written;
+  return $files_to_save;
 }
 
 /**
@@ -337,15 +461,11 @@ function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
  *   URI.
  * @param $data
  *   A string containing the contents of the file.
- *
- * @return boolean
- *   TRUE if the file exists.
- *   FALSE if the file does not exist.
  */
 function advagg_save_data($uri, $data) {
   // File already exists.
   if (file_exists($uri) && filesize($uri) > 0) {
-    return TRUE;
+    return;
   }
 
   // Perform the replace operation. Since there could be multiple processes
@@ -371,8 +491,6 @@ function advagg_save_data($uri, $data) {
       @unlink($temporary_file);
     }
   }
-
-  return file_exists($uri);
 }
 
 // Helper functions.
