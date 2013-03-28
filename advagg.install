@@ -40,6 +40,11 @@ function advagg_uninstall() {
   db_delete('variable')
     ->condition('name', 'advagg%', 'LIKE')
     ->execute();
+
+  // Remove Directories.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  drupal_rmdir($css_path[0]);
+  drupal_rmdir($js_path[0]);
 }
 
 /**
