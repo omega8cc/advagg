@@ -254,7 +254,7 @@ function advagg_bundler_merge(&$groupings, $max) {
     }
 
     // Move the bad files into the smallest good group.
-    $new_set = $groupings[$merge_candidate_key];
+    $new_set = isset($groupings[$merge_candidate_key]) ? $groupings[$merge_candidate_key] : array() ;
     $new_set = array_merge($new_set, $bad_group);
     $groupings[$merge_candidate_key] = $new_set;
   }
