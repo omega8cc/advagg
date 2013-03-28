@@ -330,7 +330,7 @@ function advagg_install_check_via_http(&$requirements) {
     // Set arguments for drupal_http_request().
     // Make a 404 request to the advagg menu callback.
     $url = file_create_url($path . '/' . $type . REQUEST_TIME . '.' . $type);
-    $options = array('timeout' => 3);
+    $options = array('timeout' => 10);
 
     // Send request.
     $request = drupal_http_request($url, $options);
@@ -407,7 +407,7 @@ function advagg_install_check_via_http(&$requirements) {
 
     // Set arguments for drupal_http_request().
     $url = file_create_url($url_path . '/' . $filename);
-    $options = array('timeout' => 3, 'headers' => array('Accept-Encoding' => 'gzip, deflate'));
+    $options = array('timeout' => 10, 'headers' => array('Accept-Encoding' => 'gzip, deflate'));
 
     // Send request.
     $request = drupal_http_request($url, $options);
