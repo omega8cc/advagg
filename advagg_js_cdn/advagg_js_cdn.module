@@ -47,7 +47,7 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
     if (empty($jquery_update_version)) {
       $jquery_update_version = variable_get('advagg_js_cdn_jquery_update_version', jquery_update_get_version());
     }
-    $jquery_update_filepath = jquery_update_jquery_path();
+    $jquery_update_filepath = advagg_js_cdn_get_jquery_path();
   }
   if (module_exists('jquery_ui')) {
     // jquery_ui_get_version hits disk and doesn't get cached.
@@ -81,7 +81,11 @@ function advagg_js_cdn_advagg_js_pre_alter(&$javascript, $preprocess_js, $public
     foreach ($data as $path => $info) {
       // jquery.js
       if ($cdn_jquery) {
-        if (isset($jquery_update_filepath) && ($path == $jquery_update_filepath)) {
+        if (   isset($jquery_update_filepath)
+            && (   $path == $jquery_update_filepath . '/jquery.min.js'
+                || $path == $jquery_update_filepath . '/jquery.js'
+                  )
+              ) {
           $info['preprocess'] = FALSE;
           $javascript['external'][$schema . '://ajax.googleapis.com/ajax/libs/jquery/' . $jquery_update_version . '/jquery.min.js'] = $info;
           unset($javascript[$type][$path]);
@@ -143,4 +147,20 @@ function advagg_js_cdn_get_jquery_ui_path() {
   $jquery_ui_path .= '/ui';
 
   return $jquery_ui_path;
+}
+
+/**
+ * Get the path for the jquery.js file.
+ *
+ * @return
+ *   path to jquery.js file.
+ */
+function advagg_js_cdn_get_jquery_path() {
+  if (function_exists('jquery_update_jquery_path')) {
+    return dirname(jquery_update_jquery_path());
+  }
+  else {
+    $jquery_update_filepath = drupal_get_path('module', 'jquery_update');
+    return $jquery_update_filepath . '/replace/';
+  }
 }
