@@ -32,11 +32,6 @@ define('ADVAGG_CORE_GROUPS', TRUE);
 define('ADVAGG_USE_FULL_CACHE', TRUE);
 
 /**
- * Default value to see if we cache the file information.
- */
-define('ADVAGG_USE_FILE_CACHE', TRUE);
-
-/**
  * Default value of counter.
  */
 define('ADVAGG_GLOBAL_COUNTER', 0);
@@ -59,6 +54,7 @@ function advagg_hook_info() {
     'advagg_get_js_aggregate_contents_alter',
     'advagg_save_aggregate_alter',
     'advagg_build_aggregate_plans_alter',
+    'advagg_changed_files',
   );
   $hooks = array();
   foreach ($advagg_hooks as $hook) {
@@ -784,6 +780,7 @@ function advagg_hooks_implemented($all = TRUE) {
   if ($all) {
     $hooks += array(
       'advagg_build_aggregate_plans_alter' => array(),
+      'advagg_changed_files' => array(),
       'js_alter' => array(),
       'css_alter' => array(),
     );

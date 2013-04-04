@@ -9,34 +9,68 @@
  * Implement hook_advagg_get_js_file_contents_alter().
  */
 function advagg_js_compress_advagg_get_js_file_contents_alter(&$contents, $filename, $aggregate_settings) {
-  if (empty($aggregate_settings['variables']['advagg_js_compress_agg_files'])) {
+  // Do nothing if js compression is disabled.
+  if (empty($aggregate_settings['variables']['advagg_js_compress_agg_files']) || !isset($aggregate_settings['variables']['advagg_js_compressor'])) {
     return;
   }
 
-  advagg_js_compress_prep($contents, $filename, $aggregate_settings);
+  // Make sure this file has been tested.
+  $compressor = $aggregate_settings['variables']['advagg_js_compressor'];
+  $info = advagg_get_info_on_file($filename);
+  if (!isset($info['advagg_js_compress'][$compressor]['code'])) {
+    // Test file here on the spot.
+    $info = advagg_js_compress_run_test($filename);
+  }
+
+  // Compress it if it passes the test.
+  if (!empty($info['advagg_js_compress'][$compressor]['code']) && $info['advagg_js_compress'][$compressor]['code'] == 1) {
+    advagg_js_compress_prep($contents, $filename, $aggregate_settings);
+  }
 }
 
 /**
  * Implements hook_advagg_save_aggregate_alter().
  *
- * Used to add in a .gz file if none exits.
+ * Used to add in a .gz file if none exits & use packer on non gzip file.
  *
  * @param $files_to_save
  *   array($uri => $contents)
  * @param $aggregate_settings
  *   array of settings.
+ * @param $other_parameters
+ *   array of containing $files & $type.
  */
-function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggregate_settings) {
+function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggregate_settings, $other_parameters) {
+  list($files, $type) = $other_parameters;
+  // Use packer on non gzip js files.
+  $compressor = 2;
+
   // Return if gzip is disabled.
-  if (empty($aggregate_settings['variables']['advagg_gzip'])) {
+  // Return if packer is disabled.
+  // Return if type is not js.
+  if (   empty($aggregate_settings['variables']['advagg_gzip'])
+      || empty($aggregate_settings['variables']['advagg_js_compress_packer'])
+      || $type != 'js'
+        ) {
     return;
   }
-  // Return if packer is disabled.
-  if (empty($aggregate_settings['variables']['advagg_js_compress_packer'])) {
-    return;
+  // Make sure all files in this aggregrate are compatible with packer.
+  foreach ($files as $file) {
+    $info = advagg_get_info_on_file($file);
+    if (!isset($info['advagg_js_compress'][$compressor]['code'])) {
+      $info = advagg_js_compress_run_test($file);
+    }
+    // If this file causes php to bomb or the ratio is way too good then do not
+    // use packer on this aggregrate.
+    if (   !isset($info['advagg_js_compress'][$compressor]['code'])
+        || $info['advagg_js_compress'][$compressor]['code'] == -1
+        || $info['advagg_js_compress'][$compressor]['code'] == -3
+          ) {
+      return;
+    }
   }
 
-  // See if a .gz file already exists.
+  // See if a .gz file of this aggregrate already exists.
   $gzip_exists = FALSE;
   foreach ($files_to_save as $uri => $contents) {
     // See if this uri contains .gz near the end of it.
@@ -63,8 +97,30 @@ function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggreg
   }
 
   // Use packer on non gzip JS data.
-  advagg_js_compress_jspacker($data);
+  $aggregate_settings['variables']['advagg_js_compressor'] = $compressor;
+  advagg_js_compress_prep($data, $uri, $aggregate_settings, FALSE);
   $files_to_save[$uri] = $data;
+}
+
+/**
+ * Implement advagg_changed_files().
+ */
+function advagg_js_compress_advagg_changed_files($files, $types) {
+  // Only care about js files.
+  if (empty($types['js'])) {
+    return;
+  }
+  $return = array();
+  foreach ($files as $filename => $meta_data) {
+    // Only care about js files.
+    $ext = pathinfo($filename, PATHINFO_EXTENSION);
+    if ($ext != 'js') {
+      continue;
+    }
+
+    $return[$filename] = advagg_js_compress_run_test($filename);
+  }
+  return $return;
 }
 
 /**
@@ -74,35 +130,64 @@ function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggreg
  *   Javascript string.
  * @param $filename
  *   filename.
+ * @param $add_licensing
+ *   FALSE to remove Source and licensing information comment.
+ * @param $log_errors
+ *   FALSE to disable logging to watchdog on failure.
+ * @param $test_ratios
+ *   FALSE to disable compression ratio testing.
  */
-function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings) {
+function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings, $add_licensing = TRUE, $log_errors = TRUE, $test_ratios = TRUE) {
+  // Get the info on this file.
+  module_load_include('inc', 'advagg', 'advagg');
+  $compressor = $aggregate_settings['variables']['advagg_js_compressor'];
+
   // Get the JS string length before the compression operation.
   $contents_before = $contents;
   $before = strlen($contents);
 
-  // Use the compressor.
-  $compressor = $aggregate_settings['variables']['advagg_js_compressor'];
-  if ($compressor == 0) {
-    advagg_js_compress_jsminplus($contents);
-  }
-  elseif ($compressor == 1) {
-    $contents = jsmin($contents);
-  }
-
-  // Make sure compression ratios are good.
-  $after = strlen($contents);
-  $ratio = 0;
-  if ($before != 0) {
-    $ratio = ($before - $after) / $before;
-  }
-  // Make sure the returned string is not empty or has a VERY high
-  // compression ratio.
-  if (empty($contents) || empty($ratio) || $ratio > $aggregate_settings['variables']['advagg_js_max_compress_ratio']) {
-    $contents = $contents_before;
+  // Try cache.
+  $info = advagg_get_info_on_file($filename);
+  $cache_id = 'advagg:js_compress:' . $compressor. ':' .  $info['filename_hash'];
+  $cache_id .= isset($info['content_hash']) ? ':' . $info['content_hash'] : '';
+  $cache = cache_get($cache_id, 'cache_advagg_info');
+  if (!empty($cache->data)) {
+    $contents = $cache->data;
   }
   else {
-    $url = url($filename, array('absolute' => TRUE));
-    $contents = "/* Source and licensing information for the line(s) below can be found at $url. */\n" . $contents . ";\n/* Source and licensing information for the above line(s) can be found at $url. */\n";
+    // Strip Byte Order Marks (BOM's), preg_* cannot parse these well.
+    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
+    // Use the compressor.
+    if ($compressor == 0) {
+      advagg_js_compress_jsminplus($contents, $log_errors);
+    }
+    elseif ($compressor == 1) {
+      $contents = jsmin($contents);
+    }
+    elseif ($compressor == 2) {
+      advagg_js_compress_jspacker($contents);
+    }
+
+    // Save into cache.
+    cache_set($cache_id, $contents, 'cache_advagg_info');
+  }
+
+  if ($test_ratios) {
+    // Make sure compression ratios are good.
+    $after = strlen($contents);
+    $ratio = 0;
+    if ($before != 0) {
+      $ratio = ($before - $after) / $before;
+    }
+    // Make sure the returned string is not empty or has a VERY high
+    // compression ratio.
+    if (empty($contents) || empty($ratio) || $ratio > $aggregate_settings['variables']['advagg_js_max_compress_ratio']) {
+      $contents = $contents_before;
+    }
+    elseif ($add_licensing) {
+      $url = url($filename, array('absolute' => TRUE));
+      $contents = "/* Source and licensing information for the line(s) below can be found at $url. */\n" . $contents . ";\n/* Source and licensing information for the above line(s) can be found at $url. */\n";
+    }
   }
 }
 
@@ -111,10 +196,10 @@ function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings) {
  *
  * @param $contents
  *   Javascript string.
- * @return
- *   array with the size before and after.
+ * @param $log_errors
+ *   FALSE to disable logging to watchdog on failure.
  */
-function advagg_js_compress_jsminplus(&$contents) {
+function advagg_js_compress_jsminplus(&$contents, $log_errors = TRUE) {
   $contents_before = $contents;
 
   // Only include jsminplus.inc if the JSMinPlus class doesn't exist.
@@ -123,8 +208,6 @@ function advagg_js_compress_jsminplus(&$contents) {
   }
   ob_start();
   try {
-    // Strip Byte Order Marks (BOM's) from the file, JSMin+ cannot parse these.
-    $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
     // JSMin+ the contents of the aggregated file.
     $contents = JSMinPlus::minify($contents);
 
@@ -136,7 +219,9 @@ function advagg_js_compress_jsminplus(&$contents) {
   }
   catch (Exception $e) {
     // Log the exception thrown by JSMin+ and roll back to uncompressed content.
-    watchdog('advagg_js_compress', $e->getMessage() . '<pre>' . $contents_before . '</pre>', NULL, WATCHDOG_WARNING);
+    if ($log_errors) {
+      watchdog('advagg_js_compress', $e->getMessage() . '<pre>' . $contents_before . '</pre>', NULL, WATCHDOG_WARNING);
+    }
     $contents = $contents_before;
   }
   ob_end_clean();
@@ -154,18 +239,106 @@ function advagg_js_compress_jspacker(&$contents) {
     include(drupal_get_path('module', 'advagg_js_compress') . '/jspacker.inc');
   }
 
-  // Strip Byte Order Marks (BOM's) from the file, packer cannot parse these.
-  $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
-
   // Add semicolons to the end of lines if missing.
   $contents = str_replace("}\n", "};\n", $contents);
   $contents = str_replace("\nfunction", ";\nfunction", $contents);
 
-  // Remove char returns,
-  $contents = str_replace("\n\r", "", $contents);
-  $contents = str_replace("\r", "", $contents);
-  $contents = str_replace("\n", "", $contents);
-
   $packer = new JavaScriptPacker($contents, 62, TRUE, FALSE);
   $contents = $packer->pack();
+}
+
+/**
+ * Test a JS file to see if it compresses well.
+ *
+ * @param $filename
+ *   Path and filename of JS file.
+ */
+function advagg_js_compress_run_test($filename) {
+  // Get the info on this file.
+  module_load_include('inc', 'advagg', 'advagg');
+  $info = advagg_get_info_on_file($filename);
+  // Cache info.
+  $filename_hashes = &drupal_static('advagg_get_info_on_file');
+  $cache_id = 'advagg:file:' . $info['filename_hash'];
+  $httprl_used = FALSE;
+
+  // Build list of compressors.
+  $compressors = array(0 => 'jsminplus', 2 => 'packer');
+  if (function_exists('jsmin')) {
+    $compressors[1] = 'jsmin';
+    ksort($compressors);
+  }
+
+  // Set to 0 if file doesn't exist.
+  if (empty($info['content_hash'])) {
+    $results = array(
+      0 => array('code' => 0, 'ratio' => 0, 'name' => 'jsminplus'),
+      1 => array('code' => 0, 'ratio' => 0, 'name' => 'jsmin'),
+      2 => array('code' => 0, 'ratio' => 0, 'name' => 'packer'),
+    );
+  }
+  else {
+    // Set to "-1" so if php bombs, the file will be marked as bad.
+    $results = array(
+      0 => array('code' => -1, 'ratio' => 0, 'name' => 'jsminplus'),
+      1 => array('code' => -1, 'ratio' => 0, 'name' => 'jsmin'),
+      2 => array('code' => -1, 'ratio' => 0, 'name' => 'packer'),
+    );
+    // Run this via httprl if possible.
+    if (!module_exists('httprl') || !httprl_is_background_callback_capable()) {
+      // Place results into array.
+      $info['advagg_js_compress'] = $results;
+      // Save results, so if PHP bombs, this file is marked as bad.
+      $filename_hashes[$cache_id] = $info;
+      cache_set($cache_id, $info, 'cache_advagg_info', CACHE_PERMANENT);
+
+      // Test the file.
+      $results = advagg_js_compress_test_file($filename, $compressors);
+      $httprl_used = FALSE;
+    }
+    else {
+      $httprl_used = TRUE;
+      // Setup callback options array.
+      $callback_options = array(
+        array(
+          'function' => 'advagg_js_compress_test_file',
+          'return' => &$results,
+        ),
+        $filename, $compressors,
+      );
+      // Queue up the request.
+      httprl_queue_background_callback($callback_options);
+      // Execute request.
+      httprl_send_request();
+
+      // If php bombs out, try each compressor indivudially.
+      foreach ($results as $key => $value) {
+        if ($value['code'] == -1) {
+          $sub_result = array();
+          $sub_result[$key] = $value;
+          // Setup callback options array.
+          $callback_options = array(
+            array(
+              'function' => 'advagg_js_compress_test_file',
+              'return' => &$sub_result,
+            ),
+            $filename, array($key => $value['name']),
+          );
+          // Queue up the request.
+          httprl_queue_background_callback($callback_options);
+          // Execute request.
+          httprl_send_request();
+
+          $results[$key] = $sub_result[$key];
+        }
+      }
+    }
+  }
+  // Place results into array.
+  $info['advagg_js_compress'] = $results;
+
+  // Save results.
+  $filename_hashes[$cache_id] = $info;
+  cache_set($cache_id, $info, 'cache_advagg_info', CACHE_PERMANENT);
+  return $info;
 }

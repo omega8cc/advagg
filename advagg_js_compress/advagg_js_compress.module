@@ -24,7 +24,7 @@ define('ADVAGG_JS_COMPRESS_RATIO', 0.1);
 /**
  * Default value for the compression ratio test.
  */
-define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.98);
+define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.90);
 
 /**
  * Default value to see if this will compress aggregated files.
@@ -62,3 +62,53 @@ function advagg_js_compress_advagg_current_hooks_hash_array_alter(&$aggregate_se
   $aggregate_settings['variables']['advagg_js_compress_packer'] = variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER);
   $aggregate_settings['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);
 }
+
+/**
+ * Test a file, making sure it is compressable.
+ *
+ * @param $filename
+ *   Path and filename of the js file to test.
+ * @param $compressors
+ *   List of compressors to test.
+ * @return
+ *   Array showing the results of the compression tests.
+ */
+function advagg_js_compress_test_file($filename, $compressors) {
+  $contents = file_get_contents($filename);
+  // Get the JS string length before the compression operation.
+  $contents_before = $contents;
+  $before = strlen($contents);
+
+  module_load_include('inc', 'advagg_js_compress', 'advagg_js_compress.advagg');
+
+  $results = array();
+  foreach ($compressors as $key => $name) {
+    $contents = $contents_before;
+    $aggregate_settings['variables']['advagg_js_compressor'] = $key;
+    $aggregate_settings['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);
+
+    // Compress it.
+    advagg_js_compress_prep($contents, $filename, $aggregate_settings, FALSE, FALSE, FALSE);
+    $after = strlen($contents);
+
+    $ratio = 0;
+    if ($before != 0) {
+      $ratio = ($before - $after) / $before;
+    }
+    // Set to "-2" if compression ratio sucks (it's already compressed).
+    if ($ratio < variable_get('advagg_js_compress_ratio', ADVAGG_JS_COMPRESS_RATIO)) {
+      $results[$key] = array('code' => -2, 'ratio' => round($ratio, 5), 'name' => $name);
+    }
+    // Set to "-3" if the compression ratio is way too good (bad js output).
+    elseif ($ratio > variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO)) {
+      $results[$key] = array('code' => -3, 'ratio' => round($ratio, 5), 'name' => $name);
+    }
+    // Set to "1". Everything worked, mark this file as compressible.
+    else {
+      $results[$key] = array('code' => 1, 'ratio' => round($ratio, 5), 'name' => $name);
+    }
+  }
+  return $results;
+}
+
+

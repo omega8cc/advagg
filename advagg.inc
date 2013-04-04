@@ -326,17 +326,40 @@ function advagg_get_aggregate_info_from_files($type, $files) {
  * @param $filename
  *   String; filename containing path information
  * @param $bypass_cache
- *   Bool: TRUE to bypass the cache.
+ *   Bool: TRUE to bypass the cache; this will not do a cache_set as well.
  * @return
  *   array
  */
 function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
   $filename_hash = drupal_hash_base64($filename);
+  $filename_hashes = &drupal_static('advagg_get_info_on_file');
 
   // Use caching to avoid hitting disk if possible.
   $cache_id = 'advagg:file:' . $filename_hash;
-  if (!$bypass_cache && variable_get('advagg_use_file_cache', ADVAGG_USE_FILE_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_info')) {
-    return $cache->data;
+  if (!$bypass_cache) {
+    // Try static cache first.
+    if (   !empty($filename_hashes)
+        && array_key_exists($cache_id, $filename_hashes)
+        && !empty($filename_hashes[$cache_id])
+          ) {
+      return $filename_hashes[$cache_id];
+    }
+
+    // Try cache backend next.
+    $cache = cache_get($cache_id, 'cache_advagg_info');
+    if (!empty($cache->data)) {
+      return $cache->data;
+    }
+  }
+  else {
+    // Sill load cached data for advagg contrib.
+    $cache = cache_get($cache_id, 'cache_advagg_info');
+    if (!empty($cache->data)) {
+      $filename_hashes[$cache_id] = $cache->data;
+    }
+  }
+  if (empty($filename_hashes[$cache_id]) || !is_array($filename_hashes[$cache_id]))  {
+    $filename_hashes[$cache_id] = array();
   }
 
   // Clear PHP's internal file status cache.
@@ -355,17 +378,17 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
   $linecount = substr_count($file_contents, "\n");
 
   // Build meta data array and set cache.
-  $data = array(
+  $filename_hashes[$cache_id] = array_merge($filename_hashes[$cache_id], array(
     'filesize' => filesize($filename),
     'mtime' => @filemtime($filename),
     'filename_hash' => $filename_hash,
     'content_hash' => drupal_hash_base64($file_contents),
     'linecount' => $linecount,
-  );
-  if (variable_get('advagg_use_file_cache', ADVAGG_USE_FILE_CACHE)) {
-    cache_set($cache_id, $data, 'cache_advagg_info', CACHE_PERMANENT);
+  ));
+  if (!$bypass_cache) {
+    cache_set($cache_id, $filename_hashes[$cache_id], 'cache_advagg_info', CACHE_PERMANENT);
   }
-  return $data;
+  return $filename_hashes[$cache_id];
 }
 
 /**

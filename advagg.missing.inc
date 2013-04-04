@@ -438,9 +438,10 @@ function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
     $uri => $contents,
   );
 
-  // Allow other modules to alter the contents and add new files to save.
+  // Allow other modules to alter the contents and add new files to save (.gz).
   // Call hook_advagg_save_aggregate_alter().
-  drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings);
+  $other_parameters = array($files, $type);
+  drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings, $other_parameters);
 
   foreach ($files_to_save as $uri => $data) {
     advagg_save_data($uri, $data);

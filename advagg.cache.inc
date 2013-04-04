@@ -25,11 +25,11 @@ function advagg_scan_for_changes() {
     foreach ($result as $row) {
       $row = (array)$row;
       // Get filesystem data.
-      $filesystem = advagg_get_info_on_file($row['filename'], TRUE);
+      $info = advagg_get_info_on_file($row['filename'], TRUE);
 
       // Make sure file exists.
-      if (empty($filesystem['content_hash'])) {
-        $files_that_have_changed[$row['filename']] = $filesystem;
+      if (empty($info['content_hash'])) {
+        $files_that_have_changed[$row['filename']] = $info;
         continue;
       }
 
@@ -42,14 +42,25 @@ function advagg_scan_for_changes() {
       );
       $changed = FALSE;
       foreach ($keys_to_compare as $key) {
-        if ($row[$key] != $filesystem[$key]) {
+        if ($row[$key] != $info[$key]) {
           $changed = TRUE;
           break;
         }
       }
       // If file has changed, add it to the array.
       if ($changed) {
-        $files_that_have_changed[$row['filename']] = $filesystem;
+        $files_that_have_changed[$row['filename']] = $info;
+
+        // Remove non advagg core attributes so advagg contrib can react to new
+        // changes to the file.
+        $keys_to_keep = array('filesize' => 1, 'mtime' => 1, 'filename_hash' => 1, 'content_hash' => 1, 'linecount' => 1);
+        $info = array_intersect_key($info, $keys_to_keep);
+
+        // Save results.
+        $filename_hashes = &drupal_static('advagg_get_info_on_file');
+        $cache_id = 'advagg:file:' . $info['filename_hash'];
+        $filename_hashes[$cache_id] = $info;
+        cache_set($cache_id, $info, 'cache_advagg_info', CACHE_PERMANENT);
       }
     }
   }
@@ -94,6 +105,10 @@ function advagg_push_new_changes() {
       // Update database.
       advagg_insert_update_files(array($filename => $meta_data), $ext);
     }
+
+    // Let other modules know about the changed files.
+    // Call hook_advagg_changed_files().
+    module_invoke_all('advagg_changed_files', $files, $types);
 
     // Clear out the full aggregates cache.
     foreach ($types as $ext => $bool) {
@@ -269,12 +284,12 @@ function advagg_remove_missing_files_from_db() {
   module_load_include('inc', 'advagg', 'advagg');
   foreach ($result as $row) {
     $row = (array)$row;
-    $filesystem = advagg_get_info_on_file($row['filename'], TRUE);
+    $info = advagg_get_info_on_file($row['filename'], TRUE);
 
     // Make sure file exists.
-    if (empty($filesystem['content_hash'])) {
-      $filesystem += advagg_get_aggregates_using_file($filesystem['filename_hash']);
-      $missing_files[$row['filename']] = $filesystem;
+    if (empty($info['content_hash'])) {
+      $info += advagg_get_aggregates_using_file($info['filename_hash']);
+      $missing_files[$row['filename']] = $info;
       continue;
     }
   }
