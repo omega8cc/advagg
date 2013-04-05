@@ -187,7 +187,7 @@ function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings, $ad
     }
     // Make sure the returned string is not empty or has a VERY high
     // compression ratio.
-    if (empty($contents) || empty($ratio) || $ratio > $aggregate_settings['variables']['advagg_js_max_compress_ratio']) {
+    if (empty($contents) || empty($ratio) || $ratio > $aggregate_settings['variables']['advagg_js_max_compress_ratio'] || $ratio < 0) {
       $contents = $contents_before;
     }
     elseif ($add_licensing) {
