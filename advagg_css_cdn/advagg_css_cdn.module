@@ -112,7 +112,7 @@ function advagg_css_cdn_advagg_css_groups_alter(&$css_groups, $preprocess_css) {
       }
     }
     else {
-      $diff = array_diff($group['browsers'], $target['browsers']);
+      $diff = array_merge(array_diff($group['browsers'], $target['browsers']), array_diff($target['browsers'], $group['browsers']));
       if (   $group['type'] != $target['type']
           || $group['group'] != $target['group']
           || $group['every_page'] != $target['every_page']
@@ -122,7 +122,7 @@ function advagg_css_cdn_advagg_css_groups_alter(&$css_groups, $preprocess_css) {
           || !empty($diff)
             ) {
         if (!empty($last_group)) {
-          $diff = array_diff($last_group['browsers'], $target['browsers']);
+          $diff = array_merge(array_diff($last_group['browsers'], $target['browsers']), array_diff($target['browsers'], $last_group['browsers']));
           if (   $last_group['type'] != $target['type']
               || $last_group['group'] != $target['group']
               || $last_group['every_page'] != $target['every_page']

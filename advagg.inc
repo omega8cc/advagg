@@ -219,39 +219,6 @@ function advagg_update_all_atimes($files) {
   return $write_done;
 }
 
-// CSS/JS operations.
-/**
- * Convert the array from *_get_js() into something more like the css array.
- *
- * @param $files
- *   List of files including files meta data.
- *
- * @return array
- *   An array that can be used by advagg_build_aggregate_plans
- */
-function advagg_convert_js_structure($files) {
-  $return = array();
-  $counter = 0;
-  foreach ($files as $group_name => $group) {
-    foreach ($group as $values) {
-      // Add in browsers.
-      if (!isset($values['browsers'])) {
-        $values['browsers'] = array(
-          '!IE' => TRUE,
-          'IE' => TRUE,
-        );
-      }
-      // Add in media.
-      if (!isset($values['media'])) {
-        $values['media'] = 'all';
-      }
-      $return[$counter]['items'][] = $values;
-    }
-    $counter++;
-  }
-  return array($return);
-}
-
 // File operations.
 /**
  * Given a group of files calculate what the aggregate filename will be.
@@ -464,7 +431,7 @@ function advagg_generate_groups($files_to_aggregate) {
           $media = $file_info['media'];
         }
         if (isset($file_info['browsers'])) {
-          $diff = array_diff($browsers, $file_info['browsers']);
+          $diff = array_merge(array_diff($file_info['browsers'], $browsers), array_diff($browsers, $file_info['browsers']));
           if (!empty($diff)) {
             $changed = TRUE;
             $browsers = $file_info['browsers'];
@@ -543,8 +510,8 @@ function advagg_build_aggregate_plans($files_to_aggregate, $type) {
     $path = ($type == 'css') ? $css_path[1] : $js_path[1];
     $plans[] = array(
       'data' => $url . '/' . $agg_filename,
-      'media' => $first['media'],
-      'browsers' => $first['browsers'],
+      'media' => isset($first['media']) ? $first['media'] : '',
+      'browsers' => isset($first['browsers']) ? $first['browsers'] : array(),
       'type' => $first['type'],
       'items' => $values,
       'filepath' => $path . '/' . $agg_filename,
