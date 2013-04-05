@@ -3,7 +3,6 @@
 /**
  * @file
  * Advanced CSS/JS aggregation js compression module.
- *
  */
 
 /**
@@ -12,9 +11,14 @@
 define('ADVAGG_JS_COMPRESS_PACKER', FALSE);
 
 /**
- * Default value to see what compressor to use. 0 is JSMin+.
+ * Default value to see what compressor to use. 0 is Disabled.
  */
 define('ADVAGG_JS_COMPRESSOR', 0);
+
+/**
+ * Default value to see what compressor to use. 0 is Disabled.
+ */
+define('ADVAGG_JS_INLINE_COMPRESSOR', 0);
 
 /**
  * Default value for the compression ratio test.
@@ -24,12 +28,7 @@ define('ADVAGG_JS_COMPRESS_RATIO', 0.1);
 /**
  * Default value for the compression ratio test.
  */
-define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.90);
-
-/**
- * Default value to see if this will compress aggregated files.
- */
-define('ADVAGG_JS_COMPRESS_AGG_FILES', TRUE);
+define('ADVAGG_JS_MAX_COMPRESS_RATIO', 0.9);
 
 /**
  * Implementation of hook_menu
@@ -58,9 +57,35 @@ function advagg_js_compress_menu() {
  */
 function advagg_js_compress_advagg_current_hooks_hash_array_alter(&$aggregate_settings) {
   $aggregate_settings['variables']['advagg_js_compressor'] = variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR);
-  $aggregate_settings['variables']['advagg_js_compress_agg_files'] = variable_get('advagg_js_compress_agg_files', ADVAGG_CSS_COMPRESS_AGG_FILES);
   $aggregate_settings['variables']['advagg_js_compress_packer'] = variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER);
   $aggregate_settings['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);
+}
+
+/**
+ * Implement hook_advagg_modify_js_pre_render_alter().
+ *
+ * Used compress inline js.
+ */
+function advagg_js_compress_advagg_modify_js_pre_render_alter(&$children) {
+  // Get variables.
+  $aggregate_settings['variables']['advagg_js_compressor'] = variable_get('advagg_js_inline_compressor', ADVAGG_JS_INLINE_COMPRESSOR);
+  $aggregate_settings['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);
+
+  // Do nothing if the compressor is disabled.
+  if (empty($aggregate_settings['variables']['advagg_js_compressor'])) {
+    return;
+  }
+
+  // Compress any inline JS.
+  module_load_include('inc', 'advagg_js_compress', 'advagg_js_compress.advagg');
+  foreach ($children as $key => &$values) {
+    if (!empty($values['#value'])) {
+      $contents = $values['#value'];
+      $filename = drupal_hash_base64($contents);
+      advagg_js_compress_prep($contents, $filename, $aggregate_settings, FALSE);
+      $values['#value'] = $contents;
+    }
+  }
 }
 
 /**

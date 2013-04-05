@@ -217,8 +217,26 @@ function advagg_admin_info_form($form, $form_state) {
     }
   }
 
-  // Output all advagg hooks implemented.
+  // Display as module -> hook instead of hook -> module.
+  ksort($advagg_hooks);
+  $module_hooks = array();
   foreach ($advagg_hooks as $hook => $values) {
+    if (!empty($values)) {
+      foreach ($values as $module_name) {
+        if (!isset($module_hooks[$module_name])) {
+          $module_hooks[$module_name] = array();
+        }
+        $module_hooks[$module_name][] = $hook;
+      }
+    }
+    else {
+      $module_hooks['not in use'][] = $hook;
+    }
+  }
+  ksort($module_hooks);
+
+  // Output all advagg hooks implemented.
+  foreach ($module_hooks as $hook => $values) {
     if (empty($values)) {
       $form['hooks_implemented'][$hook] = array(
         '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> 0</div>',
@@ -226,7 +244,7 @@ function advagg_admin_info_form($form, $form_state) {
     }
     else {
       $form['hooks_implemented'][$hook] = array(
-        '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> ' . count($values) . '<br />&nbsp;&nbsp;' . filter_xss(implode('<br />&nbsp;&nbsp;', $values)) . '</div>',
+        '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> ' . count($values) . '<br />&nbsp;&nbsp;' . filter_xss(implode('<br />&nbsp;&nbsp;', $values), array('br')) . '</div>',
       );
     }
   }

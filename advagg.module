@@ -185,6 +185,7 @@ function advagg_element_info_alter(&$type) {
   // Swap in our own aggregation callback.
   if (isset($type['styles']['#aggregate_callback'])) {
     $type['styles']['#aggregate_callback'] = '_advagg_aggregate_css';
+    $type['styles']['#pre_render'][] = 'advagg_modify_css_pre_render';
   }
 
   // Swap in our own aggregation callback.
@@ -200,6 +201,7 @@ function advagg_element_info_alter(&$type) {
       '#type' => 'scripts',
     );
   }
+  $type['scripts']['#pre_render'][] = 'advagg_modify_js_pre_render';
 }
 
 /**
@@ -250,6 +252,71 @@ function advagg_admin_menu_output_alter(&$content) {
 }
 
 // Core CSS/JS override functions.
+
+/**
+ * #pre_render callback so elements can be modifed before they are rendered.
+ *
+ * @param $elements
+ *   A render array containing:
+ *   - #items: The JavaScript items as returned by drupal_add_js() and
+ *     altered by drupal_get_js().
+ *   - #group_callback: A function to call to group #items. Following
+ *     this function, #aggregate_callback is called to aggregate items within
+ *     the same group into a single file.
+ *   - #aggregate_callback: A function to call to aggregate the items within
+ *     the groups arranged by the #group_callback function.
+ *
+ * @return
+ *   A render array that will render to a string of JavaScript tags.
+ */
+function advagg_modify_js_pre_render($elements) {
+  // Put children elements into a reference array.
+  $children = array();
+  foreach ($elements as $key => &$value) {
+    if ($key !== '' && $key[0] === '#') {
+      continue;
+    }
+    $children[$key] = &$value;
+  }
+
+  // Allow other modules to modify the children before they are rendered.
+  // Call hook_advagg_modify_js_pre_render_alter()
+  drupal_alter('advagg_modify_js_pre_render', $children);
+  return $elements;
+}
+
+/**
+ * #pre_render callback so elements can be modifed before they are rendered.
+ *
+ * @param $elements
+ *   A render array containing:
+ *   - #items: The JavaScript items as returned by drupal_add_js() and
+ *     altered by drupal_get_js().
+ *   - #group_callback: A function to call to group #items. Following
+ *     this function, #aggregate_callback is called to aggregate items within
+ *     the same group into a single file.
+ *   - #aggregate_callback: A function to call to aggregate the items within
+ *     the groups arranged by the #group_callback function.
+ *
+ * @return
+ *   A render array that will render to a string of JavaScript tags.
+ */
+function advagg_modify_css_pre_render($elements) {
+  // Put children elements into a reference array.
+  $children = array();
+  foreach ($elements as $key => &$value) {
+    if ($key !== '' && $key[0] === '#') {
+      continue;
+    }
+    $children[$key] = &$value;
+  }
+
+  // Allow other modules to modify the children before they are rendered.
+  // Call hook_advagg_modify_css_pre_render_alter()
+  drupal_alter('advagg_modify_css_pre_render', $children);
+  return $elements;
+}
+
 /**
  * Default callback to aggregate CSS files and inline content.
  *
@@ -770,8 +837,10 @@ function advagg_hooks_implemented($all = TRUE) {
     $hooks += array(
       'advagg_build_aggregate_plans_alter' => array(),
       'advagg_changed_files' => array(),
-      'advagg_js_groups' => array(),
-      'advagg_css_groups' => array(),
+      'advagg_css_groups_alter' => array(),
+      'advagg_js_groups_alter' => array(),
+      'advagg_modify_css_pre_render_alter' => array(),
+      'advagg_modify_js_pre_render_alter' => array(),
       'js_alter' => array(),
       'css_alter' => array(),
     );

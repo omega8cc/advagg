@@ -14,34 +14,40 @@
 function advagg_js_compress_admin_settings_form($form, $form_state) {
   $form = array();
 
-  $form['advagg_js_compress_agg_files'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Compress JS Files'),
-    '#default_value' => variable_get('advagg_js_compress_agg_files', ADVAGG_JS_COMPRESS_AGG_FILES),
-  );
-
   $description = '';
-  $options = array(0 => t('JSMin+'));
+  $options = array(
+    0 => t('Disabled'),
+    1 => t('JSMin+'),
+//     2 => t('Packer'),
+  );
   if (function_exists('jsmin')) {
-    $options[1] = t('JSMin');
+    $options[3] = t('JSMin');
     $description .= t('JSMin is the C complied version and is about 25 times faster. Recommend using it.');
   }
   else {
-    $description .= t('You can use the much faster C version of JSMin by installing the <a href="@php_jsmin">JSMin PHP Extension</a> on this server.', array('@php_jsmin' => 'http://www.ypass.net/software/php_jsmin/'));
+    $description .= t('You can use the much faster C version of JSMin by installing the <a href="@php_jsmin">JSMin PHP Extension</a> on this server. ', array('@php_jsmin' => 'http://www.ypass.net/software/php_jsmin/'));
   }
   $form['advagg_js_compressor'] = array(
     '#type' => 'radios',
-    '#title' => t('Select the compression program to use'),
+    '#title' => t('File Compression: Select a Compressor'),
     '#default_value' => variable_get('advagg_js_compressor', ADVAGG_JS_COMPRESSOR),
+    '#options' => $options,
+    '#description' => filter_xss($description),
+  );
+
+  $form['advagg_js_inline_compressor'] = array(
+    '#type' => 'radios',
+    '#title' => t('Inline Compression: Select a Compressor'),
+    '#default_value' => variable_get('advagg_js_inline_compressor', ADVAGG_JS_INLINE_COMPRESSOR),
     '#options' => $options,
     '#description' => filter_xss($description),
   );
 
   $form['advagg_js_compress_packer'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable Packer'),
+    '#title' => t('Use Packer on non GZip JS Aggregates'),
     '#default_value' => variable_get('advagg_js_compress_packer', ADVAGG_JS_COMPRESS_PACKER),
-    '#description' => t('If enabled the non gzip version of JS files will be compressed using the JS Packer. WARNING: This has a high chance of breaking your JS. Only Enable on production after testing the non gzipped version locally.'),
+    '#description' => t('If enabled the non gzip version of JS files will be compressed using the JS Packer. Packer works similar to gzip, thus using packer on a gzipped file does not give a big improvement in terms of bytes transfered over the wire. WARNING: This has a high chance of breaking your JS. Only Enable on production after testing the non gzipped version locally.'),
   );
 
   // Clear the cache bins on submit.

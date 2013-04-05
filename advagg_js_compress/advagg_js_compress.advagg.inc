@@ -7,10 +7,12 @@
 
 /**
  * Implement hook_advagg_get_js_file_contents_alter().
+ *
+ * Used to compress a js file.
  */
 function advagg_js_compress_advagg_get_js_file_contents_alter(&$contents, $filename, $aggregate_settings) {
-  // Do nothing if js compression is disabled.
-  if (empty($aggregate_settings['variables']['advagg_js_compress_agg_files']) || !isset($aggregate_settings['variables']['advagg_js_compressor'])) {
+  // Do nothing if js file compression is disabled.
+  if (empty($aggregate_settings['variables']['advagg_js_compressor'])) {
     return;
   }
 
@@ -105,7 +107,9 @@ function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggreg
 }
 
 /**
- * Implement advagg_changed_files().
+ * Implement hook_advagg_changed_files().
+ *
+ * Used to retest js files when they change.
  */
 function advagg_js_compress_advagg_changed_files($files, $types) {
   // Only care about js files.
@@ -160,14 +164,14 @@ function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings, $ad
     // Strip Byte Order Marks (BOM's), preg_* cannot parse these well.
     $contents = str_replace(pack("CCC", 0xef, 0xbb, 0xbf), "", $contents);
     // Use the compressor.
-    if ($compressor == 0) {
+    if ($compressor == 1) {
       advagg_js_compress_jsminplus($contents, $log_errors);
-    }
-    elseif ($compressor == 1) {
-      $contents = jsmin($contents);
     }
     elseif ($compressor == 2) {
       advagg_js_compress_jspacker($contents);
+    }
+    elseif ($compressor == 3) {
+      $contents = jsmin($contents);
     }
 
     // Save into cache.
@@ -265,26 +269,26 @@ function advagg_js_compress_run_test($filename) {
   $httprl_used = FALSE;
 
   // Build list of compressors.
-  $compressors = array(0 => 'jsminplus', 2 => 'packer');
+  $compressors = array(1 => 'jsminplus', 2 => 'packer');
   if (function_exists('jsmin')) {
-    $compressors[1] = 'jsmin';
+    $compressors[3] = 'jsmin';
     ksort($compressors);
   }
 
   // Set to 0 if file doesn't exist.
   if (empty($info['content_hash'])) {
     $results = array(
-      0 => array('code' => 0, 'ratio' => 0, 'name' => 'jsminplus'),
-      1 => array('code' => 0, 'ratio' => 0, 'name' => 'jsmin'),
+      1 => array('code' => 0, 'ratio' => 0, 'name' => 'jsminplus'),
       2 => array('code' => 0, 'ratio' => 0, 'name' => 'packer'),
+      3 => array('code' => 0, 'ratio' => 0, 'name' => 'jsmin'),
     );
   }
   else {
     // Set to "-1" so if php bombs, the file will be marked as bad.
     $results = array(
-      0 => array('code' => -1, 'ratio' => 0, 'name' => 'jsminplus'),
-      1 => array('code' => -1, 'ratio' => 0, 'name' => 'jsmin'),
+      1 => array('code' => -1, 'ratio' => 0, 'name' => 'jsminplus'),
       2 => array('code' => -1, 'ratio' => 0, 'name' => 'packer'),
+      3 => array('code' => -1, 'ratio' => 0, 'name' => 'jsmin'),
     );
     // Run this via httprl if possible.
     if (!module_exists('httprl') || !httprl_is_background_callback_capable()) {
