@@ -1093,6 +1093,15 @@ function advagg_pre_render_scripts($elements) {
       $element = $element_defaults;
       $element['#attributes']['src'] = file_create_url($group['data']);
       $element['#browsers'] = $group['browsers'];
+      if (!empty($group['defer'])) {
+        $element['#attributes']['defer'] = 'defer';
+      }
+      if (!empty($group['async'])) {
+        $element['#attributes']['async'] = 'async';
+      }
+      if (!empty($group['onload'])) {
+        $element['#attributes']['onload'] = $group['onload'];
+      }
       $elements[] = $element;
     }
     // For non-file types, and non-aggregated files, add a script element per
@@ -1103,6 +1112,12 @@ function advagg_pre_render_scripts($elements) {
         $element = $element_defaults;
         if (!empty($item['defer'])) {
           $element['#attributes']['defer'] = 'defer';
+        }
+        if (!empty($item['async'])) {
+          $element['#attributes']['async'] = 'async';
+        }
+        if (!empty($item['onload'])) {
+          $element['#attributes']['onload'] = $item['onload'];
         }
         $element['#browsers'] = $item['browsers'];
 

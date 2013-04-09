@@ -419,6 +419,7 @@ function advagg_generate_groups($files_to_aggregate) {
 
   $media = '';
   $defer = '';
+  $async = '';
   $cache = '';
   $scope = '';
   $browsers = array();
@@ -426,8 +427,9 @@ function advagg_generate_groups($files_to_aggregate) {
     foreach ($data as $values) {
 
       // Group into the biggest buckets possible.
+      $onload = array();
       foreach ($values['items'] as $file_info) {
-        // Check to see if media, browsers, defer, cache, or scope has changed
+        // Check to see if media, browsers, defer, async, cache, or scope has changed
         // from the previous run of this loop.
         $changed = FALSE;
         if (isset($file_info['media'])) {
@@ -451,6 +453,10 @@ function advagg_generate_groups($files_to_aggregate) {
           $changed = TRUE;
           $defer = $file_info['defer'];
         }
+        if (isset($file_info['async']) && $async != $file_info['async']) {
+          $changed = TRUE;
+          $async = $file_info['async'];
+        }
         if (isset($file_info['cache']) && $cache != $file_info['cache']) {
           $changed = TRUE;
           $cache = $file_info['cache'];
@@ -459,6 +465,9 @@ function advagg_generate_groups($files_to_aggregate) {
           $changed = TRUE;
           $scope = $file_info['scope'];
         }
+        if (isset($file_info['onload'])) {
+          $onload[] = trim(rtrim($file_info['onload'], ';'));
+        }
 
         // If one of the above options changed, it needs to be in a different
         // aggregate.
@@ -466,6 +475,10 @@ function advagg_generate_groups($files_to_aggregate) {
           $count++;
         }
         $groups[$location][$count][] = $file_info;
+      }
+      $onload = array_filter(array_unique($onload));
+      if (!empty($onload)) {
+        $groups[$location][$count][0]['onload'] = implode(';', $onload) . ';';
       }
     }
     // Grouping if inline is mixed between files.
@@ -521,6 +534,9 @@ function advagg_build_aggregate_plans($files_to_aggregate, $type) {
     $plans[] = array(
       'data' => $url . '/' . $agg_filename,
       'media' => isset($first['media']) ? $first['media'] : '',
+      'defer' => isset($first['defer']) ? $first['defer'] : '',
+      'async' => isset($first['async']) ? $first['async'] : '',
+      'onload' => isset($first['onload']) ? $first['onload'] : '',
       'browsers' => isset($first['browsers']) ? $first['browsers'] : array(),
       'type' => $first['type'],
       'items' => $values,
