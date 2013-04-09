@@ -14,26 +14,40 @@
 function advagg_admin_settings_form($form, $form_state) {
 
   // Simple checkbox settings.
-  $form['advagg_enabled'] = array(
+  $form['global'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Global Options'),
+  );
+  $form['global']['advagg_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable advanced aggregation'),
     '#default_value' => variable_get('advagg_enabled', ADVAGG_ENABLED),
   );
-  $form['advagg_gzip'] = array(
+  $form['global']['advagg_gzip'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create .gz files'),
     '#default_value' => variable_get('advagg_gzip', ADVAGG_GZIP),
   );
-  $form['advagg_core_groups'] = array(
+  $form['global']['advagg_core_groups'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use cores grouping logic'),
     '#default_value' => variable_get('advagg_core_groups', ADVAGG_CORE_GROUPS),
   );
-  $form['advagg_use_httprl'] = array(
+  $form['global']['advagg_use_httprl'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use HTTPRL to generate aggregates.'),
     '#default_value' => module_exists('httprl') ? variable_get('advagg_use_httprl', ADVAGG_USE_HTTPRL) : FALSE,
     '#disabled' => module_exists('httprl') ? FALSE : TRUE,
+  );
+  $form['css'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('CSS Options'),
+  );
+  $form['css']['advagg_combine_css_media'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Combine css files by using media queries'),
+    '#default_value' => variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA),
+    '#description' => t('Use cores grouping logic needs to be unchecked in order for this to work.'),
   );
 
   // Clear the cache bins on submit.

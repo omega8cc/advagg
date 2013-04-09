@@ -41,6 +41,11 @@ define('ADVAGG_GLOBAL_COUNTER', 0);
  */
 define('ADVAGG_USE_HTTPRL', TRUE);
 
+/**
+ * Combine css files by using media queries instead of media attributes.
+ */
+define('ADVAGG_COMBINE_CSS_MEDIA', TRUE);
+
 // Core hook implementations.
 /**
  * Implements hook_hook_info().
@@ -254,7 +259,7 @@ function advagg_admin_menu_output_alter(&$content) {
 // Core CSS/JS override functions.
 
 /**
- * #pre_render callback so elements can be modifed before they are rendered.
+ * #pre_render callback so elements can be modified before they are rendered.
  *
  * @param $elements
  *   A render array containing:
@@ -286,7 +291,7 @@ function advagg_modify_js_pre_render($elements) {
 }
 
 /**
- * #pre_render callback so elements can be modifed before they are rendered.
+ * #pre_render callback so elements can be modified before they are rendered.
  *
  * @param $elements
  *   A render array containing:
@@ -802,7 +807,7 @@ function advagg_get_current_hooks_hash() {
 }
 
 /**
- * Store settings assoceated with hash.
+ * Store settings associated with hash.
  *
  * @return
  *   value from db_merge

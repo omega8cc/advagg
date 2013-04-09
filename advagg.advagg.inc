@@ -52,7 +52,7 @@ function advagg_advagg_save_aggregate_alter(&$files_to_save, $aggregate_settings
 }
 
 /**
- * Implements hook_advagg_advagg_build_aggregate_plans_alter().
+ * Implements hook_advagg_build_aggregate_plans_alter().
  *
  * Used to alter the plan so it has the same grouping as cores.
  *
@@ -74,12 +74,7 @@ function advagg_advagg_build_aggregate_plans_alter(&$files, &$modified, $type) {
   foreach ($files as $filename => $data) {
     $group = NULL;
     $every_page = NULL;
-    foreach ($data as $key => $fileinfo) {
-      // Skip non numeric keys.
-      if (!is_numeric($key)) {
-        continue;
-      }
-
+    foreach ($data['files'] as $fileinfo) {
       // Grouped by group & every_page variables.
       if (is_null($group)) {
         $group = $fileinfo['group'];

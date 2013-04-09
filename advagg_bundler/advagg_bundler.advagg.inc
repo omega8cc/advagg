@@ -28,12 +28,7 @@ function advagg_bundler_advagg_build_aggregate_plans_alter(&$files, &$modified, 
     $last_group = '';
     $counter = 0;
     $groupings = array();
-    foreach ($data as $key => $fileinfo) {
-      // Skip non numeric keys.
-      if (!is_numeric($key)) {
-        continue;
-      }
-
+    foreach ($data['files'] as $fileinfo) {
       // Assign each file to their group.
       $group = advagg_bundler_analysis($fileinfo['data']);
       $fileinfo['bundler'] = $group;

@@ -145,6 +145,14 @@ function advagg_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'settings' => array(
+        'description' => 'Extra data about this file and how it is used in this aggregate.',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+        'translatable' => TRUE,
+        'serialize' => TRUE,
+      ),
     ),
     'indexes' => array(
       'porder' => array('porder'),

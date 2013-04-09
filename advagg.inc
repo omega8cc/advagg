@@ -123,11 +123,18 @@ function advagg_insert_aggregate($files, $aggregate_filenames_hash) {
       continue;
     }
 
+    // Store settings for this file that depend on how it was added.
+    $settings = array();
+    if (isset($file_meta_data['media_query'])) {
+      $settings['media'] = $file_meta_data['media_query'];
+    }
+
     // Write record into the database.
     $record = array(
       'aggregate_filenames_hash' => $aggregate_filenames_hash,
       'filename_hash' => $file_meta_data['filename_hash'],
       'porder' => $count,
+      'settings' => $settings,
     );
     if (drupal_write_record('advagg_aggregates', $record)) {
       $write_done = TRUE;
@@ -233,15 +240,10 @@ function advagg_update_all_atimes($files) {
 function advagg_generate_filenames($groups, $type) {
   $files = array();
   foreach ($groups as $key => $data) {
-    foreach ($data as $values) {
-      // Build a list of filenames.
-      $group_of_filenames = array();
-      foreach ($values as $file_info) {
-        $group_of_filenames[] = $file_info['data'];
-      }
+    foreach ($data as $files_with_meta_data) {
 
       // Get the aggregate filename & info about each file.
-      $aggregate_info = advagg_get_aggregate_info_from_files($type, $group_of_filenames);
+      $aggregate_info = advagg_get_aggregate_info_from_files($type, $files_with_meta_data);
       $values['files'] = $aggregate_info[1];
       $values['aggregate_filenames_hash'] = $aggregate_info[2];
       $values['aggregate_contents_hash'] = $aggregate_info[3];
@@ -263,12 +265,13 @@ function advagg_generate_filenames($groups, $type) {
  * @return
  *   array
  */
-function advagg_get_aggregate_info_from_files($type, $files) {
+function advagg_get_aggregate_info_from_files($type, $files_with_meta_data) {
   $filename_hashes = array();
   $content_hashes = array();
   $filenames = array();
-  foreach ($files as $filename) {
-    $info = advagg_get_info_on_file($filename);
+  foreach ($files_with_meta_data as $info) {
+    $filename = $info['data'];
+    $info += advagg_get_info_on_file($filename);
     // Skip if file doesn't exist.
     if (empty($info['content_hash'])) {
       continue;
@@ -413,6 +416,7 @@ function advagg_generate_groups($files_to_aggregate) {
   $groups = array();
   $count = 0;
   $location = 0;
+
   $media = '';
   $defer = '';
   $cache = '';
@@ -426,9 +430,15 @@ function advagg_generate_groups($files_to_aggregate) {
         // Check to see if media, browsers, defer, cache, or scope has changed
         // from the previous run of this loop.
         $changed = FALSE;
-        if (isset($file_info['media']) && $media != $file_info['media']) {
-          $changed = TRUE;
-          $media = $file_info['media'];
+        if (isset($file_info['media'])) {
+          if (variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA)) {
+            $file_info['media_query'] = $file_info['media'];
+            $file_info['media'] = 'all';
+          }
+          elseif ($media != $file_info['media']) {
+            $changed = TRUE;
+            $media = $file_info['media'];
+          }
         }
         if (isset($file_info['browsers'])) {
           $diff = array_merge(array_diff($file_info['browsers'], $browsers), array_diff($browsers, $file_info['browsers']));
@@ -505,7 +515,7 @@ function advagg_build_aggregate_plans($files_to_aggregate, $type) {
   // Build the plan.
   $plans = array();
   foreach ($files as $agg_filename => $values) {
-    $first = reset($values);
+    $first = reset($values['files']);
     $url = ($type == 'css') ? $css_path[0] : $js_path[0];
     $path = ($type == 'css') ? $css_path[1] : $js_path[1];
     $plans[] = array(

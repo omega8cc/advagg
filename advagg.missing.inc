@@ -304,13 +304,14 @@ function advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggrega
   $query->join($subquery_aggregates, 'aa', 'aa.aggregate_filenames_hash=aav.aggregate_filenames_hash');
   $query->join($subquery_files, 'af', 'af.filename_hash=aa.filename_hash');
   $query = $query->fields('af', array('filename'))
+    ->fields('aa', array('settings'))
     ->orderBy('porder', 'ASC')
     ->execute();
 
   // Add in files that are included in this aggregate.
   $files = array();
-  while ($file = $query->fetchField()) {
-    $files[] = $file;
+  foreach ($query as $value) {
+    $files[$value->filename] = unserialize($value->settings);
   }
   return $files;
 }
@@ -332,7 +333,24 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
 
   $data = '';
   if (!empty($files)) {
-    foreach ($files as $file) {
+    $media_changes = FALSE;
+    $last_media = NULL;
+    foreach ($files as $file => $settings) {
+      if (!isset($settings['media'])) {
+        continue;
+      }
+      if (is_null($last_media)) {
+        $last_media = $settings['media'];
+        continue;
+      }
+      if ($settings['media'] != $last_media) {
+        $media_changes = TRUE;
+        break;
+      }
+    }
+    $last_media = NULL;
+    $import_statements = array();
+    foreach ($files as $file => $settings) {
       $contents = drupal_load_stylesheet($file, $optimize);
 
       // Build the base URL of this CSS file: start with the full URL.
@@ -352,15 +370,47 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().
       drupal_alter('advagg_get_css_file_contents', $contents, $file, $aggregate_settings);
+
+      if ($media_changes) {
+        // Start of stylesheet.
+        if (is_null($last_media)) {
+          $last_media = $settings['media'];
+          $contents = '@media ' . $last_media . ' {' . $contents;
+        }
+        // Media changes.
+        if ($settings['media'] != $last_media) {
+          $last_media = $settings['media'];
+          $contents = '} @media ' . $last_media . ' {' . $contents;
+        }
+      }
+      // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
+      // @import rules must proceed any other style, so we move those to the top.
+      $regexp = '/@import[^;]+;/i';
+      preg_match_all($regexp, $contents, $matches);
+      $contents = preg_replace($regexp, '', $contents);
+      $import_statements[] = array($last_media, $matches[0]);
+
       $data .= $contents;
     }
 
-    // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
-    // @import rules must proceed any other style, so we move those to the top.
-    $regexp = '/@import[^;]+;/i';
-    preg_match_all($regexp, $data, $matches);
-    $data = preg_replace($regexp, '', $data);
-    $data = implode('', $matches[0]) . $data;
+    // Close the final media bracket.
+    if ($media_changes) {
+      $data .= '}';
+    }
+
+    // Add import statements to the top of the stylesheet.
+    $import_string = '';
+    foreach ($import_statements as $values) {
+      if ($media_changes) {
+        foreach ($values[1] as $statement) {
+          $import_string .= str_replace(';', $values[0] . ';', $statement);
+        }
+      }
+      else {
+        $import_string .= implode('', $values[1]);
+      }
+    }
+    $data = $import_string . $data;
   }
 
   // Allow other modules to modify this aggregates contents.
@@ -384,7 +434,7 @@ function advagg_get_js_aggregate_contents($files, $aggregate_settings) {
 
   if (!empty($files)) {
     // Build aggregate JS file.
-    foreach ($files as $filename) {
+    foreach ($files as $filename => $settings) {
       $contents = '';
       // Append a ';' and a newline after each JS file to prevent them from running together.
       if (file_exists($filename)) {
