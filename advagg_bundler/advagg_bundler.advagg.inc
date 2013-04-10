@@ -55,27 +55,31 @@ function advagg_bundler_advagg_build_aggregate_plans_alter(&$files, &$modified, 
   }
 
   // Try to shrink bundles if they are still too big.
-  if ($total_count > $max) {
-    while (TRUE) {
-      $remerge_candidate = NULL;
-      $remerge_key = NULL;
-      foreach ($final_groupings as $key => $groupings) {
-        if (count($groupings) > 1) {
-          if (is_null($remerge_candidate)) {
-            $remerge_candidate = $groupings;
-            $remerge_key = $key;
-          }
-          elseif (count($remerge_candidate) > count($groupings)) {
-            $remerge_candidate = $groupings;
-            $remerge_key = $key;
-          }
+  while ($total_count > $max) {
+    $remerge_candidate = NULL;
+    $remerge_key = NULL;
+    $total_count = 0;
+    foreach ($final_groupings as $key => $groupings) {
+      if (count($groupings) > 1) {
+        if (is_null($remerge_candidate)) {
+          $remerge_candidate = $groupings;
+          $remerge_key = $key;
+        }
+        elseif (count($remerge_candidate) > count($groupings)) {
+          $remerge_candidate = $groupings;
+          $remerge_key = $key;
         }
       }
-      if (is_null($remerge_candidate)) {
-        break;
-      }
-      advagg_bundler_merge($remerge_candidate, count($remerge_candidate)-1);
-      $final_groupings[$remerge_key] = $remerge_candidate;
+    }
+    if (is_null($remerge_candidate)) {
+      break;
+    }
+    advagg_bundler_merge($remerge_candidate, count($remerge_candidate)-1);
+    $final_groupings[$remerge_key] = $remerge_candidate;
+
+    $total_count = 0;
+    foreach ($final_groupings as $key => $groupings) {
+      $total_count += count($groupings);
     }
   }
 
