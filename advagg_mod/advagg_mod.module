@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * @file
+ * Advanced aggregation modifier module.
+ */
+
+// Define default variables.
+/**
+ * Default value to move all JS to the footer.
+ */
+define('ADVAGG_MOD_JS_FOOTER', FALSE);
+
+/**
+ * Default value to turn on preprocessing for all JavaScript files.
+ */
+define('ADVAGG_MOD_JS_PREPROCESS', FALSE);
+
+/**
+ * Default value to add the defer tag to all script tags.
+ */
+define('ADVAGG_MOD_JS_DEFER', FALSE);
+
+/**
+ * Default value to turn on preprocessing for all CSS files.
+ */
+define('ADVAGG_MOD_CSS_PREPROCESS', FALSE);
+
+// Core hook implementations.
+/**
+ * Implement hook_menu.
+ */
+function advagg_mod_menu() {
+  $items = array();
+  $file_path = drupal_get_path('module', 'advagg_mod');
+
+  $items['admin/config/development/advagg/mod'] = array(
+    'title' => 'Modifications',
+    'description' => 'Turn on or off various mods for CSS/JS.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('advagg_mod_admin_settings_form'),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'file path' => $file_path,
+    'file' => 'advagg_mod.admin.inc',
+    'weight' => 10,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_js_alter().
+ */
+function advagg_mod_js_alter(&$js) {
+  // Move all JS to the footer.
+  if (variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER)) {
+    foreach ($js as $name => &$values) {
+      $values['scope'] = 'footer';
+    }
+  }
+
+  // Force all JS to be preprocessed.
+  if (variable_get('advagg_mod_js_preprocess', ADVAGG_MOD_JS_PREPROCESS)) {
+    foreach ($js as $name => &$values) {
+      $values['preprocess'] = TRUE;
+    }
+  }
+
+  // Add the defer tag to all JS.
+  if (variable_get('advagg_mod_js_defer', ADVAGG_MOD_JS_DEFER)) {
+    foreach ($js as $name => &$values) {
+      // Everything is defer.
+      $values['defer'] = TRUE;
+
+      if (strpos($name, 'jquery.js') !== FALSE || strpos($name, 'jquery.min.js') !== FALSE ) {
+        // Do not defer the loading of jquery.js
+        $values['defer'] = FALSE;
+
+        // jquery_update fallback.
+        if (module_exists('jquery_update')) {
+          $values['onload'] = "if (typeof window.init_drupal_jquery_update_fallback === 'function') {init_drupal_jquery_update_fallback();}";
+        }
+      }
+      if (strpos($name, 'jquery-ui.js') !== FALSE || strpos($name, 'jquery-ui.min.js') !== FALSE ) {
+        // Do not defer the loading of jquery-ui.js
+        $values['defer'] = FALSE;
+
+        // jquery_update fallback.
+        if (module_exists('jquery_update')) {
+          $values['onload'] = "if (typeof window.init_drupal_jquery_ui_update_fallback === 'function') {init_drupal_jquery_ui_update_fallback();}";
+        }
+      }
+
+      // Drupal settings.
+      if ($name == 'misc/drupal.js') {
+        $values['onload'] = "if (typeof window.init_drupal_core_settings === 'function') {init_drupal_core_settings();}";
+      }
+
+    }
+  }
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function advagg_mod_css_alter(&$css) {
+  // Force all CSS to be preprocessed.
+  if (variable_get('advagg_mod_css_preprocess', ADVAGG_MOD_CSS_PREPROCESS)) {
+    foreach ($css as $name => &$values) {
+      $values['preprocess'] = TRUE;
+    }
+  }
+}
+
+// AdvAgg hook implementations.
+/**
+ * Implements hook_advagg_modify_js_pre_render_alter().
+ */
+function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
+  if (variable_get('advagg_mod_js_defer', ADVAGG_MOD_JS_DEFER)) {
+    foreach ($children as &$values) {
+      $values['#attributes']['defer'] = TRUE;
+      if (empty($values['#value'])) {
+        continue;
+      }
+
+      // Workaround bug with onload and jquery update.
+      if (!empty($values['#attributes']['onload'])) {
+        unset($values['#attributes']['onload']);
+      }
+
+      // Core
+      if (strpos($values['#value'], 'jQuery.extend(Drupal.settings') !== FALSE) {
+        $values['#value'] = 'function init_drupal_core_settings() {' . $values['#value'] . '}';
+      }
+
+      // jQuery Update
+      if (strpos($values['#value'], 'window.jQuery') !== FALSE) {
+        $values['#value'] = 'function init_drupal_jquery_update_fallback() {' . $values['#value'] . '}';
+      }
+      if (strpos($values['#value'], 'window.jQuery.ui') !== FALSE) {
+        $values['#value'] = 'function init_drupal_jquery_ui_update_fallback() {' . $values['#value'] . '}';
+      }
+    }
+  }
+}

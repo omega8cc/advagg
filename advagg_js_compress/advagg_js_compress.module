@@ -66,7 +66,7 @@ function advagg_js_compress_advagg_current_hooks_hash_array_alter(&$aggregate_se
  *
  * Used compress inline js.
  */
-function advagg_js_compress_advagg_modify_js_pre_render_alter(&$children) {
+function advagg_js_compress_advagg_modify_js_pre_render_alter(&$children, &$elements) {
   // Get variables.
   $aggregate_settings['variables']['advagg_js_compressor'] = variable_get('advagg_js_inline_compressor', ADVAGG_JS_INLINE_COMPRESSOR);
   $aggregate_settings['variables']['advagg_js_max_compress_ratio'] = variable_get('advagg_js_max_compress_ratio', ADVAGG_JS_MAX_COMPRESS_RATIO);

@@ -286,7 +286,7 @@ function advagg_modify_js_pre_render($elements) {
 
   // Allow other modules to modify the children before they are rendered.
   // Call hook_advagg_modify_js_pre_render_alter()
-  drupal_alter('advagg_modify_js_pre_render', $children);
+  drupal_alter('advagg_modify_js_pre_render', $children, $elements);
   return $elements;
 }
 
@@ -318,7 +318,7 @@ function advagg_modify_css_pre_render($elements) {
 
   // Allow other modules to modify the children before they are rendered.
   // Call hook_advagg_modify_css_pre_render_alter()
-  drupal_alter('advagg_modify_css_pre_render', $children);
+  drupal_alter('advagg_modify_css_pre_render', $children, $elements);
   return $elements;
 }
 
@@ -437,7 +437,6 @@ function _advagg_aggregate_js(&$js_groups) {
     }
   }
 
-
   if (!empty($files_to_aggregate)) {
     $hooks_hash = advagg_get_current_hooks_hash();
     $js_hash = drupal_hash_base64(serialize($files_to_aggregate));
@@ -478,6 +477,9 @@ function _advagg_process_html(&$variables) {
 
   // JS needs hacks.
   $javascript = advagg_get_full_js();
+  if (!isset($variables['scripts'])) {
+    $variables['scripts'] = '';
+  }
   if (!empty($javascript)) {
     $scopes = advagg_get_js_scopes($javascript);
 
