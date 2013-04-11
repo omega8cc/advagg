@@ -761,6 +761,11 @@ function advagg_enabled() {
  *   array('variables' => array(...), 'hooks' => array(...))
  */
 function advagg_current_hooks_hash_array() {
+  $aggregate_settings = &drupal_static(__FUNCTION__);
+  if (isset($aggregate_settings)) {
+    return $aggregate_settings;
+  }
+
   // Put all enabled hooks and settings into a big array.
   $aggregate_settings = array(
     'variables' => array(
@@ -896,8 +901,8 @@ function advagg_get_hooks_hash_settings($hash) {
  *   )
  */
 function advagg_get_root_files_dir() {
-  static $css_paths;
-  static $js_paths;
+  $css_paths = &drupal_static(__FUNCTION__ . '_css');
+  $js_paths = &drupal_static(__FUNCTION__ . '_js');
 
   // Make sure directories are available and writable.
   if (empty($css_paths) || empty($js_paths)) {
