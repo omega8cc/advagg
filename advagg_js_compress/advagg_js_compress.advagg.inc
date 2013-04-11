@@ -59,7 +59,7 @@ function advagg_js_compress_advagg_save_aggregate_alter(&$files_to_save, $aggreg
   }
   module_load_include('inc', 'advagg', 'advagg');
   // Make sure all files in this aggregrate are compatible with packer.
-  foreach ($files as $file) {
+  foreach ($files as $file => $settings) {
     $info = advagg_get_info_on_file($file);
     if (!isset($info['advagg_js_compress'][$compressor]['code'])) {
       $info = advagg_js_compress_run_test($file);
