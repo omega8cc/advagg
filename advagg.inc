@@ -435,7 +435,6 @@ function advagg_generate_groups($files_to_aggregate) {
         if (isset($file_info['media'])) {
           if (variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA)) {
             $file_info['media_query'] = $file_info['media'];
-            $file_info['media'] = 'all';
           }
           elseif ($media != $file_info['media']) {
             $changed = TRUE;
@@ -527,8 +526,28 @@ function advagg_build_aggregate_plans($files_to_aggregate, $type) {
 
   // Build the plan.
   $plans = array();
+
   foreach ($files as $agg_filename => $values) {
+    if ($type == 'css') {
+      $mixed_media = FALSE;
+      $media = NULL;
+      foreach ($values['files'] as $key => $value) {
+        if (!isset($value['media'])) {
+          continue;
+        }
+        if (is_null($media)) {
+          $media = $value['media'];
+        }
+        if ($media != $value['media']) {
+          $mixed_media = TRUE;
+        }
+      }
+    }
+
     $first = reset($values['files']);
+    if (!empty($mixed_media)) {
+      $first['media'] = 'all';
+    }
     $url = ($type == 'css') ? $css_path[0] : $js_path[0];
     $path = ($type == 'css') ? $css_path[1] : $js_path[1];
     $plans[] = array(
