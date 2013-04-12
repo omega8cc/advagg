@@ -25,7 +25,7 @@ function advagg_js_compress_admin_settings_form($form, $form_state) {
     $description .= t('JSMin is the C complied version and is about 25 times faster. Recommend using it.');
   }
   else {
-    $description .= t('You can use the much faster C version of JSMin by installing the <a href="@php_jsmin">JSMin PHP Extension</a> on this server. ', array('@php_jsmin' => 'http://www.ypass.net/software/php_jsmin/'));
+    $description .= t('You can use the much faster C version of JSMin by installing the <a href="@php_jsmin">JSMin PHP Extension</a> on this server.', array('@php_jsmin' => 'http://www.ypass.net/software/php_jsmin/'));
   }
   $form['advagg_js_compressor'] = array(
     '#type' => 'radios',

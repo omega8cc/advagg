@@ -33,6 +33,11 @@ function advagg_bundler_admin_settings_form() {
     8 => 8,
     9 => 9,
     10 => 10,
+    11 => 11,
+    12 => 12,
+    13 => 13,
+    14 => 14,
+    15 => 15,
   );
   $form['advagg_bundler_max_css'] = array(
     '#type' => 'select',

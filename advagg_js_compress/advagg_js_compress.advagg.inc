@@ -154,7 +154,7 @@ function advagg_js_compress_prep(&$contents, $filename, $aggregate_settings, $ad
 
   // Try cache.
   $info = advagg_get_info_on_file($filename);
-  $cache_id = 'advagg:js_compress:' . $compressor. ':' .  $info['filename_hash'];
+  $cache_id = 'advagg:js_compress:' . $compressor . ':' . $info['filename_hash'];
   $cache_id .= isset($info['content_hash']) ? ':' . $info['content_hash'] : '';
   $cache = cache_get($cache_id, 'cache_advagg_info');
   if (!empty($cache->data)) {
