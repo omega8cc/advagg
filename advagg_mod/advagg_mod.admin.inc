@@ -49,7 +49,6 @@ function advagg_mod_admin_settings_form() {
     '#type' => 'fieldset',
     '#title' => t('Inline CSS/JS on specific pages'),
   );
-
   // Taken from block_admin_configure().
   $access = user_access('use PHP for settings');
   $visibility = variable_get('advagg_mod_inline_visibility', BLOCK_VISIBILITY_LISTED);
@@ -93,6 +92,17 @@ function advagg_mod_admin_settings_form() {
     );
   }
 
+  $form['unified_mutisite'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Unified Mutisite'),
+  );
+  $form['unified_mutisite']['advagg_mod_unified_mutisite_dir'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Shared Directory'),
+    '#default_value' => variable_get('advagg_mod_unified_mutisite_dir', ''),
+    '#size' => 60,
+    '#maxlength' => 128,
+  );
 
   // Clear the cache bins on submit.
   $form['#submit'][] = 'advagg_mod_admin_settings_form_submit';

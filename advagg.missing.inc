@@ -512,10 +512,12 @@ function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
  *   URI.
  * @param $data
  *   A string containing the contents of the file.
+ * @param $overwrite
+ *   Bool, set to TRUE to overwrite a file.
  */
-function advagg_save_data($uri, $data) {
+function advagg_save_data($uri, $data, $overwrite = FALSE) {
   // File already exists.
-  if (file_exists($uri) && filesize($uri) > 0) {
+  if (!$overwrite && file_exists($uri) && filesize($uri) > 0) {
     return;
   }
 

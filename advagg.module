@@ -844,6 +844,7 @@ function advagg_hooks_implemented($all = TRUE) {
     'advagg_get_js_aggregate_contents_alter' => array(),
     'advagg_save_aggregate_alter' => array(),
     'advagg_current_hooks_hash_array' => array(),
+    'advagg_get_root_files_dir_alter' => array(),
   );
   if ($all) {
     $hooks += array(
@@ -912,11 +913,15 @@ function advagg_get_root_files_dir() {
     file_prepare_directory($css_paths[0], FILE_CREATE_DIRECTORY);
     file_prepare_directory($js_paths[0], FILE_CREATE_DIRECTORY);
 
-    // Get the URI of the directory.
+    // Set the URI of the directory.
     $css_paths[1] = parse_url(file_create_url($css_paths[0]));
     $css_paths[1] = ltrim($css_paths[1]['path'], $GLOBALS['base_path']);
     $js_paths[1] = parse_url(file_create_url($js_paths[0]));
     $js_paths[1] = ltrim($js_paths[1]['path'], $GLOBALS['base_path']);
+
+    // Allow other modules to alter css and js paths.
+    // Call hook_advagg_get_root_files_dir_alter()
+    drupal_alter('advagg_get_root_files_dir', $css_paths, $js_paths);
   }
 
   return array($css_paths, $js_paths);

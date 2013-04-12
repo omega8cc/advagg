@@ -28,7 +28,44 @@ define('ADVAGG_MOD_CSS_PREPROCESS', FALSE);
 
 // Core hook implementations.
 /**
- * Implement hook_menu.
+ * Implement hook_init().
+ */
+function advagg_mod_init() {
+  // Return if unified_mutisite_dir is not set.
+  $dir = rtrim(variable_get('advagg_mod_unified_mutisite_dir', ''), '/');
+  if (empty($dir) || !file_exists($dir) || !is_dir($dir)){
+    return;
+  }
+
+  $counter_filename = $dir . '/' . ADVAGG_SPACE . 'advagg_global_counter';
+  $local_counter = advagg_get_global_counter();
+  if (!file_exists($counter_filename)) {
+    module_load_include('inc', 'advagg', 'advagg.missing');
+    advagg_save_data($counter_filename, $local_counter);
+  }
+  else {
+    $shared_counter = (int) file_get_contents($counter_filename);
+
+    if ($shared_counter == $local_counter) {
+      // Counters are the same, return.
+      return;
+    }
+    elseif ($shared_counter < $local_counter) {
+      // Local counter is higher, update saved file and return.
+      module_load_include('inc', 'advagg', 'advagg.missing');
+      advagg_save_data($counter_filename, $local_counter, TRUE);
+      return;
+    }
+    elseif ($shared_counter > $local_counter) {
+      // Shared counter is higher, update local copy and return.
+      variable_set('advagg_global_counter', $shared_counter);
+      return;
+    }
+  }
+}
+
+/**
+ * Implement hook_menu().
  */
 function advagg_mod_menu() {
   $items = array();
@@ -164,6 +201,30 @@ function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
   }
 }
 
+/**
+ * Implements hook_advagg_get_root_files_dir_alter().
+ */
+function advagg_mod_advagg_get_root_files_dir_alter(&$css_paths, &$js_paths) {
+  $dir = rtrim(variable_get('advagg_mod_unified_mutisite_dir', ''), '/');
+  if (empty($dir) || !file_exists($dir) || !is_dir($dir)){
+    return;
+  }
+  // Change directory.
+  $css_paths[0] = $dir . '/advagg_css';
+  $js_paths[0] = $dir . '/advagg_js';
+
+  file_prepare_directory($css_paths[0], FILE_CREATE_DIRECTORY);
+  file_prepare_directory($js_paths[0], FILE_CREATE_DIRECTORY);
+
+  // Set the URI of the directory.
+  $css_paths[1] = parse_url(file_create_url($css_paths[0]));
+  $css_paths[1] = ltrim($css_paths[1]['path'], $GLOBALS['base_path']);
+  $js_paths[1] = parse_url(file_create_url($js_paths[0]));
+  $js_paths[1] = ltrim($js_paths[1]['path'], $GLOBALS['base_path']);
+}
+
+
+// Helper Functions.
 /**
  * Returns TRUE if this page should have inline CSS/JS.
  */
