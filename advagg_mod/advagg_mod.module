@@ -273,6 +273,7 @@ function advagg_mod_inline_js(&$js) {
 function advagg_mod_inline_css(&$css) {
   $aggregate_settings = advagg_current_hooks_hash_array();
   $optimize = TRUE;
+  module_load_include('inc', 'advagg', 'advagg');
   foreach ($css as $name => &$values) {
     // Only process files.
     if ($values['type'] != 'file') {
@@ -281,21 +282,7 @@ function advagg_mod_inline_css(&$css) {
 
     $file = $values['data'];
     if (file_exists($file)) {
-      $contents = drupal_load_stylesheet($file, $optimize);
-
-      // Build the base URL of this CSS file: start with the full URL.
-      $css_base_url = file_create_url($file);
-      // Move to the parent.
-      $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
-      // Simplify to a relative URL if the stylesheet URL starts with the
-      // base URL of the website.
-      if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
-        $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
-      }
-
-      _drupal_build_css_path(NULL, $css_base_url . '/');
-      // Anchor all paths in the CSS with its base URL, ignoring external and absolute paths.
-      $contents = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+      $contents = advagg_load_css_stylesheet($file, $optimize);
 
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().

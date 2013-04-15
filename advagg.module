@@ -673,6 +673,8 @@ function advagg_get_js_scopes($javascript) {
  *   New version of $css_js_groups.
  */
 function advagg_merge_plans($css_js_groups, $plans) {
+  $new_css_js_groups = array();
+  $used_keys = array();
   foreach ($plans as $plan) {
     $plan_added = FALSE;
     foreach ($css_js_groups as $key => $group) {
@@ -695,9 +697,9 @@ function advagg_merge_plans($css_js_groups, $plans) {
         $step = 0;
         do {
           $step++;
-          $insert_key = '' . intval($key) . '.' . $step;
+          $insert_key = '' . floatval($key) . '.' . $step;
         } while (array_key_exists($insert_key, $css_js_groups));
-        $css_js_groups[$insert_key] = $plan;
+        $css_js_groups[(string) $insert_key] = $plan;
         $plan_added = TRUE;
       }
     }
@@ -708,11 +710,34 @@ function advagg_merge_plans($css_js_groups, $plans) {
         unset($css_js_groups[$key]);
       }
     }
+
+    if (!$plan_added) {
+      foreach ($css_js_groups as $key => $group) {
+        if (   empty($group['items']['aggregate_filenames_hash'])
+            || $group['items']['aggregate_filenames_hash'] != $plan['items']['aggregate_filenames_hash']
+            || empty($group['items']['aggregate_contents_hash'])
+            || $group['items']['aggregate_contents_hash'] != $plan['items']['aggregate_contents_hash']
+              ) {
+          continue;
+        }
+
+        // Insert a unique key
+        do {
+          $key = '' . floatval($key) + 0.01;
+        } while (array_key_exists((string) $key, $css_js_groups) || array_key_exists((string) $key, $used_keys));
+        $used_keys[(string) $key] = TRUE;
+        $css_js_groups[(string) $key] = $plan;
+        $plan_added = TRUE;
+        break;
+      }
+    }
+
   }
 
   // Key sort and normalize the array before returning it.
   ksort($css_js_groups);
-  return array_values($css_js_groups);
+  $css_js_groups = array_values($css_js_groups);
+  return $css_js_groups;
 }
 
 // Helper functions.

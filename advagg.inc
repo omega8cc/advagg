@@ -354,6 +354,7 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
     'filename_hash' => $filename_hash,
     'content_hash' => drupal_hash_base64($file_contents),
     'linecount' => $linecount,
+    'data' => $filename,
   ));
   if (!$bypass_cache) {
     cache_set($cache_id, $filename_hashes[$cache_id], 'cache_advagg_info', CACHE_PERMANENT);
@@ -371,8 +372,10 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
  * @param $aggregate_contents_hash
  *   Hash of the files contents.
  */
-function advagg_build_filename($type, $aggregate_filenames_hash, $aggregate_contents_hash) {
-  $hooks_hash = advagg_get_current_hooks_hash();
+function advagg_build_filename($type, $aggregate_filenames_hash, $aggregate_contents_hash, $hooks_hash = NULL) {
+  if (is_null($hooks_hash)) {
+    $hooks_hash = advagg_get_current_hooks_hash();
+  }
   return $type . ADVAGG_SPACE .
     $aggregate_filenames_hash . ADVAGG_SPACE .
     $aggregate_contents_hash . ADVAGG_SPACE .
@@ -615,4 +618,42 @@ function advagg_create_aggregate_files($plans) {
       }
     }
   }
+}
+
+/**
+ * Loads the stylesheet and resolves all @import commands.
+ *
+ * Loads a stylesheet and replaces @import commands with the contents of the
+ * imported file. Use this instead of file_get_contents when processing
+ * stylesheets.
+ *
+ * The returned contents are compressed removing white space and comments only
+ * when CSS aggregation is enabled. This optimization will not apply for
+ * color.module enabled themes with CSS aggregation turned off.
+ *
+ * @param $file
+ *   Name of the stylesheet to be processed.
+ * @param $optimize
+ *   Defines if CSS contents should be compressed or not.
+ * @return
+ * Contents of the stylesheet, including any resolved @import commands.
+ */
+function advagg_load_css_stylesheet($file, $optimize) {
+  $contents = drupal_load_stylesheet($file, $optimize);
+
+  // Build the base URL of this CSS file: start with the full URL.
+  $css_base_url = file_create_url($file);
+  // Move to the parent.
+  $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
+  // Simplify to a relative URL if the stylesheet URL starts with the
+  // base URL of the website.
+  if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
+    $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
+  }
+
+  _drupal_build_css_path(NULL, $css_base_url . '/');
+  // Anchor all paths in the CSS with its base URL, ignoring external and absolute paths.
+  $contents = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+
+  return $contents;
 }

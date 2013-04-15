@@ -47,6 +47,20 @@ function advagg_scan_for_changes() {
           break;
         }
       }
+
+      if (!$changed) {
+        // Call hook_advagg_scan_for_changes().
+        $changes_array = module_invoke_all('advagg_scan_for_changes', $row['filename']);
+        if (is_array($changes_array)) {
+          foreach ($changes_array as $value) {
+            if (!empty($value)) {
+              $changed = TRUE;
+              break;
+            }
+          }
+        }
+      }
+
       // If file has changed, add it to the array.
       if ($changed) {
         $files_that_have_changed[$row['filename']] = $info;

@@ -350,22 +350,9 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
     }
     $last_media = NULL;
     $import_statements = array();
+    module_load_include('inc', 'advagg', 'advagg');
     foreach ($files as $file => $settings) {
-      $contents = drupal_load_stylesheet($file, $optimize);
-
-      // Build the base URL of this CSS file: start with the full URL.
-      $css_base_url = file_create_url($file);
-      // Move to the parent.
-      $css_base_url = substr($css_base_url, 0, strrpos($css_base_url, '/'));
-      // Simplify to a relative URL if the stylesheet URL starts with the
-      // base URL of the website.
-      if (substr($css_base_url, 0, strlen($GLOBALS['base_root'])) == $GLOBALS['base_root']) {
-        $css_base_url = substr($css_base_url, strlen($GLOBALS['base_root']));
-      }
-
-      _drupal_build_css_path(NULL, $css_base_url . '/');
-      // Anchor all paths in the CSS with its base URL, ignoring external and absolute paths.
-      $contents = preg_replace_callback('/url\(\s*[\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\s*\)/i', '_drupal_build_css_path', $contents);
+      $contents = advagg_load_css_stylesheet($file, $optimize);
 
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().
