@@ -428,7 +428,7 @@ function advagg_install_check_via_http(&$requirements) {
         || empty($request->headers['content-encoding'])
         || ($request->headers['content-encoding'] != 'gzip' && $request->headers['content-encoding'] != 'deflate')
           ) {
-      $config_path = advagg_admin_config_path();
+      $config_path = advagg_admin_config_root_path();
       // Gzip failed.
       if (!variable_get('advagg_gzip', ADVAGG_GZIP)) {
         // Recommend that gzip be turned on.
@@ -437,7 +437,7 @@ function advagg_install_check_via_http(&$requirements) {
           'severity' => REQUIREMENT_WARNING,
           'value' => $t('Gzip is failing for %type files.', array('%type' => $type)),
           'description' => $t('Try enabling on the "Create .gz files" setting on the <a href="@advagg">Advanced CSS/JS Aggregation Configuration page</a>', array(
-            '@advagg' => url($config_path),
+            '@advagg' => url($config_path . '/advagg'),
             '%type' => $type,
           )),
         );
@@ -449,7 +449,7 @@ function advagg_install_check_via_http(&$requirements) {
           'severity' => REQUIREMENT_WARNING,
           'value' => $t('Gzip is failing for %type files.', array('%type' => $type)),
           'description' => $t('The web servers configuration will need to be adjusted. In most cases make sure that the webroots .htaccess file still contains this section "Rules to correctly serve gzip compressed CSS and JS files".', array(
-            '@advagg' => url($config_path),
+            '@advagg' => url($config_path . '/advagg'),
           )),
         );
       }

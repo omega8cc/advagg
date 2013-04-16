@@ -3,4 +3,4 @@ description = Aggregates multiple CSS/JS files in a way that prevents 404 from h
 package = Advanced CSS/JS Aggregation
 core = 7.x
 
-configure = admin/config/development/advagg
+configure = admin/config/development/performance/advagg

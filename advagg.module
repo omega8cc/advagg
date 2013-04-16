@@ -49,7 +49,7 @@ define('ADVAGG_COMBINE_CSS_MEDIA', TRUE);
 /**
  * Default location of AdvAgg configuration items.
  */
-define('ADVAGG_ADMIN_CONFIG_PATH', 'admin/config/development/advagg');
+define('ADVAGG_ADMIN_CONFIG_ROOT_PATH', 'admin/config/development/performance');
 
 // Core hook implementations.
 /**
@@ -79,13 +79,9 @@ function advagg_hook_info() {
  */
 function advagg_system_info_alter(&$info, $file, $type) {
   static $config_path;
-  static $module_path;
   // Get advagg config path
   if (!isset($config_path)) {
-    $config_path = advagg_admin_config_path();
-  }
-  if (!isset($module_path)) {
-    $module_path = drupal_get_path('module', 'advagg') . '/advagg.module';
+    $config_path = advagg_admin_config_root_path();
   }
 
   // Replace advagg path.
@@ -99,7 +95,7 @@ function advagg_system_info_alter(&$info, $file, $type) {
         ) {
     $pos = strpos($info['configure'], '/advagg') + 7;
     $substr = substr($info['configure'], 0, $pos);
-    $info['configure'] = str_replace($substr, $config_path, $info['configure']);
+    $info['configure'] = str_replace($substr, $config_path . '/advagg', $info['configure']);
   }
 }
 
@@ -121,7 +117,7 @@ function advagg_permission() {
 function advagg_menu() {
   list($css_path, $js_path) = advagg_get_root_files_dir();
   $file_path = drupal_get_path('module', 'advagg');
-  $config_path = advagg_admin_config_path();
+  $config_path = advagg_admin_config_root_path();
 
   $items = array();
   $items[$css_path[1] . '/%'] = array(
@@ -140,23 +136,29 @@ function advagg_menu() {
     'file path' => $file_path,
     'file' => 'advagg.missing.inc',
   );
-  $items[$config_path] = array(
+  $items[$config_path . '/default'] = array(
+    'title' => 'Performance',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'file path' => drupal_get_path('module', 'system'),
+    'weight' => -10,
+  );
+  $items[$config_path . '/advagg'] = array(
     'title' => 'Advanced CSS/JS Aggregation',
     'description' => 'Configuration for Advanced CSS/JS Aggregation.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('advagg_admin_settings_form'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'access arguments' => array('administer site configuration'),
     'file path' => $file_path,
     'file' => 'advagg.admin.inc',
-    'weight' => -10,
+    'weight' => 1,
   );
-  $items[$config_path . '/config'] = array(
+  $items[$config_path . '/advagg/config'] = array(
     'title' => 'Configuration',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items[$config_path . '/operations'] = array(
+  $items[$config_path . '/advagg/operations'] = array(
     'title' => 'Preform An Operation',
     'description' => 'Flush caches, set the bypass cookie, take drastic actions.',
     'page callback' => 'drupal_get_form',
@@ -167,7 +169,7 @@ function advagg_menu() {
     'file' => 'advagg.admin.inc',
     'weight' => -9,
   );
-  $items[$config_path . '/info'] = array(
+  $items[$config_path . '/advagg/info'] = array(
     'title' => 'Information',
     'description' => 'More detailed information about advagg.',
     'page callback' => 'drupal_get_form',
@@ -820,8 +822,8 @@ function advagg_enabled() {
  * @return string
  *   Path to root advagg config.
  */
-function advagg_admin_config_path() {
-  return variable_get('advagg_admin_config_path', ADVAGG_ADMIN_CONFIG_PATH);
+function advagg_admin_config_root_path() {
+  return variable_get('advagg_admin_config_root_path', ADVAGG_ADMIN_CONFIG_ROOT_PATH);
 }
 
 /**

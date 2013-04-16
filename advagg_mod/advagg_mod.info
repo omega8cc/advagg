@@ -4,4 +4,4 @@ package = Advanced CSS/JS Aggregation
 core = 7.x
 dependencies[] = advagg
 
-configure = admin/config/development/advagg/mod
+configure = admin/config/development/performance/advagg/mod
