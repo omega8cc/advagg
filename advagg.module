@@ -75,6 +75,25 @@ function advagg_hook_info() {
 }
 
 /**
+ * Implements hook_module_implements_alter().
+ */
+function advagg_module_implements_alter(&$implementations, $hook) {
+  // Move css_emimage to the top.
+  if ($hook === 'advagg_get_css_aggregate_contents_alter' && array_key_exists('css_emimage', $implementations)) {
+    $item = array('css_emimage' => $implementations['css_emimage']);
+    unset($implementations['css_emimage']);
+    $implementations = array_merge($item, $implementations);
+  }
+
+  // Move css_emimage to the bottom.
+  if ($hook === 'advagg_build_aggregate_plans_alter' && array_key_exists('css_emimage', $implementations)) {
+    $item = $implementations['css_emimage'];
+    unset($implementations['css_emimage']);
+    $implementations['css_emimage'] = $item;
+  }
+}
+
+/**
  * Implements hook_system_info_alter().
  */
 function advagg_system_info_alter(&$info, $file, $type) {

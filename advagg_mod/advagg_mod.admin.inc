@@ -35,6 +35,7 @@ function advagg_mod_admin_settings_form() {
     '#description' => t('This will most likely break javascript on different browsers. Use with extreme caution.'),
   );
 
+  $config_path = advagg_admin_config_root_path();
   $form['css'] = array(
     '#type' => 'fieldset',
     '#title' => t('CSS'),
@@ -43,6 +44,7 @@ function advagg_mod_admin_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Enable preprocess on all CSS'),
     '#default_value' => variable_get('advagg_mod_css_preprocess', ADVAGG_MOD_CSS_PREPROCESS),
+    '#description' => module_exists('advagg_bundler') ? t('You might want to increase the <a href="@link">CSS Bundles Per Page</a> if this is checked.', array('@link' => url($config_path . '/advagg/bundler'))) : '',
   );
 
   $form['landing_page'] = array(
