@@ -267,7 +267,7 @@ function advagg_get_hashes_from_filename($filename) {
   $hooks_hashes_value = substr($filename, $hooks_hashes_start, 43);
 
   // Verify that the hooks hashes is valid.
-  $aggregate_settings = advagg_get_hooks_hash_settings($hooks_hashes_value);
+  $aggregate_settings = advagg_get_hash_settings($hooks_hashes_value);
   if (empty($aggregate_settings)) {
     return t('Bad hooks hashes value.');
   }

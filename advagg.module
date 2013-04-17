@@ -872,10 +872,10 @@ function advagg_get_current_hooks_hash() {
     $current_hash = drupal_hash_base64(serialize($aggregate_settings));
 
     // Save into variables for verification purposes later on if not found.
-    $settings = advagg_get_hooks_hash_settings($current_hash);
+    $settings = advagg_get_hash_settings($current_hash);
     if (empty($settings) && lock_acquire(__FUNCTION__, 5)) {
       // Save new hash into
-      advagg_set_hooks_hash($current_hash, $aggregate_settings);
+      advagg_set_hash_settings($current_hash, $aggregate_settings);
 
       // Release lock
       lock_release(__FUNCTION__);
@@ -891,7 +891,7 @@ function advagg_get_current_hooks_hash() {
  * @return
  *   value from db_merge
  */
-function advagg_set_hooks_hash($hash, $settings) {
+function advagg_set_hash_settings($hash, $settings) {
   return db_merge('advagg_aggregates_hashes')
     ->key(array('hash' => $hash))
     ->fields(array('settings' => serialize($settings)))
@@ -947,7 +947,7 @@ function advagg_hooks_implemented($all = TRUE) {
  * @return
  *   The settings array or FALSE if not found.
  */
-function advagg_get_hooks_hash_settings($hash) {
+function advagg_get_hash_settings($hash) {
   $settings = db_select('advagg_aggregates_hashes', 'aah')
     ->fields('aah', array('settings'))
     ->condition('hash', $hash)
