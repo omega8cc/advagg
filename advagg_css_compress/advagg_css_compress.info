@@ -3,3 +3,5 @@ description = Compress CSS with a 3rd party compressor, YUI currently.
 package = Advanced CSS/JS Aggregation
 core = 7.x
 dependencies[] = advagg
+
+configure = admin/config/development/performance/advagg/css-compress

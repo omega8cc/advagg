@@ -12,6 +12,7 @@
  * @see system_settings_form()
  */
 function advagg_admin_settings_form($form, $form_state) {
+  drupal_set_title('AdvAgg: Configuration');
 
   // Simple checkbox settings.
   $form['global'] = array(
@@ -62,6 +63,8 @@ function advagg_admin_settings_form($form, $form_state) {
  * @ingroup forms
  */
 function advagg_admin_operations_form($form, $form_state) {
+  drupal_set_title('AdvAgg: Operations');
+
   // Buttons to do stuff.
   // Smart flushing.
   $form['smart_flush'] = array(
@@ -188,6 +191,8 @@ function advagg_admin_operations_form($form, $form_state) {
  * @see system_settings_form()
  */
 function advagg_admin_info_form($form, $form_state) {
+  drupal_set_title('AdvAgg: Information');
+
   // Get all hooks.
   drupal_theme_initialize();
   $core_hooks = theme_get_registry();

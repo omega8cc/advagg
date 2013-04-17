@@ -12,8 +12,9 @@
  * @see system_settings_form()
  */
 function advagg_mod_admin_settings_form() {
-  $form = array();
+  drupal_set_title('AdvAgg: Modifications');
 
+  $form = array();
   $form['js'] = array(
     '#type' => 'fieldset',
     '#title' => t('JS'),

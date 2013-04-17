@@ -12,8 +12,9 @@
  * @see system_settings_form()
  */
 function advagg_bundler_admin_settings_form() {
-  $form = array();
+  drupal_set_title('AdvAgg: Bundler');
 
+  $form = array();
   $form['advagg_bundler_active'] = array(
     '#type' => 'checkbox',
     '#title' => t('Bundler is Active'),

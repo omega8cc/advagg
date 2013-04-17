@@ -12,8 +12,9 @@
  * @see system_settings_form()
  */
 function advagg_js_compress_admin_settings_form($form, $form_state) {
-  $form = array();
+  drupal_set_title('AdvAgg: JS Compression');
 
+  $form = array();
   $description = '';
   $options = array(
     0 => t('Disabled'),
