@@ -63,7 +63,7 @@ function advagg_admin_settings_form($form, $form_state) {
  * @ingroup forms
  */
 function advagg_admin_operations_form($form, $form_state) {
-  drupal_set_title(t('AdvAgg: Operations');
+  drupal_set_title(t('AdvAgg: Operations'));
 
   // Buttons to do stuff.
   // Smart flushing.
