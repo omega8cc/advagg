@@ -257,6 +257,26 @@ function advagg_admin_info_form($form, $form_state) {
   // Output all advagg hooks implemented.
   foreach ($module_hooks as $hook => $values) {
     if (empty($values)) {
+      $form['modules_implementing_advagg'][$hook] = array(
+        '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> 0</div>',
+      );
+    }
+    else {
+      $form['modules_implementing_advagg'][$hook] = array(
+        '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> ' . count($values) . '<br />&nbsp;&nbsp;' . filter_xss(implode('<br />&nbsp;&nbsp;', $values), array('br')) . '</div>',
+      );
+    }
+  }
+  $form['modules_implementing_advagg'] += array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Modules implementing AdvAgg CSS/JS hooks'),
+  );
+
+  // Output all advagg hooks implemented.
+  foreach ($advagg_hooks as $hook => $values) {
+    if (empty($values)) {
       $form['hooks_implemented'][$hook] = array(
         '#markup' => '<div><strong>' . check_plain($hook) . ':</strong> 0</div>',
       );
@@ -271,7 +291,7 @@ function advagg_admin_info_form($form, $form_state) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#title' => t('Modules implementing advagg css/js hooks'),
+    '#title' => t('AdvAgg CSS/JS hooks implemented by modules'),
   );
 
   // Output what is used inside of the advagg_get_current_hooks_hash() function.
