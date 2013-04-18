@@ -12,7 +12,7 @@
  * @see system_settings_form()
  */
 function advagg_mod_admin_settings_form() {
-  drupal_set_title('AdvAgg: Modifications');
+  drupal_set_title(t('AdvAgg: Modifications'));
 
   $form = array();
   $form['js'] = array(

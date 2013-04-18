@@ -636,7 +636,7 @@ function advagg_create_aggregate_files($plans) {
  * @param $optimize
  *   Defines if CSS contents should be compressed or not.
  * @return
- * Contents of the stylesheet, including any resolved @import commands.
+ *   Contents of the stylesheet, including any resolved @import commands.
  */
 function advagg_load_css_stylesheet($file, $optimize) {
   $contents = drupal_load_stylesheet($file, $optimize);

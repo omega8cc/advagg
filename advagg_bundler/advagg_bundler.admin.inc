@@ -12,7 +12,7 @@
  * @see system_settings_form()
  */
 function advagg_bundler_admin_settings_form() {
-  drupal_set_title('AdvAgg: Bundler');
+  drupal_set_title(t('AdvAgg: Bundler'));
 
   $form = array();
   $form['advagg_bundler_active'] = array(

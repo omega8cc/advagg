@@ -12,7 +12,7 @@
  * @see system_settings_form()
  */
 function advagg_css_compress_admin_settings_form($form, $form_state) {
-  drupal_set_title('AdvAgg: CSS Compression Settings');
+  drupal_set_title(t('AdvAgg: CSS Compression Settings'));
 
   $form = array();
   $description = '';

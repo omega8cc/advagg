@@ -492,7 +492,6 @@ function _advagg_aggregate_js(&$js_groups) {
   }
 }
 
-
 /**
  * Replacement for template_process_html().
  */
@@ -1109,7 +1108,7 @@ function advagg_admin_flush_cache() {
 
 // Exact Copies of core functions from patches.
 /**
- * #pre_render callback to add the elements needed for JavaScript tags to be rendered.
+ * #pre_render callback to add elements needed for JavaScript to be rendered.
  *
  * This function evaluates the aggregation enabled/disabled condition on a group
  * by group basis by testing whether an aggregate file has been made for the
