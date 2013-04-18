@@ -23,7 +23,7 @@ function advagg_css_compress_admin_settings_form($form, $form_state) {
   $form['advagg_css_compressor'] = array(
     '#type' => 'radios',
     '#title' => t('File Compression: Select a Compressor'),
-    '#default_value' => variable_get('ADVAGG_CSS_COMPRESSOR', ADVAGG_CSS_COMPRESSOR),
+    '#default_value' => variable_get('advagg_css_compressor', ADVAGG_CSS_COMPRESSOR),
     '#options' => $options,
     '#description' => filter_xss($description),
   );
