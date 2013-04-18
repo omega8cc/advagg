@@ -33,7 +33,7 @@ function advagg_mod_admin_settings_form() {
     '#type' => 'checkbox',
     '#title' => t('Add the defer tag to all script tags'),
     '#default_value' => variable_get('advagg_mod_js_defer', ADVAGG_MOD_JS_DEFER),
-    '#description' => t('This will most likely break javascript on different browsers. Use with extreme caution.'),
+    '#description' => t('This will most likely break javascript on different browsers; and/or on all browsers. Use with extreme caution.'),
   );
 
   $config_path = advagg_admin_config_root_path();
