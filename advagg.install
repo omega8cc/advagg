@@ -366,6 +366,16 @@ function advagg_requirements($phase) {
         );
       }
     }
+    if (module_exists('labjs')) {
+      if (!function_exists('labjs_advagg_modify_js_pre_render_alter')) {
+        $requirements['advagg_module_labjs_patch'] = array(
+          'title' => $t('Adv CSS/JS Agg - LAB.js module'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('The LAB.js module needs a patch to be compatible with AdvAgg.'),
+          'description' => $t('You need to install the latest patch in <a href="@link">this issue</a>.', array('@link' => 'http://drupal.org/node/1977122')),
+        );
+      }
+    }
 
     // Make sure http requests will work correctly.
     advagg_install_check_via_http($requirements);
