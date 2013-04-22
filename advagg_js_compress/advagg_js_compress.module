@@ -21,6 +21,11 @@ define('ADVAGG_JS_COMPRESSOR', 0);
 define('ADVAGG_JS_INLINE_COMPRESSOR', 0);
 
 /**
+ * Default value to if inline compression is used if page is not cacheable.
+ */
+define('ADVAGG_JS_INLINE_COMPRESS_IF_NOT_CACHEABLE', FALSE);
+
+/**
  * Default value for the compression ratio test.
  */
 define('ADVAGG_JS_COMPRESS_RATIO', 0.1);
@@ -77,6 +82,12 @@ function advagg_js_compress_advagg_modify_js_pre_render_alter(&$children, &$elem
     return;
   }
 
+  // Do nothing if the page is not cacheable and inline compress if not
+  // cacheable is not checked.
+  if (!variable_get('advagg_js_inline_compress_if_not_cacheable', ADVAGG_JS_INLINE_COMPRESS_IF_NOT_CACHEABLE) && !drupal_page_is_cacheable()) {
+    return;
+  }
+
   // Compress any inline JS.
   module_load_include('inc', 'advagg_js_compress', 'advagg_js_compress.advagg');
   foreach ($children as $key => &$values) {
@@ -90,7 +101,7 @@ function advagg_js_compress_advagg_modify_js_pre_render_alter(&$children, &$elem
 }
 
 /**
- * Test a file, making sure it is compressable.
+ * Test a file, making sure it is compressible.
  *
  * @param $filename
  *   Path and filename of the js file to test.

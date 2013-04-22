@@ -43,6 +43,12 @@ function advagg_js_compress_admin_settings_form($form, $form_state) {
     '#options' => $options,
     '#description' => filter_xss($description),
   );
+  $form['advagg_js_inline_compress_if_not_cacheable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Inline Compression: Use even if this page is not cacheable'),
+    '#default_value' => variable_get('advagg_js_inline_compress_if_not_cacheable', ADVAGG_JS_INLINE_COMPRESS_IF_NOT_CACHEABLE),
+    '#description' => t('By checking this box, all Inline JavaScript will be compressed regardless of the state of <a href="@link">drupal_page_is_cacheable()</a>. If the C complied version of JSMin is enabled, this option should not slow down page generation that much; if you are using JSMin+ I recommend keeping this disabled.', array('@link' => 'http://api.drupal.org/api/drupal/includes!bootstrap.inc/function/drupal_page_is_cacheable/7')),
+  );
 
   $form['advagg_js_compress_packer'] = array(
     '#type' => 'checkbox',
