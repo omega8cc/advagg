@@ -345,7 +345,7 @@ function advagg_admin_toggle_bypass_cookie() {
 }
 
 /**
- * Preform a smart flush.
+ * Perform a smart flush.
  */
 function advagg_admin_flush_cache_button() {
   // Run the command.

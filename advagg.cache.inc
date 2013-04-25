@@ -238,7 +238,7 @@ function advagg_delete_files_if_stale($files) {
 }
 
 /**
- * Preform a cache_clear_all on all bins returned by advagg_flush_caches(TRUE).
+ * Perform a cache_clear_all on all bins returned by advagg_flush_caches(TRUE).
  */
 function advagg_flush_all_cache_bins() {
   $bins = advagg_flush_caches(TRUE);

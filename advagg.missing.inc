@@ -519,7 +519,7 @@ function advagg_save_data($uri, $data, $overwrite = FALSE) {
   // Save to temporary filename in the destination directory.
   $filepath = file_unmanaged_save_data($data, $temporary_file, FILE_EXISTS_REPLACE);
 
-  // Preform the rename operation.
+  // Perform the rename operation.
   $result = @rename($temporary_file, $uri);
   if (!$result) {
     // Unlink and try again for windows. Rename on windows does not replace

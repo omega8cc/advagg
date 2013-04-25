@@ -159,7 +159,7 @@ function advagg_menu() {
     'weight' => -10,
   );
   $items[$config_path . '/advagg/operations'] = array(
-    'title' => 'Preform An Operation',
+    'title' => 'Perform An Operation',
     'description' => 'Flush caches, set the bypass cookie, take drastic actions.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('advagg_admin_operations_form'),
