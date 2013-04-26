@@ -46,9 +46,9 @@ function advagg_admin_settings_form($form, $form_state) {
   );
   $form['css']['advagg_combine_css_media'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Combine css files by using media queries'),
+    '#title' => t('Combine CSS files by using media queries'),
     '#default_value' => variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA),
-    '#description' => t('Use cores grouping logic needs to be unchecked in order for this to work.'),
+    '#description' => t('Use cores grouping logic needs to be unchecked in order for this to work. Also noted is that due to an issue with IE9, compatibility mode is forced off if this is enabled.'),
   );
 
   // Clear the cache bins on submit.
