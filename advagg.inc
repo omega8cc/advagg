@@ -338,8 +338,15 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
   // Remove file in the cache if it does not exist.
   if (!file_exists($filename)) {
     cache_clear_all($cache_id, 'cache_advagg_info', FALSE);
-    // Only return filename hash.
-    return array('filename_hash' => $filename_hash);
+    // Return filename_hash & data. Empty values for the other keys.
+    return array(
+      'filesize' => 0,
+      'mtime' => 0,
+      'filename_hash' => $filename_hash,
+      'content_hash' => '',
+      'linecount' => 0,
+      'data' => $filename,
+    );
   }
 
   // Get the file contents

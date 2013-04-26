@@ -27,12 +27,6 @@ function advagg_scan_for_changes() {
       // Get filesystem data.
       $info = advagg_get_info_on_file($row['filename'], TRUE);
 
-      // Make sure file exists.
-      if (empty($info['content_hash'])) {
-        $files_that_have_changed[$row['filename']] = $info;
-        continue;
-      }
-
       // Select the keys to compare.
       $keys_to_compare = array(
         'filesize',
