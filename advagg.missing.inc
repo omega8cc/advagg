@@ -359,16 +359,70 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
       drupal_alter('advagg_get_css_file_contents', $contents, $file, $aggregate_settings);
 
       if ($media_changes) {
-        // Start of stylesheet.
-        if (is_null($last_media)) {
-          $last_media = $settings['media'];
-          $contents = '@media ' . $last_media . ' {' . $contents;
+        $media_blocks = advagg_parse_media_blocks($contents);
+        $contents = '';
+
+        foreach ($media_blocks as $css_rules) {
+          if (strpos($css_rules, '@media') !== FALSE) {
+            // Get start and end of the rules for this media query block.
+            $start = strpos($css_rules, '{');
+            if ($start === FALSE) {
+              continue;
+            }
+            $end = strrpos($css_rules, '}');
+            if ($end === FALSE) {
+              continue;
+            }
+
+            // Get current media queries for this media block.
+            $media_rules = substr($css_rules, 6, $start-6);
+            // Get everything else besides top level media query.
+            $css_selectors_rules = substr($css_rules, $start+1, $end-($start+1));
+
+            // Add in main media rule if needed.
+            if (strpos($media_rules, $settings['media']) === FALSE) {
+              $media_rules = $settings['media'] . ' ' . $media_rules;
+            }
+          }
+          else {
+            $media_rules = $settings['media'];
+            $css_selectors_rules = $css_rules;
+          }
+          // Remove the all rule.
+          $media_rules = str_replace('all', '', $media_rules);
+          $media_rules = trim($media_rules);
+          $css_selectors_rules = trim($css_selectors_rules);
+
+          // Start of stylesheet.
+          if (is_null($last_media)) {
+            if (!empty($media_rules)) {
+              $output = '@media ' . $media_rules . ' {' . $css_selectors_rules;
+            }
+            else {
+              $output = $css_selectors_rules;
+            }
+          }
+          elseif ($media_rules != $last_media) {
+            if (!empty($media_rules)) {
+              if (!empty($last_media)) {
+                $output = "} \n@media " . $media_rules . ' {' . $css_selectors_rules;
+              }
+              else {
+                $output = "\n@media " . $media_rules . ' {' . $css_selectors_rules;
+              }
+            }
+            else {
+              $output = "} \n " . $css_selectors_rules;
+            }
+          }
+          else {
+            $output = ' ' . $css_selectors_rules;
+          }
+
+          $last_media = $media_rules;
+          $contents .= $output;
         }
-        // Media changes.
-        if ($settings['media'] != $last_media) {
-          $last_media = $settings['media'];
-          $contents = '} @media ' . $last_media . ' {' . $contents;
-        }
+
       }
       // Per the W3C specification at http://www.w3.org/TR/REC-CSS2/cascade.html#at-import,
       // @import rules must proceed any other style, so we move those to the top.
@@ -381,7 +435,7 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
     }
 
     // Close the final media bracket.
-    if ($media_changes) {
+    if ($media_changes && !empty($last_media)) {
       $data .= '}';
     }
 
@@ -603,3 +657,74 @@ function advagg_get_atime($aggregate_filenames_hash, $aggregate_contents_hash, $
   // No atime was found, return FALSE.
   return FALSE;
 }
+
+/**
+ * Split up as CSS string by @media queries.
+ *
+ * @see http://stackoverflow.com/questions/14145620/regular-expression-for-media-queries-in-css
+ *
+ * @return
+ *   array of css with only media queries.
+ */
+function advagg_parse_media_blocks($css) {
+  $media_blocks = array();
+  $start = 0;
+  $last_start = 0;
+
+  // Using the string as an array throughout this function.
+  // http://php.net/types.string#language.types.string.substr
+  while (($start = strpos($css, "@media", $start)) !== FALSE) {
+    // Stack to manage brackets.
+    $s = array();
+
+    // Get the first opening bracket.
+    $i = strpos($css, "{", $start);
+
+    // If $i is false, then there is probably a css syntax error.
+    if ($i === FALSE) {
+      continue;
+    }
+
+    // Push bracket onto stack.
+    array_push($s, $css[$i]);
+    // Move past first bracket.
+    $i++;
+
+    // Find the closing bracket for the @media statement.
+    while (!empty($s)) {
+      // If the character is an opening bracket, push it onto the stack,
+      // otherwise pop the stack.
+      if ($css[$i] == "{") {
+        array_push($s, "{");
+      }
+      elseif ($css[$i] == "}") {
+        array_pop($s);
+      }
+      $i++;
+    }
+
+    // Get CSS before @media and store it.
+    if ($last_start != $start) {
+      $insert = trim(substr($css, $last_start, $start-$last_start));
+      if (!empty($insert)) {
+        $media_blocks[] = $insert;
+      }
+    }
+    // Cut @media block out of the css and store.
+    $media_blocks[] = trim(substr($css, $start, ($i + 1) - $start));
+    // Set the new $start to the end of the block.
+    $start = $i;
+    $last_start = $start + 1;
+  }
+
+  // Add in any remaing css rules after the last @media statement.
+  if (strlen($css) > $last_start) {
+    $insert = trim(substr($css, $last_start));
+    if (!empty($insert)) {
+      $media_blocks[] = $insert;
+    }
+  }
+
+  return $media_blocks;
+}
+
