@@ -687,7 +687,7 @@ function advagg_get_js($scope = 'header', $javascript = NULL, $skip_alter = FALS
   // because drupal_get_js() was intentionally passed a $javascript argument
   // stripped of settings, potentially in order to override how settings get
   // output, so in this case, do not add the setting to this output.
-  if ($scope == 'header' && isset($items['settings'])) {
+  if (($scope == 'header' || ($scope == 'footer' && module_exists('advagg_mod') && variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER))) && isset($items['settings'])) {
     $items['settings']['data'][] = $setting;
   }
 
