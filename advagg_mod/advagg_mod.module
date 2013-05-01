@@ -94,6 +94,14 @@ function advagg_mod_js_alter(&$js) {
   // Move all JS to the footer.
   if (variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER)) {
     foreach ($js as $name => &$values) {
+      // If JS is not in the header increase group by 1000.
+      if ($values['scope'] != 'header') {
+        $values['group'] += 1000;
+      }
+      // If JS is already in the footer increase group by 1000.
+      if ($values['scope'] == 'footer') {
+        $values['group'] += 1000;
+      }
       $values['scope'] = 'footer';
     }
   }
