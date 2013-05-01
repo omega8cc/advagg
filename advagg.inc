@@ -351,8 +351,17 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
 
   // Get the file contents
   $file_contents = file_get_contents($filename);
-  // Get the number of lines.
-  $linecount = substr_count($file_contents, "\n");
+
+  $ext = pathinfo($filename, PATHINFO_EXTENSION);
+  if ($ext == 'css') {
+    // Get the number of selectors.
+    // http://stackoverflow.com/questions/12567000/regex-matching-for-counting-css-selectors/12567381#12567381
+    $linecount = preg_match_all('/\{.+?\}|,/s', $file_contents, $matched);
+  }
+  else {
+    // Get the number of lines.
+    $linecount = substr_count($file_contents, "\n");
+  }
 
   // Build meta data array and set cache.
   $filename_hashes[$cache_id] = array_merge($filename_hashes[$cache_id], array(
@@ -362,6 +371,7 @@ function advagg_get_info_on_file($filename, $bypass_cache = FALSE) {
     'content_hash' => drupal_hash_base64($file_contents),
     'linecount' => $linecount,
     'data' => $filename,
+    'fileext' => $ext,
   ));
   if (!$bypass_cache) {
     cache_set($cache_id, $filename_hashes[$cache_id], 'cache_advagg_info', CACHE_PERMANENT);
@@ -433,6 +443,7 @@ function advagg_generate_groups($files_to_aggregate) {
   $cache = '';
   $scope = '';
   $browsers = array();
+  $selector_count = 0;
   foreach ($files_to_aggregate as $data) {
     foreach ($data as $values) {
 
@@ -442,6 +453,18 @@ function advagg_generate_groups($files_to_aggregate) {
         // Check to see if media, browsers, defer, async, cache, or scope has changed
         // from the previous run of this loop.
         $changed = FALSE;
+        if (variable_get('advagg_ie_css_selector_limiter', ADVAGG_IE_CSS_SELECTOR_LIMITER)) {
+          $file_info += advagg_get_info_on_file($file_info['data']);
+          // Prevent CSS rules exceding 4095 due to limits with IE9 and below.
+          $ext = isset($file_info['fileext']) ? $file_info['fileext'] : pathinfo($file_info['data'], PATHINFO_EXTENSION);
+          if ($ext == 'css') {
+            $selector_count += $file_info['linecount'];
+            if ($selector_count > 4095) {
+              $changed = TRUE;
+              $selector_count = $file_info['linecount'];
+            }
+          }
+        }
         if (isset($file_info['media'])) {
           if (variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA)) {
             $file_info['media_query'] = $file_info['media'];

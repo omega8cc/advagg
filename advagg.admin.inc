@@ -50,6 +50,12 @@ function advagg_admin_settings_form($form, $form_state) {
     '#default_value' => variable_get('advagg_combine_css_media', ADVAGG_COMBINE_CSS_MEDIA),
     '#description' => t('Use cores grouping logic needs to be unchecked in order for this to work. Also noted is that due to an issue with IE9, compatibility mode is forced off if this is enabled.'),
   );
+  $form['css']['advagg_ie_css_selector_limiter'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Prevent more than 4095 CSS selectors in an aggregated CSS file'),
+    '#default_value' => variable_get('advagg_ie_css_selector_limiter', ADVAGG_IE_CSS_SELECTOR_LIMITER),
+    '#description' => t('Internet Explorer before version 10; IE9, IE8, IE7, & IE6 all have 4095 as the limit for the maximum number of css selectors that can be in a file. Enabling this will prevent CSS aggregates from being created that exceed this limit. <a href="@link">More info</a>.', array('@link' => 'http://blogs.msdn.com/b/ieinternals/archive/2011/05/14/10164546.aspx')),
+  );
 
   // Clear the cache bins on submit.
   $form['#submit'][] = 'advagg_admin_settings_form_submit';

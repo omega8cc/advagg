@@ -47,6 +47,11 @@ define('ADVAGG_USE_HTTPRL', TRUE);
 define('ADVAGG_COMBINE_CSS_MEDIA', FALSE);
 
 /**
+ * Prevent more than 4095 css selector rules inside of a CSS aggregate.
+ */
+define('ADVAGG_IE_CSS_SELECTOR_LIMITER', TRUE);
+
+/**
  * Default location of AdvAgg configuration items.
  */
 define('ADVAGG_ADMIN_CONFIG_ROOT_PATH', 'admin/config/development/performance');
@@ -870,6 +875,7 @@ function advagg_current_hooks_hash_array() {
       'is_https' => $GLOBALS['is_https'],
       'advagg_global_counter' => advagg_get_global_counter(),
       'base_path' => $GLOBALS['base_path'],
+      'advagg_ie_css_selector_limiter' => variable_get('advagg_ie_css_selector_limiter', ADVAGG_IE_CSS_SELECTOR_LIMITER),
     ),
     'hooks' => advagg_hooks_implemented(FALSE),
   );
