@@ -20,9 +20,15 @@ function advagg_mod_admin_settings_form() {
     '#title' => t('JS'),
   );
   $form['js']['advagg_mod_js_footer'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Move all JS to the footer'),
+    '#type' => 'radios',
+    '#title' => t('Move JS to the footer'),
     '#default_value' => variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER),
+    '#options' => array(
+        0 => t('Disabled'),
+        1 => t('All but JavaScript Libraries'),
+        2 => t('All'),
+      ),
+    '#description' => t("If you have JavaScript inline in the body of your document, such as if you are displaying ads, you may need to keep Drupal JS Libraries in the head instead of moving them to the footer. This will keep all JS added with the JS_LIBRARY group in the head while still moving all other JavaScript to the footer."),
   );
   $form['js']['advagg_mod_js_preprocess'] = array(
     '#type' => 'checkbox',

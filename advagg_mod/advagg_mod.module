@@ -9,7 +9,7 @@
 /**
  * Default value to move all JS to the footer.
  */
-define('ADVAGG_MOD_JS_FOOTER', FALSE);
+define('ADVAGG_MOD_JS_FOOTER', 0);
 
 /**
  * Default value to turn on preprocessing for all JavaScript files.
@@ -92,8 +92,12 @@ function advagg_mod_menu() {
  */
 function advagg_mod_js_alter(&$js) {
   // Move all JS to the footer.
-  if (variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER)) {
+  $move_js_to_footer = variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER);
+  if (!empty($move_js_to_footer)) {
     foreach ($js as $name => &$values) {
+      if ($move_js_to_footer == 1 && $values['group'] <= JS_LIBRARY) {
+        continue;
+      }
       // If JS is not in the header increase group by 1000.
       if ($values['scope'] != 'header') {
         $values['group'] += 1000;
