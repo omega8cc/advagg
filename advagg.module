@@ -532,10 +532,16 @@ function _advagg_process_html(&$variables) {
   }
 
   // Render page_top and page_bottom into top level variables.
-  $variables['page_top'] = drupal_render($variables['page']['page_top']);
-  $variables['page_bottom'] = drupal_render($variables['page']['page_bottom']);
+  if (isset($variables['page']['page_top'])) {
+    $variables['page_top'] = drupal_render($variables['page']['page_top']);
+  }
+  if (isset($variables['page']['page_bottom'])) {
+    $variables['page_bottom'] = drupal_render($variables['page']['page_bottom']);
+  }
   // Place the rendered HTML for the page body into a top level variable.
-  $variables['page'] = $variables['page']['#children'];
+  if (isset($variables['page']['#children'])) {
+    $variables['page'] = $variables['page']['#children'];
+  }
 
   $variables['head'] = drupal_get_html_head();
   // CSS has nice hooks so we don't need to work around it.
