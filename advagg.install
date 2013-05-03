@@ -529,15 +529,43 @@ function advagg_install_check_via_http(&$requirements) {
         );
       }
       else {
-        // Recommend servers configuration be adjusted.
-        $requirements['advagg_' . $type . '_gzip'] = array(
-          'title' => $t('Adv CSS/JS Agg - gzip'),
-          'severity' => REQUIREMENT_WARNING,
-          'value' => $t('Gzip is failing for %type files.', array('%type' => $type)),
-          'description' => $t('The web servers configuration will need to be adjusted. In most cases make sure that the webroots .htaccess file still contains this section "Rules to correctly serve gzip compressed CSS and JS files".', array(
-            '@advagg' => url($config_path . '/advagg'),
-          )),
-        );
+        // If the apache_get_modules function doesn't exist, skip this entirely.
+        $apache_module_missing = FALSE;
+        if (function_exists('apache_get_modules')) {
+          // Get all available Apache modules.
+          $modules = apache_get_modules();
+          if (!in_array('mod_headers', $modules) || !in_array('mod_rewrite', $modules)) {
+            $apache_module_missing = TRUE;
+
+            if (!in_array('mod_headers', $modules)) {
+              $requirements['advagg_mod_headers'] = array(
+                'title'       => $t('Adv CSS/JS Agg - Apache'),
+                'description' => $t('The Apache module "mod_headers" is not available. Enable <a href="!link">mod_headers</a> for Apache if at all possible. This is causing gzip to fail.', array('!link' => 'http://httpd.apache.org/docs/current/mod/mod_headers.html')),
+                'severity'    => REQUIREMENT_WARNING,
+                'value'       => $t('Apache module "mod_headers" is not installed.'),
+              );
+            }
+            if (!in_array('mod_rewrite', $modules)) {
+              $requirements['advagg_mod_rewrite'] = array(
+                'title'       => $t('Adv CSS/JS Agg - Apache'),
+                'description' => $t('The Apache module "mod_rewrite" is not available.  You must enable <a href="!link">mod_rewrite</a> for Apache. This is causing gzip to fail.', array('!link' => 'http://httpd.apache.org/docs/current/mod/mod_rewrite.html')),
+                'severity'    => REQUIREMENT_ERROR,
+                'value'       => $t('Apache module "mod_rewrite" is not installed.'),
+              );
+            }
+          }
+        }
+        if (!$apache_module_missing) {
+          // Recommend servers configuration be adjusted.
+          $requirements['advagg_' . $type . '_gzip'] = array(
+            'title' => $t('Adv CSS/JS Agg - gzip'),
+            'severity' => REQUIREMENT_WARNING,
+            'value' => $t('Gzip is failing for %type files.', array('%type' => $type)),
+            'description' => $t('The web servers configuration will need to be adjusted. In most cases make sure that the webroots .htaccess file still contains this section "Rules to correctly serve gzip compressed CSS and JS files".', array(
+              '@advagg' => url($config_path . '/advagg'),
+            )),
+          );
+        }
       }
     }
   }
