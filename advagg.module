@@ -568,6 +568,9 @@ function _advagg_process_html(&$variables) {
       }
       // Footer scripts
       elseif ($scope == 'footer') {
+        if (!isset($variables['page_bottom']) || !is_string($variables['page_bottom'])) {
+          $variables['page_bottom'] = '';
+        }
         $variables['page_bottom'] .= $scripts;
       }
       // Scripts in other places.
