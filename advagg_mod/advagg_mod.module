@@ -91,6 +91,10 @@ function advagg_mod_menu() {
  * Implements hook_js_alter().
  */
 function advagg_mod_js_alter(&$js) {
+  if (module_exists('advagg') && !advagg_enabled()) {
+    return;
+  }
+
   // Move all JS to the footer.
   $move_js_to_footer = variable_get('advagg_mod_js_footer', ADVAGG_MOD_JS_FOOTER);
   if (!empty($move_js_to_footer)) {
@@ -162,6 +166,10 @@ function advagg_mod_js_alter(&$js) {
  * Implements hook_css_alter().
  */
 function advagg_mod_css_alter(&$css) {
+  if (module_exists('advagg') && !advagg_enabled()) {
+    return;
+  }
+
   // Do not use preprocessing if CSS is inlined.
   if (advagg_mod_inline_page()) {
     advagg_mod_inline_css($css);
@@ -181,6 +189,10 @@ function advagg_mod_css_alter(&$css) {
  * Implements hook_advagg_modify_js_pre_render_alter().
  */
 function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
+  if (module_exists('advagg') && !advagg_enabled()) {
+    return;
+  }
+
   // Do not use defer if JS is inlined.
   if (advagg_mod_inline_page()) {
     return;
@@ -287,6 +299,7 @@ function advagg_mod_inline_css(&$css) {
   $aggregate_settings = advagg_current_hooks_hash_array();
   $optimize = TRUE;
   module_load_include('inc', 'advagg', 'advagg');
+
   foreach ($css as $name => &$values) {
     // Only process files.
     if ($values['type'] != 'file') {

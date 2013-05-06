@@ -854,7 +854,7 @@ function advagg_enabled() {
     }
     // Enable debugging if requested.
     if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
-      $conf['advagg_debug'] = TRUE;
+      $GLOBALS['conf']['advagg_debug'] = TRUE;
     }
 
   }
