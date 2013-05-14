@@ -1422,7 +1422,7 @@ function advagg_file_copy(&$source, $dest = 0, $replace = FILE_EXISTS_RENAME) {
     $result = FALSE;
     if ($replace == FILE_EXISTS_REPLACE) {
       // Get a temporary filename in the destination directory.
-      $temporary_file = drupal_tempnam(drupal_dirname($dest), 'file');
+      $temporary_file = tempnam(dirname($dest), 'file');
       // Place contents in the temporary file.
       if ($temporary_file && @copy($source, $temporary_file)) {
         if (!$result = @rename($temporary_file, $dest)) {
