@@ -2093,7 +2093,7 @@ function advagg_process_css($css = NULL, $noagg = FALSE) {
       $files = array();
       foreach ($types as $type) {
         foreach ($type as $file => $cache) {
-          if ($cache) {
+          if ($cache && advagg_file_exists($file)) {
             $files[] = $file;
             $files_included[$media][$file] = TRUE;
             unset($files_aggregates_included[$file]);
