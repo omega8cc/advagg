@@ -352,7 +352,8 @@ function advagg_modify_js_pre_render($elements) {
     $children[$key] = &$value;
   }
 
-  // Allow other modules to modify the children before they are rendered.
+  // Allow other modules to modify $children & $elements before they are
+  // rendered.
   // Call hook_advagg_modify_js_pre_render_alter()
   drupal_alter('advagg_modify_js_pre_render', $children, $elements);
   return $elements;
@@ -384,7 +385,8 @@ function advagg_modify_css_pre_render($elements) {
     $children[$key] = &$value;
   }
 
-  // Allow other modules to modify the children before they are rendered.
+  // Allow other modules to modify $children & $elements before they are
+  // rendered.
   // Call hook_advagg_modify_css_pre_render_alter()
   drupal_alter('advagg_modify_css_pre_render', $children, $elements);
   return $elements;
@@ -416,6 +418,7 @@ function _advagg_aggregate_css(&$css_groups) {
   }
   $preprocess_css = advagg_file_aggregation_enabled('css');
 
+  // Allow other modules to modify $css_groups right before it is processed.
   // Call hook_advagg_css_groups_alter().
   drupal_alter('advagg_css_groups', $css_groups, $preprocess_css);
 
@@ -490,6 +493,7 @@ function _advagg_aggregate_js(&$js_groups) {
   }
   $preprocess_js = advagg_file_aggregation_enabled('js');
 
+  // Allow other modules to modify $js_groups right before it is processed.
   // Call hook_advagg_js_groups_alter().
   drupal_alter('advagg_js_groups', $js_groups, $preprocess_js);
 
