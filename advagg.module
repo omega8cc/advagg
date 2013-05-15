@@ -438,8 +438,9 @@ function advagg_get_root_files_dir($reset = FALSE) {
     $custom_path = variable_get('advagg_custom_files_dir', ADVAGG_CUSTOM_FILES_DIR);
   }
   if (empty($custom_path)) {
-    $css_path = file_create_path('advagg_css');
-    $js_path = file_create_path('advagg_js');
+    $file_path = file_directory_path();
+    $css_path = file_create_path($file_path . '/advagg_css');
+    $js_path = file_create_path($file_path . '/advagg_js');
     return array($css_path, $js_path);
   }
   file_check_directory($custom_path, FILE_CREATE_DIRECTORY);
