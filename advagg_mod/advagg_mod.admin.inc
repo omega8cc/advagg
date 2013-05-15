@@ -101,16 +101,17 @@ function advagg_mod_admin_settings_form() {
     );
   }
 
-  $form['unified_mutisite'] = array(
+  $form['unified_multisite'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Unified Mutisite'),
+    '#title' => t('Unified Multisite'),
   );
-  $form['unified_mutisite']['advagg_mod_unified_mutisite_dir'] = array(
+  $form['unified_multisite']['advagg_mod_unified_multisite_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Shared Directory'),
-    '#default_value' => variable_get('advagg_mod_unified_mutisite_dir', ''),
+    '#default_value' => variable_get('advagg_mod_unified_multisite_dir', ''),
     '#size' => 60,
     '#maxlength' => 128,
+    '#description' => t('This allows you to have ').,
   );
 
   // Clear the cache bins on submit.

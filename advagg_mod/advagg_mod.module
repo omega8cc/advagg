@@ -31,8 +31,8 @@ define('ADVAGG_MOD_CSS_PREPROCESS', FALSE);
  * Implement hook_init().
  */
 function advagg_mod_init() {
-  // Return if unified_mutisite_dir is not set.
-  $dir = rtrim(variable_get('advagg_mod_unified_mutisite_dir', ''), '/');
+  // Return if unified_multisite_dir is not set.
+  $dir = rtrim(variable_get('advagg_mod_unified_multisite_dir', ''), '/');
   if (empty($dir) || !file_exists($dir) || !is_dir($dir)){
     return;
   }
@@ -230,7 +230,7 @@ function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
  * Implements hook_advagg_get_root_files_dir_alter().
  */
 function advagg_mod_advagg_get_root_files_dir_alter(&$css_paths, &$js_paths) {
-  $dir = rtrim(variable_get('advagg_mod_unified_mutisite_dir', ''), '/');
+  $dir = rtrim(variable_get('advagg_mod_unified_multisite_dir', ''), '/');
   if (empty($dir) || !file_exists($dir) || !is_dir($dir)){
     return;
   }
