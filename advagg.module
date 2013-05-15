@@ -2691,7 +2691,7 @@ function advagg_css_js_file_builder($type, $files, $query_string = '', $counter 
 
       // Only generate once.
       $lock_name = 'advagg_' . $filename;
-      if (!lock_acquire($lock_name)) {
+      if (!lock_acquire($lock_name) && !$force) {
         if (variable_get('advagg_aggregate_mode', ADVAGG_AGGREGATE_MODE) == 0 ) {
           $locks[$lock_name] = $filepath;
           $output[$filepath] = array(
