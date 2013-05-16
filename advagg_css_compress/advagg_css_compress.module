@@ -54,7 +54,7 @@ function advagg_css_compress_advagg_current_hooks_hash_array_alter(&$aggregate_s
 /**
  * Implement hook_advagg_modify_css_pre_render_alter().
  *
- * Used compress inline css.
+ * Used to compress inline css.
  */
 function advagg_css_compress_advagg_modify_css_pre_render_alter(&$children, &$elements) {
   // Get variables.

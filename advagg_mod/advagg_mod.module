@@ -231,7 +231,7 @@ function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
  */
 function advagg_mod_advagg_get_root_files_dir_alter(&$css_paths, &$js_paths) {
   $dir = rtrim(variable_get('advagg_mod_unified_multisite_dir', ''), '/');
-  if (empty($dir) || !file_exists($dir) || !is_dir($dir)){
+  if (empty($dir) || !file_exists($dir) || !is_dir($dir)) {
     return;
   }
   // Change directory.

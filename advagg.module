@@ -364,8 +364,8 @@ function advagg_modify_js_pre_render($elements) {
  *
  * @param $elements
  *   A render array containing:
- *   - #items: The JavaScript items as returned by drupal_add_js() and
- *     altered by drupal_get_js().
+ *   - #items: The CSS items as returned by drupal_add_css() and
+ *     altered by drupal_get_css().
  *   - #group_callback: A function to call to group #items. Following
  *     this function, #aggregate_callback is called to aggregate items within
  *     the same group into a single file.
