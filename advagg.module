@@ -56,6 +56,11 @@ define('ADVAGG_IE_CSS_SELECTOR_LIMITER', TRUE);
  */
 define('ADVAGG_ADMIN_CONFIG_ROOT_PATH', 'admin/config/development/performance');
 
+/**
+ * Default value for debugging info to watchdog.
+ */
+define('ADVAGG_DEBUG', FALSE);
+
 // Core hook implementations.
 /**
  * Implements hook_hook_info().
@@ -416,6 +421,10 @@ function _advagg_aggregate_css(&$css_groups) {
   if (!advagg_enabled()) {
     return drupal_aggregate_css($css_groups);
   }
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $GLOBALS['_advagg']['debug']['css_groups_before'][] = $css_groups;
+  }
+
   $preprocess_css = advagg_file_aggregation_enabled('css');
 
   // Allow other modules to modify $css_groups right before it is processed.
@@ -462,6 +471,9 @@ function _advagg_aggregate_css(&$css_groups) {
     }
     $css_groups = advagg_merge_plans($css_groups, $plans);
   }
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $GLOBALS['_advagg']['debug']['css_groups_after'][] = $css_groups;
+  }
 }
 
 /**
@@ -491,6 +503,10 @@ function _advagg_aggregate_js(&$js_groups) {
       return;
     }
   }
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $GLOBALS['_advagg']['debug']['js_groups_before'][] = $js_groups;
+  }
+
   $preprocess_js = advagg_file_aggregation_enabled('js');
 
   // Allow other modules to modify $js_groups right before it is processed.
@@ -524,6 +540,9 @@ function _advagg_aggregate_js(&$js_groups) {
       }
     }
     $js_groups = advagg_merge_plans($js_groups, $plans);
+  }
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $GLOBALS['_advagg']['debug']['js_groups_after'][] = $js_groups;
   }
 }
 
@@ -595,6 +614,18 @@ function _advagg_process_html(&$variables) {
         $variables[$scope] .= $scripts;
       }
     }
+  }
+
+  // Output debug info.
+  if (variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $debug = $GLOBALS['_advagg']['debug'];
+    if (module_exists('httprl')) {
+      $output = ' ' . httprl_pr($debug);
+    }
+    else {
+      $output = '<pre>' . str_replace(array('<', '>'), array('&lt;', '&gt;'), print_r($debug, TRUE)) . '</pre>';
+    }
+    watchdog('advagg_debug', $output, array(), WATCHDOG_DEBUG);
   }
 }
 
@@ -766,7 +797,6 @@ function advagg_get_js_scopes($javascript) {
  *   New version of $css_js_groups.
  */
 function advagg_merge_plans($css_js_groups, $plans) {
-  $new_css_js_groups = array();
   $used_keys = array();
   foreach ($plans as $plan) {
     $plan_added = FALSE;
