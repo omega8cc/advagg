@@ -1021,9 +1021,19 @@ function advagg_hooks_implemented($all = TRUE) {
   // Call hook_advagg_hooks_implemented_alter().
   drupal_alter('advagg_hooks_implemented', $hooks, $all);
 
-  foreach ($hooks as $hook => $values) {
-    $hooks[$hook] = module_implements($hook);
+  // Cache module_implements as this will load up .inc files.
+  $cid = 'advagg_hooks_implemented:' . (int)$all . ':' . drupal_hash_base64(serialize($hooks));
+  $cache = cache_get($cid, 'cache_bootstrap');
+  if (!empty($cache->data)) {
+    $hooks = $cache->data;
   }
+  else {
+    foreach ($hooks as $hook => $values) {
+      $hooks[$hook] = module_implements($hook);
+    }
+    cache_set($cid, $hooks, 'cache_bootstrap', CACHE_TEMPORARY);
+  }
+
   return $hooks;
 }
 
