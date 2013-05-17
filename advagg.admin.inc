@@ -40,6 +40,24 @@ function advagg_admin_settings_form($form, $form_state) {
     '#default_value' => module_exists('httprl') ? variable_get('advagg_use_httprl', ADVAGG_USE_HTTPRL) : FALSE,
     '#disabled' => module_exists('httprl') ? FALSE : TRUE,
   );
+  $options = array(
+    0 => t('Disabled ~ 70ms'),
+    1 => t('Normal ~ 10ms'),
+    3 => t('Aggressive ~ 4ms'),
+  );
+  $form['global']['advagg_cache_level'] = array(
+    '#type' => 'radios',
+    '#title' => t('AdvAgg Cache Settings'),
+    '#default_value' => variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL),
+    '#options' => $options,
+    '#description' => t('Disabled is useful for testing hook_alters for CSS/JS. Normal is should be fine for all use cases. Aggressive might break depending on how various hook_alter for CSS/JS are implemented. As a reference, core takes about 7 ms to run.'),
+  );
+  $form['global']['advagg_use_httprl'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use HTTPRL to generate aggregates.'),
+    '#default_value' => module_exists('httprl') ? variable_get('advagg_use_httprl', ADVAGG_USE_HTTPRL) : FALSE,
+    '#disabled' => module_exists('httprl') ? FALSE : TRUE,
+  );
   $form['css'] = array(
     '#type' => 'fieldset',
     '#title' => t('CSS Options'),

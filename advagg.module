@@ -29,7 +29,7 @@ define('ADVAGG_CORE_GROUPS', TRUE);
 /**
  * Default value to see if we cache the full CSS/JS structure.
  */
-define('ADVAGG_USE_FULL_CACHE', TRUE);
+define('ADVAGG_CACHE_LEVEL', 3);
 
 /**
  * Default value of counter.
@@ -459,13 +459,13 @@ function _advagg_aggregate_css(&$css_groups) {
     $hooks_hash = advagg_get_current_hooks_hash();
     $css_hash = drupal_hash_base64(serialize($files_to_aggregate));
     $cache_id = 'advagg:css:' . $hooks_hash . ':' . $css_hash;
-    if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
+    if (variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL) >= 1 && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
       $plans = $cache->data;
     }
     else {
       module_load_include('inc', 'advagg', 'advagg');
       $plans = advagg_build_aggregate_plans($files_to_aggregate, 'css');
-      if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+      if (variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL) >= 1) {
         cache_set($cache_id, $plans, 'cache_advagg_aggregates', CACHE_TEMPORARY);
       }
     }
@@ -529,13 +529,13 @@ function _advagg_aggregate_js(&$js_groups) {
     $hooks_hash = advagg_get_current_hooks_hash();
     $js_hash = drupal_hash_base64(serialize($files_to_aggregate));
     $cache_id = 'advagg:js:' . $hooks_hash . ':' . $js_hash;
-    if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE) && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
+    if (variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL) >= 1 && $cache = cache_get($cache_id, 'cache_advagg_aggregates')) {
       $plans = $cache->data;
     }
     else {
       module_load_include('inc', 'advagg', 'advagg');
       $plans = advagg_build_aggregate_plans($files_to_aggregate, 'js');
-      if (variable_get('advagg_use_full_cache', ADVAGG_USE_FULL_CACHE)) {
+      if (variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL) >= 1) {
         cache_set($cache_id, $plans, 'cache_advagg_aggregates', CACHE_TEMPORARY);
       }
     }
@@ -578,40 +578,79 @@ function _advagg_process_html(&$variables) {
   if (isset($variables['page']['#children'])) {
     $variables['page'] = $variables['page']['#children'];
   }
-
   $variables['head'] = drupal_get_html_head();
-  // CSS has nice hooks so we don't need to work around it.
+
+
+  // Get the raw CSS/JS variables.
+  $hooks_hash = advagg_get_current_hooks_hash();
   $variables['css'] = drupal_add_css();
-  $variables['styles'] = drupal_get_css();
+  $javascript = drupal_add_js();
+
+  // Try the cache first; only if not debugging.
+  if (variable_get('advagg_cache_level', ADVAGG_CACHE_LEVEL) >= 3) {
+    $css_hash = drupal_hash_base64(serialize($variables['css']));
+    $css_cache_id = 'advagg:css:full:' . $hooks_hash . ':' . $css_hash;
+    $css_cache = cache_get($css_cache_id, 'cache_advagg_aggregates');
+
+    $js_hash = drupal_hash_base64(serialize($javascript));
+    $js_cache_id = 'advagg:js:full:' . $hooks_hash . ':' . $js_hash;
+    $js_cache = cache_get($js_cache_id, 'cache_advagg_aggregates');
+  }
+
+  // CSS has nice hooks so we don't need to work around it.
+  if (!empty($css_cache->data) && !variable_get('advagg_debug', ADVAGG_DEBUG)) {
+    $variables['styles'] = $css_cache->data;
+  }
+  else {
+    $variables['styles'] = drupal_get_css();
+    if (!empty($css_cache_id)) {
+      cache_set($css_cache_id, $variables['styles'], 'cache_advagg_aggregates', CACHE_TEMPORARY);
+    }
+  }
 
   // JS needs hacks.
-  $javascript = advagg_get_full_js();
   if (!isset($variables['scripts'])) {
     $variables['scripts'] = '';
   }
-  if (!empty($javascript)) {
-    $scopes = advagg_get_js_scopes($javascript);
+  if (!isset($variables['page_bottom']) || !is_string($variables['page_bottom'])) {
+    $variables['page_bottom'] = '';
+  }
+  if (!empty($js_cache->data)) {
+    foreach ($js_cache->data as $key => $value) {
+      $variables[$key] .= $value;
+    }
+  }
+  else {
+    $js_cache = array();
+    $javascript = advagg_get_full_js($javascript);
+    if (!empty($javascript)) {
+      $scopes = advagg_get_js_scopes($javascript);
 
-    // Add JS to the header and footer of the page.
-    foreach ($scopes as $scope => $use) {
-      if (!$use) {
-        continue;
-      }
-      $scripts = advagg_get_js($scope, $javascript);
-      // Header scripts.
-      if ($scope == 'header') {
-        $variables['scripts'] = $scripts;
-      }
-      // Footer scripts.
-      elseif ($scope == 'footer') {
-        if (!isset($variables['page_bottom']) || !is_string($variables['page_bottom'])) {
-          $variables['page_bottom'] = '';
+      // Add JS to the header and footer of the page.
+      foreach ($scopes as $scope => $use) {
+        if (!$use) {
+          continue;
         }
-        $variables['page_bottom'] .= $scripts;
+        $scripts = advagg_get_js($scope, $javascript);
+        // Header scripts.
+        if ($scope == 'header') {
+          $variables['scripts'] = $scripts;
+          $js_cache['scripts'] = $scripts;
+        }
+        // Footer scripts.
+        elseif ($scope == 'footer') {
+          $variables['page_bottom'] .= $scripts;
+          $js_cache['page_bottom'] = $scripts;
+        }
+        // Scripts in other places.
+        elseif (isset($variables[$scope]) && is_string($variables[$scope])) {
+          $variables[$scope] .= $scripts;
+          $js_cache[$scope] = $scripts;
+        }
       }
-      // Scripts in other places.
-      elseif (isset($variables[$scope]) && is_string($variables[$scope])) {
-        $variables[$scope] .= $scripts;
+
+      if (!empty($js_cache_id) && !empty($js_cache)) {
+        cache_set($js_cache_id, $js_cache, 'cache_advagg_aggregates', CACHE_TEMPORARY);
       }
     }
   }
