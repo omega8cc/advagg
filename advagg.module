@@ -29,7 +29,7 @@ define('ADVAGG_CORE_GROUPS', TRUE);
 /**
  * Default value to see if we cache the full CSS/JS structure.
  */
-define('ADVAGG_CACHE_LEVEL', 3);
+define('ADVAGG_CACHE_LEVEL', 1);
 
 /**
  * Default value of counter.
