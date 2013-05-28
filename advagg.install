@@ -430,12 +430,13 @@ function advagg_install_check_via_http(&$requirements) {
     $request = drupal_http_request($url, $options);
 
     // Check response. Report an error if
-    //  Not a 404.
-    //  Headers do not contain "x-advagg".
-    //  Body does not contain "advagg_missing_fast404".
+    //  Not a 404 OR
+    //   Headers do not contain "x-advagg" AND
+    //   Body does not contain "advagg_missing_fast404".
     if (   $request->code != 404
-        || empty($request->headers['x-advagg'])
-        || strpos($request->data, '<!-- advagg_missing_fast404 -->') === FALSE
+        || (   empty($request->headers['x-advagg'])
+            && strpos($request->data, '<!-- advagg_missing_fast404 -->') === FALSE
+              )
           ) {
       // Menu callback failed.
       $requirements['advagg_' . $type . '_generation'] = array(
