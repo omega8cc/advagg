@@ -20,6 +20,10 @@ function advagg_bundler_advagg_build_aggregate_plans_alter(&$files, &$modified, 
   if (empty($max)) {
     return;
   }
+  // If bundler is disabled then do not do any more processing.
+  if (!advagg_bundler_enabled()) {
+    return;
+  }
 
   $final_groupings = array();
   $total_count = 0;
