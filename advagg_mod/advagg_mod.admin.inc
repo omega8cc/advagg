@@ -111,7 +111,7 @@ function advagg_mod_admin_settings_form() {
     '#default_value' => variable_get('advagg_mod_unified_multisite_dir', ''),
     '#size' => 60,
     '#maxlength' => 128,
-    '#description' => t('This allows you to have ').,
+    '#description' => t('This allows you to have '),
   );
 
   // Clear the cache bins on submit.
