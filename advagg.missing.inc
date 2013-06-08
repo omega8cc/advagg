@@ -606,8 +606,8 @@ function advagg_missing_fast404($msg = '') {
 
   // Output fast 404 message and exit.
   print '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' . "\n";
-  print '<html>';
-  print '<head><title>404 Not Found</title></head>';
+  print '<html xmlns="http://www.w3.org/1999/xhtml">';
+  print '<head><title>404 Not Found</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /></head>';
   print '<body><h1>Not Found</h1>';
   print '<p>The requested URL was not found on this server.</p>';
   print '<p><a href="' . $GLOBALS['base_path'] . '">Home</a></p>';
