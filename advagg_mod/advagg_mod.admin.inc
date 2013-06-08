@@ -111,7 +111,10 @@ function advagg_mod_admin_settings_form() {
     '#default_value' => variable_get('advagg_mod_unified_multisite_dir', ''),
     '#size' => 60,
     '#maxlength' => 128,
-    '#description' => t('This allows you to have ').,
+    '#description' => t('This allows you to have a shared directory for all CSS/JS aggregates if this install of drupal is used as a <a href="@multisite">multisite</a>. If this servers multisites share a similar CSS/JS structure then a lot of resources can be saved by not rebuilding the same aggregates in each site of the multisite. Make sure that you use the same directory and advagg settings in each multisite for this setting to work efficiently. Current hash value of settings on this site: %value. If this value is different across the servers multisites then this will not save server resources as a different file will be built due to AdvAgg having different settings. Note that $base_path is used in the hash value so in some multisite cases it will be impossible to use this setting.', array(
+      '@multisite' => 'https://drupal.org/documentation/install/multi-site',
+      '%value' => advagg_get_current_hooks_hash(),
+    )),
   );
 
   // Clear the cache bins on submit.

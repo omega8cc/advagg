@@ -615,8 +615,11 @@ function _advagg_process_html(&$variables) {
   if (!isset($variables['page_bottom']) || !is_string($variables['page_bottom'])) {
     $variables['page_bottom'] = '';
   }
-  if (!empty($js_cache->data)) {
+  if (!empty($js_cache->data) && !variable_get('advagg_debug', ADVAGG_DEBUG)) {
     foreach ($js_cache->data as $key => $value) {
+      if (!isset($variables[$key]) || !is_string($variables[$key])) {
+        $variables[$key] = '';
+      }
       $variables[$key] .= $value;
     }
   }
