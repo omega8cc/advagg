@@ -12,6 +12,28 @@ function advagg_enable() {
   // Make sure the advagg_get_root_files_dir() function is available.
   drupal_load('module', 'advagg');
 
+  // Make sure permissions for dirs are correct. Needed if installed via drush.
+  list($css_path, $js_path) = advagg_get_root_files_dir();
+  $stat_public = stat('public://');
+  $stat_css = stat($css_path[0]);
+  $stat_js = stat($js_path[0]);
+  if (isset($stat_public['uid'])) {
+    if (isset($stat_css['uid']) && $stat_public['uid'] != $stat_css['uid']) {
+      @chown($css_path[0], $stat_public['uid']);
+    }
+    if (isset($stat_js['uid']) && $stat_public['uid'] != $stat_js['uid']) {
+      @chown($stat_js[0], $stat_public['uid']);
+    }
+  }
+  if (isset($stat_public['gid'])) {
+    if (isset($stat_css['gid']) && $stat_public['gid'] != $stat_css['gid']) {
+      @chgrp($css_path[0], $stat_public['gid']);
+    }
+    if (isset($stat_js['uid']) && $stat_public['gid'] != $stat_js['gid']) {
+      @chgrp($stat_js[0], $stat_public['gid']);
+    }
+  }
+
   // Make sure the advagg_flush_all_cache_bins() function is available.
   module_load_include('inc', 'advagg', 'advagg');
   module_load_include('inc', 'advagg', 'advagg.cache');
@@ -438,11 +460,27 @@ function advagg_install_check_via_http(&$requirements) {
             && strpos($request->data, '<!-- advagg_missing_fast404 -->') === FALSE
               )
           ) {
+      // Fast 404 check.
+      if (strpos($GLOBALS['conf']['404_fast_paths_exclude'], 'advagg_') === FALSE) {
+        if ($GLOBALS['conf']['404_fast_paths_exclude'] == '/\/(?:styles)\//') {
+          $description = $t('Change it from <code>/\/(?:styles)\//</code> to <code>/\/(?:styles|advagg_(cs|j)s)\//</code> Current value: %value', array('%value' => $GLOBALS['conf']['404_fast_paths_exclude']));
+        }
+        else {
+          $description = $t('Add in <code>advagg_(cs|j)s</code> into the regex. Current value: %value', array('%value' => $GLOBALS['conf']['404_fast_paths_exclude']));
+        }
+        $requirements['advagg_404_fast_' . $type . '_generation'] = array(
+          'title' => $t('Adv CSS/JS Agg - Fast 404: HTTP Request'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('HTTP requests to advagg for ' . $type . ' files are not getting through.'),
+          'description' => $t('If you have fast 404 enabled in your settings.php file, you need to change the 404_fast_paths_exclude setting so advagg will work.') . ' ' . $description,
+        );
+      }
+
       // Menu callback failed.
       $requirements['advagg_' . $type . '_generation'] = array(
         'title' => $t('Adv CSS/JS Agg - HTTP Request'),
         'severity' => REQUIREMENT_ERROR,
-        'value' => $t('HTTP requests to advagg for ' . $type . ' files are not getting though.'),
+        'value' => $t('HTTP requests to advagg for ' . $type . ' files are not getting through.'),
         'description' => $t('Raw request info: <pre>@request</pre>', array('@request' => print_r($request, TRUE)))
       );
     }
