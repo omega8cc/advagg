@@ -461,12 +461,13 @@ function advagg_install_check_via_http(&$requirements) {
               )
           ) {
       // Fast 404 check.
-      if (strpos($GLOBALS['conf']['404_fast_paths_exclude'], 'advagg_') === FALSE) {
-        if ($GLOBALS['conf']['404_fast_paths_exclude'] == '/\/(?:styles)\//') {
-          $description = $t('Change it from <code>/\/(?:styles)\//</code> to <code>/\/(?:styles|advagg_(cs|j)s)\//</code> Current value: %value', array('%value' => $GLOBALS['conf']['404_fast_paths_exclude']));
+      $exclude_paths = variable_get('404_fast_paths_exclude', FALSE);
+      if (!empty($exclude_paths) && strpos($exclude_paths, 'advagg_') === FALSE) {
+        if ($exclude_paths == '/\/(?:styles)\//') {
+          $description = $t('Change it from <code>/\/(?:styles)\//</code> to <code>/\/(?:styles|advagg_(cs|j)s)\//</code> Current value: %value', array('%value' => $exclude_paths));
         }
         else {
-          $description = $t('Add in <code>advagg_(cs|j)s</code> into the regex. Current value: %value', array('%value' => $GLOBALS['conf']['404_fast_paths_exclude']));
+          $description = $t('Add in <code>advagg_(cs|j)s</code> into the regex. Current value: %value', array('%value' => $exclude_paths));
         }
         $requirements['advagg_404_fast_' . $type . '_generation'] = array(
           'title' => $t('Adv CSS/JS Agg - Fast 404: HTTP Request'),
