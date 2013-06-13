@@ -330,7 +330,7 @@ function advagg_admin_info_form($form, $form_state) {
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    '#title' => t('Get detailed info about an aggregrate file'),
+    '#title' => t('Get detailed info about an aggregate file'),
   );
   $form['get_info_about_agg']['filename'] = array(
     '#type' => 'textfield',
@@ -416,7 +416,7 @@ function advagg_admin_get_file_info_callback($form, &$form_state) {
   }
   $info = advagg_admin_get_file_info($form_state['values']['filename']);
   if (empty($info)) {
-    form_set_error('filename', 'Please input a valid aggregrate filename.');
+    form_set_error('filename', 'Please input a valid aggregate filename.');
     return '<div id="advagg-file-info-ajax"></div>';
   }
   else {
@@ -435,7 +435,7 @@ function advagg_admin_get_file_info_callback($form, &$form_state) {
  */
 function advagg_admin_get_file_info_validate($form, &$form_state) {
   if (empty($form_state['values']['filename'])) {
-    form_set_error('filename', 'Please input an aggregrate filename.');
+    form_set_error('filename', 'Please input an aggregate filename.');
     $form_state['values']['error'] = TRUE;
   }
 }
