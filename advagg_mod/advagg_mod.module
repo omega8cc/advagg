@@ -26,6 +26,12 @@ define('ADVAGG_MOD_JS_DEFER', FALSE);
  */
 define('ADVAGG_MOD_CSS_PREPROCESS', FALSE);
 
+/**
+ * Default value to remove JavaScript if none was added on the page.
+ */
+define('ADVAGG_MOD_JS_REMOVE_UNUSED', FALSE);
+
+
 // Core hook implementations.
 /**
  * Implement hook_init().
@@ -93,6 +99,11 @@ function advagg_mod_menu() {
 function advagg_mod_js_alter(&$js) {
   if (module_exists('advagg') && !advagg_enabled()) {
     return;
+  }
+
+  // Only add JS if it's actually needed.
+  if (variable_get('advagg_mod_js_remove_unused', ADVAGG_MOD_JS_REMOVE_UNUSED)) {
+    advagg_remove_js_if_not_used($js);
   }
 
   // Move all JS to the footer.
@@ -373,4 +384,161 @@ function advagg_mod_match_path($pages, $visibility) {
   }
 
   return $page_match;
+}
+
+/**
+ * See if JavaScript file contains drupal and/or jquery.
+ *
+ * @param $filename
+ *   filename or full URL.
+ * @param $type
+ *   file or external
+ *
+ * @see block_block_list_alter()
+ */
+function advagg_mod_js_contains_jquery_drupal($filename, $type) {
+  module_load_include('inc', 'advagg', 'advagg');
+  $info = advagg_get_info_on_file($filename);
+
+  if (empty($info['advagg_mod']['contents'])) {
+    if ($type == 'file') {
+      $contents = file_get_contents($filename);
+    }
+    if ($type == 'external') {
+      $result = drupal_http_request($filename);
+      if (($result->code == 200 || (isset($result->redirect_code) && $result->redirect_code == 200)) && !empty($result->data)) {
+        $contents = $result->data;
+      }
+    }
+
+    if (!empty($contents) && stripos($contents, 'drupal.') !== FALSE) {
+      $info['advagg_mod']['contents']['drupal'] = TRUE;
+      if (stripos($contents, 'drupal.settings.') !== FALSE) {
+        $info['advagg_mod']['contents']['drupal.settings'] = TRUE;
+      }
+      else {
+        $info['advagg_mod']['contents']['drupal.settings'] = FALSE;
+      }
+      if (stripos($contents, 'drupal.behaviors.') !== FALSE) {
+        $info['advagg_mod']['contents']['drupal.behaviors'] = TRUE;
+      }
+      else {
+        $info['advagg_mod']['contents']['drupal.behaviors'] = FALSE;
+      }
+    }
+    else {
+      $info['advagg_mod']['contents']['drupal'] = FALSE;
+      $info['advagg_mod']['contents']['drupal.settings'] = FALSE;
+      $info['advagg_mod']['contents']['drupal.behaviors'] = FALSE;
+    }
+    if (!empty($contents) && stripos($contents, 'jquery') !== FALSE) {
+      $info['advagg_mod']['contents']['jquery'] = TRUE;
+    }
+    else {
+      $info['advagg_mod']['contents']['jquery'] = FALSE;
+    }
+
+    // Cache info.
+    $filename_hashes = &drupal_static('advagg_get_info_on_file');
+    $cache_id = 'advagg:file:' . $info['filename_hash'];
+
+    // Save results.
+    $filename_hashes[$cache_id] = $info;
+    cache_set($cache_id, $info, 'cache_advagg_info', CACHE_PERMANENT);
+  }
+
+  return array($info['advagg_mod']['contents']['drupal'], $info['advagg_mod']['contents']['jquery']);
+}
+
+/**
+ * Remove JS if not in use on current page.
+ *
+ * @param $js
+ *   JS array.
+ */
+function advagg_remove_js_if_not_used(&$js) {
+  // Do not run the following code if drupal_add_js_page_defaults exists.
+  if (function_exists('drupal_add_js_page_defaults')) {
+    return;
+  }
+
+  $files_skiplist = array(
+    'drupal.js',
+    'jquery.js',
+    'jquery.min.js',
+    'jquery.once.js',
+  );
+  $inline_skiplist = array(
+    '/jquery_update/replace/jquery/1.5/jquery.min.js',
+    'var $L = $LAB.setGlobalDefaults',
+  );
+  $include_jquery = FALSE;
+  $include_drupal = FALSE;
+
+  // Look at each JavaScript entry.
+  foreach ($js as $name => &$values) {
+    if ($values['type'] == 'file' || $values['type'] == 'external') {
+      $skip = FALSE;
+      foreach ($files_skiplist as $skip_name) {
+        if (substr_compare($name, $skip_name, -strlen($skip_name), strlen($skip_name)) === 0) {
+          $skip = TRUE;
+          break;
+        }
+      }
+      if (!$skip) {
+        list($drupal, $jquery) = advagg_mod_js_contains_jquery_drupal($name, $values['type']);
+        if ($drupal) {
+          $include_jquery = TRUE;
+          $include_drupal = TRUE;
+        }
+        elseif ($jquery) {
+          $include_jquery = TRUE;
+        }
+      }
+    }
+    if ($values['type'] == 'inline') {
+      $skip = FALSE;
+      foreach ($inline_skiplist as $skip_string) {
+        if (stripos($values['data'], $skip_string) !== FALSE) {
+          $skip = TRUE;
+          break;
+        }
+      }
+      if (!$skip) {
+        $include_jquery = TRUE;
+        $include_drupal = TRUE;
+      }
+    }
+  }
+
+  // Kill only drupal JavaScript.
+  if (!$include_drupal) {
+    unset($js['settings']);
+    foreach ($js as $name => &$values) {
+      $drupal = 'drupal.js';
+      if (substr_compare($name, $drupal, -strlen($drupal), strlen($drupal)) === 0) {
+        unset($js[$name]);
+      }
+    }
+
+    // Kill all default JavaScript.
+    if (!$include_jquery) {
+      foreach ($js as $name => &$values) {
+        if ($values['type'] == 'file' || $values['type'] == 'external') {
+          foreach ($files_skiplist as $skip_name) {
+            if (substr_compare($name, $skip_name, -strlen($skip_name), strlen($skip_name)) === 0) {
+              unset($js[$name]);
+            }
+          }
+        }
+        elseif ($values['type'] == 'inline') {
+          foreach ($inline_skiplist as $skip_string) {
+            if (stripos($values['data'], $skip_string) !== FALSE) {
+              unset($js[$name]);
+            }
+          }
+        }
+      }
+    }
+  }
 }

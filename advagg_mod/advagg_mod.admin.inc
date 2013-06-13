@@ -41,6 +41,12 @@ function advagg_mod_admin_settings_form() {
     '#default_value' => variable_get('advagg_mod_js_defer', ADVAGG_MOD_JS_DEFER),
     '#description' => t('This will most likely break javascript on different browsers; and/or on all browsers. Use with extreme caution.'),
   );
+  $form['js']['advagg_mod_js_remove_unused'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove unused JavaScript tags if possible'),
+    '#default_value' => variable_get('advagg_mod_js_remove_unused', ADVAGG_MOD_JS_REMOVE_UNUSED),
+    '#description' => t('This is still experemental. Use with extreme caution. This will scan all included JS files for references to jquery and drupal. If none are found then the default JavaScript is removed from the page.'),
+  );
 
   $config_path = advagg_admin_config_root_path();
   $form['css'] = array(
