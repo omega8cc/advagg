@@ -104,15 +104,53 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
   // Cache query in a static.
   static $analysis = array();
   if (empty($analysis)) {
-    // See if we have a cached version of this.
+    // See if we have a cached version of this. Generate cache ID.
     $query = db_select('advagg_aggregates_versions', 'aav')
       ->condition('aav.root', 1)
       ->condition('aav.atime', REQUEST_TIME - ADVAGG_BUNDLER_OUTDATED, '>');
     $query->addExpression('COUNT(aggregate_filenames_hash)', 'counter');
     $count = $query->execute()->fetchField();
+    $ideal_cid = 'advagg:bundler_analysis:' . $count;
 
-    $cache = cache_get('advagg:bundler_analysis:' . $count, 'cache_advagg_aggregates');
-    if (empty($cache->data) || $force) {
+    if (!$force) {
+      // Generate cache IDs.
+      $counts = range(max(0, $count-3), $count+3);
+      foreach ($counts as $count) {
+        $cache_ids[] = 'advagg:bundler_analysis:' . $count;
+      }
+
+      // Get a range of cached bundler_analysis data.
+      $cache_hits = cache_get_multiple($cache_ids, 'cache_advagg_aggregates');
+      if (!empty($cache_hits)) {
+        if (isset($cache_hits[$ideal_cid])) {
+          $cache = $cache_hits[$ideal_cid];
+        }
+        elseif (!$force && module_exists('httprl') && httprl_is_background_callback_capable()) {
+          // Setup callback options array.
+          $callback_options = array(
+            array(
+              'function' => 'advagg_bundler_analysis',
+            ),
+            $filename, TRUE,
+          );
+          // Queue up the request.
+          httprl_queue_background_callback($callback_options);
+          // Execute request.
+          httprl_send_request();
+
+          // Use most recent bundler_analysis data.
+          $max = 0;
+          foreach ($cache_hits as $cid => $data) {
+            if ($data->created > $max) {
+              $max = $data->created;
+              $cache = $data;
+            }
+          }
+        }
+      }
+    }
+
+    if ($force || empty($cache->data)) {
       // "Magic Query"; only needs to run once.
       // Return a count of how many root bundles all files are used in. Count is
       // padded with eight zeros so the count can be key sorted as a string
@@ -167,7 +205,7 @@ function advagg_bundler_analysis($filename = '', $force = FALSE) {
       drupal_alter('advagg_bundler_analysis', $analysis);
 
       // Save results to the cache.
-      cache_set('advagg:bundler_analysis:' . $count, $analysis, 'cache_advagg_aggregates', CACHE_TEMPORARY);
+      cache_set($ideal_cid, $analysis, 'cache_advagg_aggregates', CACHE_TEMPORARY);
     }
     else {
       $analysis = $cache->data;
