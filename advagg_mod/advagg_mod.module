@@ -22,6 +22,11 @@ define('ADVAGG_MOD_JS_PREPROCESS', FALSE);
 define('ADVAGG_MOD_JS_DEFER', FALSE);
 
 /**
+ * Default value to add use the async script shim for script tags.
+ */
+define('ADVAGG_MOD_JS_ASYNC_SHIM', TRUE);
+
+/**
  * Default value to turn on preprocessing for all CSS files.
  */
 define('ADVAGG_MOD_CSS_PREPROCESS', FALSE);
@@ -204,7 +209,7 @@ function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
     return;
   }
 
-  // Do not use defer if JS is inlined.
+  // Do not use defer/async shim if JS is inlined.
   if (advagg_mod_inline_page()) {
     return;
   }
@@ -235,6 +240,25 @@ function advagg_mod_advagg_modify_js_pre_render_alter(&$children, &$elements) {
       }
     }
   }
+
+  if (variable_get('advagg_mod_js_async_shim', ADVAGG_MOD_JS_ASYNC_SHIM)) {
+    foreach ($children as &$values) {
+      if (isset($values['#attributes']) && isset($values['#attributes']['async']) && $values['#attributes']['async'] == 'async') {
+        $source = url($values['#attributes']['src']);
+        $values['#value'] = "(function() {
+  var s = document.createElement('script');
+  s.type = 'text/javascript';
+  s.async = true;
+  s.src = '$source';
+  var d = document.getElementsByTagName('script')[0];
+  d.parentNode.insertBefore(s, d);
+})();";
+        unset($values['#attributes']['async']);
+        unset($values['#attributes']['src']);
+      }
+    }
+  }
+
 }
 
 /**

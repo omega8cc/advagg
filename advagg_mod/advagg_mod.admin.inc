@@ -35,6 +35,12 @@ function advagg_mod_admin_settings_form() {
     '#title' => t('Enable preprocess on all JS'),
     '#default_value' => variable_get('advagg_mod_js_preprocess', ADVAGG_MOD_JS_PREPROCESS),
   );
+  $form['js']['advagg_mod_js_async_shim'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Rewrite asynchronous script tags to inline, old-browser-compatible scripts.'),
+    '#default_value' => variable_get('advagg_mod_js_async_shim', ADVAGG_MOD_JS_ASYNC_SHIM),
+    '#description' => t('Rewrites all scripts in the page with an "async" attribute to an inline JavaScript loading the script asynchronously in an old browser compatible way. List of <a href="@link">supported browsers</a>. Once all commonly used browsers support the "async" attribute you can happily disable this checkbox.', array('@link' => 'http://caniuse.com/script-async')),
+  );
   $form['js']['advagg_mod_js_defer'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add the defer tag to all script tags'),
