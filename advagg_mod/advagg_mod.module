@@ -566,3 +566,62 @@ function advagg_remove_js_if_not_used(&$js) {
     }
   }
 }
+
+
+/**
+ * Implements hook_magic().
+ *
+ * @param array $magic_settings
+ *   The renderable form array of the magic module theme settings. READ ONLY
+ * @param string $theme
+ *   The theme that the settings will be editing.
+ *
+ * @return
+ *   The array of settings within the magic module theme page. Must not contain
+ *   anything from the $magic_settings array.
+ */
+function advagg_mod_magic($magic_settings, $theme) {
+  $settings = array();
+
+  // If possible disable access and set defult to false.
+  if (!isset($magic_settings['css']['magic_embedded_mqs']['#access'])) {
+    $settings['css']['magic_embedded_mqs']['#access'] = FALSE;
+  }
+  if (!isset($magic_settings['css']['magic_embedded_mqs']['#default_value'])) {
+    $settings['css']['magic_embedded_mqs']['#default_value'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_footer_js']['#access'])) {
+    $settings['js']['magic_footer_js']['#access'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_footer_js']['#default_value'])) {
+    $settings['js']['magic_footer_js']['#default_value'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_library_head']['#access'])) {
+    $settings['js']['magic_library_head']['#access'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_library_head']['#default_value'])) {
+    $settings['js']['magic_library_head']['#default_value'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_experimental_js']['#access'])) {
+    $settings['js']['magic_experimental_js']['#access'] = FALSE;
+  }
+  if (!isset($magic_settings['js']['magic_experimental_js']['#default_value'])) {
+    $settings['js']['magic_experimental_js']['#default_value'] = FALSE;
+  }
+
+  // Add in our own validate function so we can preprocess variables before
+  // they are saved.
+  $settings['#validate'] = array('advagg_mod_magic_form_validate');
+  return $settings;
+}
+
+/**
+ * Form validation handler. Disable certian magic settings before being saved.
+ */
+function advagg_mod_magic_form_validate($form, &$form_state) {
+  // Disable magic functionality if it is a duplicate of AdvAgg.
+  $form_state['values']['magic_embedded_mqs'] = 0;
+  $form_state['values']['magic_footer_js'] = 0;
+  $form_state['values']['magic_library_head'] = 0;
+  $form_state['values']['magic_experimental_js'] = 0;
+}
