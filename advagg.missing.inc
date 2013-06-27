@@ -11,15 +11,6 @@
  * Menu Callback; generates a missing CSS/JS file.
  */
 function advagg_missing_aggregate() {
-  // Conditional GET requests (i.e. with If-Modified-Since header).
-  if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-    // All files served by this function are designed to expire in the far
-    // future. Hence we can simply always tell the client the requested file
-    // was not modified.
-    header("HTTP/1.1 304 Not Modified");
-    exit();
-  }
-
   // Do not stop processing this request.
   ignore_user_abort(TRUE);
 
@@ -54,8 +45,13 @@ function advagg_missing_generate() {
   $uri = $GLOBALS['base_path'] . $_GET['q'];
   $created = FALSE;
   $files_to_save = array();
-  if (lock_acquire($lock_name, 10)) {
-    $return = advagg_missing_create_file($filename);
+  if (lock_acquire($lock_name, 10) || $redirect_counter > 4) {
+    if ($redirect_counter > 4) {
+      $return = advagg_missing_create_file($filename, TRUE);
+    }
+    else {
+      $return = advagg_missing_create_file($filename);
+    }
     lock_release($lock_name);
     if (!is_array($return)) {
       return $return;
@@ -80,6 +76,10 @@ function advagg_missing_generate() {
     $uri .= '?redirect_counter=' . $redirect_counter;
     header('Location: ' . $uri, TRUE, 307);
     exit();
+  }
+
+  if ($redirect_counter > 4) {
+    watchdog('advagg', 'One of the alter hooks failed when generating this file: %uri. Thus this file was created without any alter hooks.', array('%uri' => $uri), WATCHDOG_CRITICAL);
   }
 
   // Output file's contents if createing the file was sucessfull.
@@ -199,18 +199,25 @@ function advagg_missing_set_farfuture_headers() {
  *
  * @param $filename
  *   Just the filename no path information.
+ * @param $no_alters
+ *   Set to TRUE to do the bare ammount of processing on the file.
  *
  * @return
  *   On failure a string saying why it failed.
  *   On success the $files_to_save array.
  */
-function advagg_missing_create_file($filename) {
+function advagg_missing_create_file($filename, $no_alters = FALSE) {
   $data = advagg_get_hashes_from_filename($filename);
   if (is_array($data)) {
     list($type, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings) = $data;
   }
   else {
     return $data;
+  }
+
+  // Set no alters if this is the last chance of generating the aggregate.
+  if ($no_alters) {
+    $aggregate_settings['settings']['no_alters'] = TRUE;
   }
 
   // Get a list of files.
@@ -330,6 +337,9 @@ function advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggrega
 function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
   // Check if CSS compression is enabled.
   $optimize = TRUE;
+  if (!empty($aggregate_settings['settings']['no_alters'])) {
+    $optimize = FALSE;
+  }
 
   $data = '';
   if (!empty($files)) {
@@ -352,11 +362,13 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
     $import_statements = array();
     module_load_include('inc', 'advagg', 'advagg');
     foreach ($files as $file => $settings) {
-      $contents = advagg_load_css_stylesheet($file, $optimize);
+      $contents = advagg_load_css_stylesheet($file, $optimize, $aggregate_settings);
 
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_css_file_contents_alter().
-      drupal_alter('advagg_get_css_file_contents', $contents, $file, $aggregate_settings);
+      if (empty($aggregate_settings['settings']['no_alters'])) {
+        drupal_alter('advagg_get_css_file_contents', $contents, $file, $aggregate_settings);
+      }
 
       if ($media_changes) {
         $media_blocks = advagg_parse_media_blocks($contents);
@@ -456,7 +468,9 @@ function advagg_get_css_aggregate_contents($files, $aggregate_settings) {
 
   // Allow other modules to modify this aggregates contents.
   // Call hook_advagg_get_css_aggregate_contents_alter().
-  drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $aggregate_settings);
+  if (empty($aggregate_settings['settings']['no_alters'])) {
+    drupal_alter('advagg_get_css_aggregate_contents', $data, $files, $aggregate_settings);
+  }
   return $data;
 }
 
@@ -483,14 +497,18 @@ function advagg_get_js_aggregate_contents($files, $aggregate_settings) {
       }
       // Allow other modules to modify this files contents.
       // Call hook_advagg_get_js_file_contents_alter().
-      drupal_alter('advagg_get_js_file_contents', $contents, $filename, $aggregate_settings);
+      if (empty($aggregate_settings['settings']['no_alters'])) {
+        drupal_alter('advagg_get_js_file_contents', $contents, $filename, $aggregate_settings);
+      }
       $data .= $contents;
     }
   }
 
   // Allow other modules to modify this aggregates contents.
   // Call hook_advagg_get_js_aggregate_contents_alter().
-  drupal_alter('advagg_get_js_aggregate_contents', $data, $files, $aggregate_settings);
+  if (empty($aggregate_settings['settings']['no_alters'])) {
+    drupal_alter('advagg_get_js_aggregate_contents', $data, $files, $aggregate_settings);
+  }
   return $data;
 }
 
@@ -532,7 +550,9 @@ function advagg_save_aggregate($filename, $files, $type, $aggregate_settings) {
   // Allow other modules to alter the contents and add new files to save (.gz).
   // Call hook_advagg_save_aggregate_alter().
   $other_parameters = array($files, $type);
-  drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings, $other_parameters);
+  if (empty($aggregate_settings['settings']['no_alters'])) {
+    drupal_alter('advagg_save_aggregate', $files_to_save, $aggregate_settings, $other_parameters);
+  }
 
   foreach ($files_to_save as $uri => $data) {
     advagg_save_data($uri, $data);
