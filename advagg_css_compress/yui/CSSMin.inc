@@ -285,19 +285,23 @@ class CSSmin
         // Replace 0 length numbers with 0
         $css = preg_replace('/((?<!\\\\)\:|\s)\-?\.?0+([^\d])/S', '${1}0$2', $css);
 
-        // Remove the spaces before the things that should not have spaces before them.
-        // But, be careful not to turn "p :link {...}" into "p:link{...}"
-        // Swap out any pseudo-class colons with the token, and then swap back.
-        $css = preg_replace_callback('/(?:^|\})(?:(?:[^\{\:])+\:)+(?:[^\{]*\{)/', array($this, 'replace_colon'), $css);
+        // preg_replace_callback error on windows only.
+        // https://github.com/tubalmartin/YUI-CSS-compressor-PHP-port/issues/4
+        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+          // Remove the spaces before the things that should not have spaces before them.
+          // But, be careful not to turn "p :link {...}" into "p:link{...}"
+          // Swap out any pseudo-class colons with the token, and then swap back.
+          $css = preg_replace_callback('/(?:^|\})(?:(?:[^\{\:])+\:)+(?:[^\{]*\{)/', array($this, 'replace_colon'), $css);
 
-        // Remove spaces before the things that should not have spaces before them.
-        $css = preg_replace('/\s+([\!\{\}\;\:\>\+\(\)\]\~\=,])/', '$1', $css);
+          // Remove spaces before the things that should not have spaces before them.
+          $css = preg_replace('/\s+([\!\{\}\;\:\>\+\(\)\]\~\=,])/', '$1', $css);
 
-        // Restore spaces for !important
-        $css = preg_replace('/\!important/i', ' !important', $css);
+          // Restore spaces for !important
+          $css = preg_replace('/\!important/i', ' !important', $css);
 
-        // bring back the colon
-        $css = preg_replace('/' . self::CLASSCOLON . '/', ':', $css);
+          // bring back the colon
+          $css = preg_replace('/' . self::CLASSCOLON . '/', ':', $css);
+        }
 
         // retain space for special IE6 cases
         $css = preg_replace_callback('/\:first\-(line|letter)(\{|,)/i', array($this, 'lowercase_pseudo_first'), $css);
