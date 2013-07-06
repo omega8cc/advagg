@@ -219,6 +219,11 @@ function advagg_cron() {
  *   TRUE: Get all advagg cache bins
  */
 function advagg_flush_caches($all_bins = FALSE) {
+  // Send back a blank array if aav table doesn't exist.
+  if (!db_table_exists('advagg_aggregates_versions')) {
+    return array();
+  }
+
   // Get list of cache bins to clear.
   $bins = array();
   $bins[] = 'cache_advagg_aggregates';
@@ -913,6 +918,14 @@ function advagg_merge_plans($css_js_groups, $plans) {
  *   The value of the advagg_enabled variable.
  */
 function advagg_enabled() {
+  // Disable AdvAgg if module needs to be upgraded from 1.x to 2.x.
+  if (!db_table_exists('advagg_aggregates_versions')) {
+    $GLOBALS['conf']['advagg_enabled'] = FALSE;
+    if (user_access(array('administer site configuration'))) {
+      drupal_set_message(t('Please run <a href="@link">database updates</a>. AdvAgg will remain disabled until done.', array('@link' => url('update.php'))), 'error');
+    }
+  }
+
   // Only run code below if advagg is enabled.
   if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
     // Do not use the cache if the disable cookie is set.
@@ -938,7 +951,6 @@ function advagg_enabled() {
     if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
       $GLOBALS['conf']['advagg_debug'] = TRUE;
     }
-
   }
 
   return variable_get('advagg_enabled', ADVAGG_ENABLED);

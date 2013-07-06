@@ -255,6 +255,54 @@ function advagg_schema() {
   return $schema;
 }
 
+
+/**
+ * Upgrade AdvAgg previous verions (6.x-1.x & 7.x-1.x) to 7.x-2.x.
+ *
+ * Implements hook_update_N().
+ */
+function advagg_update_7200(&$sandbox) {
+  // Check and see if new tables exist.
+  $table_names = array_keys(advagg_schema());
+  $all_tables_exist = TRUE;
+  $missing_tables = array();
+  foreach ($table_names as $table_name) {
+    if (!db_table_exists($table_name)) {
+      $all_tables_exist = FALSE;
+      $missing_tables[] = $table_name;
+    }
+  }
+  // Bail if needed DB Tables exist.
+  if ($all_tables_exist) {
+    return t('Nothing needed to happen in Advanced CSS/JS Aggregation.');
+  }
+
+  // Remove all old advagg variables.
+  db_delete('variable')
+    ->condition('name', 'advagg%', 'LIKE')
+    ->execute();
+
+  // Remove old schema.
+  $tables_to_remove = array(
+    'cache_advagg',
+    'cache_advagg_files_data',
+    'cache_advagg_bundle_reuse',
+    'advagg_files',
+    'advagg_bundles',
+  );
+  foreach ($tables_to_remove as $table_to_remove) {
+    if (db_table_exists($table_to_remove)) {
+      db_drop_table($table_to_remove);
+    }
+  }
+
+  // Install new schema.
+  drupal_install_schema('advagg');
+
+  return t('Upgraded Advanced CSS/JS Aggregation to 7.x-2.x.');
+}
+
+
 /**
  * Implements hook_requirements().
  */
