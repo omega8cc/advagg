@@ -226,9 +226,7 @@ function advagg_admin_info_form($form, $form_state) {
   );
   $data = implode("\n", $core_hooks['html']['process functions']);
   $form['info']['advagg_debug_info'] = array(
-    '#type' => 'textarea',
-    '#default_value' => $data,
-    '#rows' => count($core_hooks['html']['process functions']) + 1,
+    '#markup' => '<pre>' . $data . '</pre>',
   );
 
   // Get all parent css and js files.
@@ -327,6 +325,35 @@ function advagg_admin_info_form($form, $form_state) {
     '#markup' => '<pre>' . print_r(advagg_current_hooks_hash_array(), TRUE) . '</pre>'
   );
 
+  // Get info about a file.
+  $form['get_info_about_agg'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#title' => t('Get detailed info about an aggregate file'),
+  );
+  $form['get_info_about_agg']['filename'] = array(
+    '#type' => 'textfield',
+    '#size' => 170,
+    '#maxlength' => 256,
+    '#default_value' => '',
+    '#title' => t('Filename'),
+  );
+  $form['get_info_about_agg']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Lookup Details'),
+    '#submit' => array('advagg_admin_get_file_info_submit'),
+    '#validate' => array('advagg_admin_get_file_info_validate'),
+    "#ajax" => array(
+      "callback" => "advagg_admin_get_file_info_callback",
+      "wrapper" => "advagg-file-info-ajax",
+      "effect" => "fade",
+    ),
+  );
+  $form['get_info_about_agg']["wrapper"] = array(
+    "#markup" => "<div id='advagg-file-info-ajax'></div>",
+  );
+
   return $form;
 }
 
@@ -361,6 +388,104 @@ function advagg_admin_toggle_bypass_cookie() {
     $_COOKIE[$cookie_name] = $key;
     drupal_set_message(t('AdvAgg Bypass Cookie Set.'));
   }
+}
+
+/**
+ * Display file info in a drupal message.
+ */
+function advagg_admin_get_file_info_submit($form, &$form_state) {
+  if (!empty($form_state['input']['ajax_page_state'])) {
+    return;
+  }
+  $info = advagg_admin_get_file_info($form_state['values']['filename']);
+  if (module_exists('httprl')) {
+    $output = httprl_pr($info);
+  }
+  else {
+    $output = '<pre>' . print_r($info, TRUE) . '</pre>';
+  }
+  drupal_set_message($output);
+}
+
+/**
+ * Display file info via ajax callback.
+ */
+function advagg_admin_get_file_info_callback($form, &$form_state) {
+  if (!empty($form_state['values']['error'])) {
+    return '<div id="advagg-file-info-ajax"></div>';
+  }
+  $info = advagg_admin_get_file_info($form_state['values']['filename']);
+  if (empty($info)) {
+    form_set_error('filename', 'Please input a valid aggregate filename.');
+    return '<div id="advagg-file-info-ajax"></div>';
+  }
+  else {
+    if (module_exists('httprl')) {
+      $output = httprl_pr($info);
+    }
+    else {
+      $output = '<pre>' . print_r($info, TRUE) . '</pre>';
+    }
+    return '<div id="advagg-file-info-ajax">' . $output . '</div>';
+  }
+}
+
+/**
+ * Verify that the filename is correct.
+ */
+function advagg_admin_get_file_info_validate($form, &$form_state) {
+  if (empty($form_state['values']['filename'])) {
+    form_set_error('filename', 'Please input an aggregate filename.');
+    $form_state['values']['error'] = TRUE;
+  }
+}
+
+/**
+ * Get detailed info about the given filename.
+ *
+ * @param $filename
+ *   Name of file to lookup.
+ * @return array
+ *   Returns an array of detailed info about this file.
+ */
+function advagg_admin_get_file_info($filename) {
+  module_load_include('inc', 'advagg', 'advagg.missing');
+  module_load_include('inc', 'advagg', 'advagg');
+
+  $data = advagg_get_hashes_from_filename($filename);
+  $output = array();
+  if (is_array($data)) {
+    list($type, $aggregate_filenames_hash, $aggregate_contents_hash, $aggregate_settings) = $data;
+
+    // Get a list of files.
+    $files = advagg_get_files_from_hashes($type, $aggregate_filenames_hash, $aggregate_contents_hash);
+    $data['files'] = $files;
+
+    // Get detailed info on each file.
+    foreach ($data['files'] as $filename => &$info) {
+      $info += advagg_get_info_on_file($filename);
+      if (module_exists('advagg_bundler')) {
+        $bundler = advagg_bundler_analysis($filename);
+        $info['group_hash'] = $bundler['group_hash'];
+      }
+    }
+    $output = $data;
+  }
+  else {
+    $results = db_select('advagg_files', 'af')
+      ->fields('af')
+      ->condition('filename', '%' . db_like($filename), 'LIKE')
+      ->execute();
+    while ($row = $results->fetchAssoc()) {
+      $row += advagg_get_info_on_file($row['filename']);
+      if (module_exists('advagg_bundler')) {
+        $bundler = advagg_bundler_analysis($row['filename']);
+        $row['group_hash'] = $bundler['group_hash'];
+      }
+      $output[] = $row;
+    }
+  }
+  return $output;
 }
 
 /**

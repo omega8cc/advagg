@@ -35,11 +35,23 @@ function advagg_mod_admin_settings_form() {
     '#title' => t('Enable preprocess on all JS'),
     '#default_value' => variable_get('advagg_mod_js_preprocess', ADVAGG_MOD_JS_PREPROCESS),
   );
+  $form['js']['advagg_mod_js_async_shim'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Rewrite asynchronous script tags to inline, old-browser-compatible scripts.'),
+    '#default_value' => variable_get('advagg_mod_js_async_shim', ADVAGG_MOD_JS_ASYNC_SHIM),
+    '#description' => t('Rewrites all scripts in the page with an "async" attribute to an inline JavaScript loading the script asynchronously in an old browser compatible way. List of <a href="@link">supported browsers</a>. Once all commonly used browsers support the "async" attribute you can happily disable this checkbox.', array('@link' => 'http://caniuse.com/script-async')),
+  );
   $form['js']['advagg_mod_js_defer'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add the defer tag to all script tags'),
     '#default_value' => variable_get('advagg_mod_js_defer', ADVAGG_MOD_JS_DEFER),
     '#description' => t('This will most likely break javascript on different browsers; and/or on all browsers. Use with extreme caution.'),
+  );
+  $form['js']['advagg_mod_js_remove_unused'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove unused JavaScript tags if possible'),
+    '#default_value' => variable_get('advagg_mod_js_remove_unused', ADVAGG_MOD_JS_REMOVE_UNUSED),
+    '#description' => t('This is still experemental. Use with extreme caution. This will scan all included JS files for references to jquery and drupal. If none are found then the default JavaScript is removed from the page.'),
   );
 
   $config_path = advagg_admin_config_root_path();
@@ -111,7 +123,11 @@ function advagg_mod_admin_settings_form() {
     '#default_value' => variable_get('advagg_mod_unified_multisite_dir', ''),
     '#size' => 60,
     '#maxlength' => 128,
-    '#description' => t('This allows you to have '),
+    '#description' => t('This allows you to have a shared directory for all CSS/JS aggregates if this install of drupal is used as a <a href="@multisite">multisite</a>. If this servers multisites share a similar CSS/JS structure then a lot of resources can be saved by not rebuilding the same aggregates in each site of the multisite. Make sure that you use the same directory and advagg settings in each multisite for this setting to work efficiently. Current <a href="@info">hash value</a> of settings on this site: %value. If this value is different across the servers multisites then this will not save server resources as a different file will be built due to AdvAgg having different settings. Note that $base_path is used in the hash value so in some multisite cases it will be impossible to use this setting.', array(
+      '@multisite' => 'https://drupal.org/documentation/install/multi-site',
+      '@info' => url($config_path . '/advagg/info'),
+      '%value' => advagg_get_current_hooks_hash(),
+    )),
   );
 
   // Clear the cache bins on submit.

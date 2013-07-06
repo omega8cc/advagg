@@ -219,6 +219,11 @@ function advagg_cron() {
  *   TRUE: Get all advagg cache bins
  */
 function advagg_flush_caches($all_bins = FALSE) {
+  // Send back a blank array if aav table doesn't exist.
+  if (!db_table_exists('advagg_aggregates_versions')) {
+    return array();
+  }
+
   // Get list of cache bins to clear.
   $bins = array();
   $bins[] = 'cache_advagg_aggregates';
@@ -615,8 +620,11 @@ function _advagg_process_html(&$variables) {
   if (!isset($variables['page_bottom']) || !is_string($variables['page_bottom'])) {
     $variables['page_bottom'] = '';
   }
-  if (!empty($js_cache->data)) {
+  if (!empty($js_cache->data) && !variable_get('advagg_debug', ADVAGG_DEBUG)) {
     foreach ($js_cache->data as $key => $value) {
+      if (!isset($variables[$key]) || !is_string($variables[$key])) {
+        $variables[$key] = '';
+      }
       $variables[$key] .= $value;
     }
   }
@@ -910,6 +918,14 @@ function advagg_merge_plans($css_js_groups, $plans) {
  *   The value of the advagg_enabled variable.
  */
 function advagg_enabled() {
+  // Disable AdvAgg if module needs to be upgraded from 1.x to 2.x.
+  if (!db_table_exists('advagg_aggregates_versions')) {
+    $GLOBALS['conf']['advagg_enabled'] = FALSE;
+    if (user_access(array('administer site configuration'))) {
+      drupal_set_message(t('Please run <a href="@link">database updates</a>. AdvAgg will remain disabled until done.', array('@link' => url('update.php'))), 'error');
+    }
+  }
+
   // Only run code below if advagg is enabled.
   if (variable_get('advagg_enabled', ADVAGG_ENABLED)) {
     // Do not use the cache if the disable cookie is set.
@@ -935,7 +951,6 @@ function advagg_enabled() {
     if (isset($_GET['advagg-debug']) && $_GET['advagg-debug'] == 1 && user_access('bypass advanced aggregation')) {
       $GLOBALS['conf']['advagg_debug'] = TRUE;
     }
-
   }
 
   return variable_get('advagg_enabled', ADVAGG_ENABLED);
@@ -1329,6 +1344,11 @@ function advagg_pre_render_scripts($elements) {
     // item.
     else {
       foreach ($group['items'] as $item) {
+        // Skip if data is empty.
+        if (empty($item['data'])) {
+          continue;
+        }
+
         // Element properties that do not depend on item type.
         $element = $element_defaults;
         if (!empty($item['defer'])) {
@@ -1340,8 +1360,23 @@ function advagg_pre_render_scripts($elements) {
         if (!empty($item['onload'])) {
           $element['#attributes']['onload'] = $item['onload'];
         }
-        $element['#browsers'] = $item['browsers'];
+        $element['#browsers'] = isset($item['browsers']) ? $item['browsers'] : array();
 
+        // Crude type detection if needed.
+        if (empty($item['type'])) {
+          if (is_array($item['data'])) {
+            $item['type'] = 'setting';
+          }
+          elseif (strpos($item['data'], 'http') === 0) {
+            $item['type'] = 'external';
+          }
+          elseif (file_exists(trim($item['data']))) {
+            $item['type'] = 'file';
+          }
+          else {
+            $item['type'] = 'inline';
+          }
+        }
         // Element properties that depend on item type.
         switch ($item['type']) {
           case 'setting':
